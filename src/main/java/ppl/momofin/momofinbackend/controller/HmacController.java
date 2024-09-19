@@ -7,8 +7,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.service.HmacService;
+import org.springframework.ui.Model;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 
 @RestController
@@ -21,18 +23,6 @@ public class HmacController {
 
     public HmacController(HmacService hmacService) {
         this.hmacService = hmacService;
-    }
-
-    @PostMapping("/upload-hmac")
-    public String uploadFileAndHash(@RequestParam("file") MultipartFile file) throws Exception {
-        // Step 1: Get file input stream
-        InputStream inputStream = file.getInputStream();
-
-        // Step 2: Calculate the HMAC hash of the file
-        String hmacHash = hmacService.calculateHmac(inputStream, secretKey, "HmacSHA256");
-
-        // Step 3: Return the hash value as response
-        return "HMAC Hash: " + hmacHash;
     }
 
     // API endpoint to get HMAC of a file
