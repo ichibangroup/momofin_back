@@ -20,7 +20,6 @@ public class HmacService {
 
     @Autowired
     private DocumentRepository documentRepository;
-
     // Method to compute HMAC of a file
     public String calculateHmac(File file, String secret, String algorithm)
             throws NoSuchAlgorithmException, InvalidKeyException, Exception {
