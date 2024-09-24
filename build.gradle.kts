@@ -1,3 +1,7 @@
+val persistenceVersion = "3.1.0"
+
+val postgresVersion = "42.6.0"
+
 plugins {
     java
     id("org.springframework.boot") version "3.3.3"
@@ -28,15 +32,21 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("jakarta.persistence:jakarta.persistence-api:$persistenceVersion")
+
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     annotationProcessor("org.projectlombok:lombok")
+
+    compileOnly("org.projectlombok:lombok")
+
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
+    runtimeOnly("org.postgresql:postgresql:$postgresVersion")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
-    runtimeOnly("org.postgresql:postgresql:42.6.0")
 }
 
 tasks.withType<Test> {
@@ -50,6 +60,9 @@ tasks.test{
 }
 
 tasks.jacocoTestReport{
+    reports {
+        xml.required = true
+    }
     dependsOn(tasks.test)
 }
 

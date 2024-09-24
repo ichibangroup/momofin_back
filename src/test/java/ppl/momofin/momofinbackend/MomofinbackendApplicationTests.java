@@ -8,6 +8,7 @@ class MomofinbackendApplicationTests {
 
     @Test
     void contextLoads() {
+        // This test is to see if the application itself can load properly, by using the @SpringBootTest decorator
     }
 
 }

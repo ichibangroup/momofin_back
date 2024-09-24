@@ -4,9 +4,9 @@ import model.Organization;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class OrganizationTest {
+class OrganizationTest {
     @Test
-    public void testEmptyConstructor() {
+    void testEmptyConstructor() {
         Organization organization = new Organization();
         assertNotNull(organization);
         assertNull(organization.getOrganizationId());
@@ -14,7 +14,7 @@ public class OrganizationTest {
     }
 
     @Test
-    public void testConstructor() {
+    void testConstructor() {
         String name = "test organization name";
         Organization organization = new Organization(name);
         assertNotNull(organization);
@@ -23,7 +23,7 @@ public class OrganizationTest {
     }
 
     @Test
-    public void testGetSetOrganizationId() {
+    void testGetSetOrganizationId() {
         Long organizationId = 1L;
         Organization organization = new Organization();
         organization.setOrganizationId(organizationId);
@@ -31,7 +31,7 @@ public class OrganizationTest {
     }
 
     @Test
-    public void testGetSetName() {
+    void testGetSetName() {
         String name = "test organization name";
         Organization organization = new Organization();
         organization.setName(name);

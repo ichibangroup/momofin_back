@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 public class UserTest {
     @Test
-    public void testUserContructorEmpty() {
+    void testUserContructorEmpty() {
         User user = new User();
 
         assertNotNull(user);
@@ -24,7 +24,7 @@ public class UserTest {
     }
 
     @Test
-    public void testUserConstructorRolesNotSpecified() {
+    void testUserConstructorRolesNotSpecified() {
         Organization organization = new Organization();
         String name = "testname";
         String email = "test@example.com";
@@ -45,7 +45,7 @@ public class UserTest {
     }
 
     @Test
-    public void testUserConstructorOrganizationAdmin() {
+    void testUserConstructorOrganizationAdmin() {
         Organization organization = new Organization();
         String name = "testname";
         String email = "test@example.com";
@@ -66,7 +66,7 @@ public class UserTest {
     }
 
     @Test
-    public void testUserConstructorMomofinAdmin() {
+    void testUserConstructorMomofinAdmin() {
         Organization organization = new Organization();
         String name = "testname";
         String email = "test@example.com";
@@ -87,7 +87,7 @@ public class UserTest {
     }
 
     @Test
-    public void testGetSetUserId() {
+    void testGetSetUserId() {
         Long userId = 1L;
         User user = new User();
 
@@ -96,7 +96,7 @@ public class UserTest {
     }
 
     @Test
-    public void  testGetSetOrganization() {
+    void  testGetSetOrganization() {
         Organization organization = new Organization();
         User user = new User();
 
@@ -105,7 +105,7 @@ public class UserTest {
     }
 
     @Test
-    public void testGetSetName() {
+    void testGetSetName() {
         String name = "testName";
         User user = new User();
 
@@ -114,7 +114,7 @@ public class UserTest {
     }
 
     @Test
-    public void testGetSetEmail() {
+    void testGetSetEmail() {
         String email = "test@email.com";
         User user = new User();
 
@@ -123,7 +123,7 @@ public class UserTest {
     }
 
     @Test
-    public void testGetSetPassword() {
+    void testGetSetPassword() {
         String password = "test password";
         User user = new User();
 
@@ -132,7 +132,7 @@ public class UserTest {
     }
 
     @Test
-    public void testGetSetPosition() {
+    void testGetSetPosition() {
         String position = "Manager";
         User user = new User();
 
@@ -141,7 +141,7 @@ public class UserTest {
     }
 
     @Test
-    public void testGetSetIsOrganizationAdmin() {
+    void testGetSetIsOrganizationAdmin() {
         User user = new User();
 
         user.setOrganizationAdmin(true);
@@ -149,7 +149,7 @@ public class UserTest {
     }
 
     @Test
-    public void testGetSetIsMomofinAdmin() {
+    void testGetSetIsMomofinAdmin() {
         User user = new User();
 
         user.setMomofinAdmin(true);
