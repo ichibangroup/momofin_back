@@ -34,10 +34,23 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
+    runtimeOnly("org.postgresql:postgresql:42.6.0")
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+tasks.test{
+    filter{
+        excludeTestsMatching("*FunctionalTest")
+    }
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport{
+    dependsOn(tasks.test)
 }
 
 tasks.jacocoTestReport {

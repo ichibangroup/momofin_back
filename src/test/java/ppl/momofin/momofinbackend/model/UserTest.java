@@ -23,16 +23,15 @@ public class UserTest {
 
     @Test
     public void testUserConstructorRolesNotSpecified() {
-        int userId = 0;
         String name = "testname";
         String email = "test@example.com";
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(userId, name, email, password, position);
+        User user = new User(name, email, password, position);
 
         assertNotNull(user);
-        assertEquals(userId, user.getUserId());
+        assertNull(user.getUserId());
         assertEquals(name, user.getName());
         assertEquals(email, user.getEmail());
         assertEquals(password, user.getPassword());
@@ -43,16 +42,15 @@ public class UserTest {
 
     @Test
     public void testUserConstructorOrganizationAdmin() {
-        int userId = 0;
         String name = "testname";
         String email = "test@example.com";
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(userId, name, email, password, position, true);
+        User user = new User( name, email, password, position, true);
 
         assertNotNull(user);
-        assertEquals(userId, user.getUserId());
+        assertNull(user.getUserId());
         assertEquals(name, user.getName());
         assertEquals(email, user.getEmail());
         assertEquals(password, user.getPassword());
@@ -63,16 +61,15 @@ public class UserTest {
 
     @Test
     public void testUserConstructorMomofinAdmin() {
-        int userId = 0;
         String name = "testname";
         String email = "test@example.com";
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(userId, name, email, password, position, false, true);
+        User user = new User(name, email, password, position, false, true);
 
         assertNotNull(user);
-        assertEquals(userId, user.getUserId());
+        assertNull(user.getUserId());
         assertEquals(name, user.getName());
         assertEquals(email, user.getEmail());
         assertEquals(password, user.getPassword());
@@ -83,7 +80,7 @@ public class UserTest {
 
     @Test
     public void testGetSetUserId() {
-        int userId = 0;
+        Long userId = 1L;
         User user = new User();
 
         user.setUserId(userId);
