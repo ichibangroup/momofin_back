@@ -1,9 +1,9 @@
 package ppl.momofin.momofinbackend.repository;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 import ppl.momofin.momofinbackend.model.User;
 
 import java.util.Optional;
@@ -12,56 +12,52 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
+@Transactional
 public class UserRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
 
-    private String companyname;
-    private String password;
-    private String email;
-    private User user;
-
-
-    @BeforeEach
-    public void setup() {
-        this.companyname = "test";
-        this.email = "test@email.com";
-        this.password = "password";
-        this.user = new User();
-    }
-
     @Test
     public void testFindWithEmail() {
-        User user1  = new User(companyname,email,password);
+        String companyName = "test";
+        String email = "test@email.com";
+        String password = "password";
+        User user = new User(companyName, email, password);
 
-        userRepository.save(user1);
+        userRepository.save(user);
 
-        Optional<User> checkUser = userRepository.findByEmail("test@email.com");
+        Optional<User> checkUser = userRepository.findByEmail(email);
 
         assertTrue(checkUser.isPresent());
-        assertEquals("test@email.com", checkUser.get().getEmail());
+        assertEquals(email, checkUser.get().getEmail());
     }
 
     @Test
     public void testFindWithCompanyName() {
-        User user1  = new User(companyname,email,password);
+        String companyName = "test";
+        String email = "test@email.com";
+        String password = "password";
+        User user = new User(companyName, email, password);
 
-        userRepository.save(user1);
+        userRepository.save(user);
 
-        Optional<User> checkUser = userRepository.findByCompanyName("test");
+        Optional<User> checkUser = userRepository.findByCompanyName(companyName);
 
         assertTrue(checkUser.isPresent());
-        assertEquals("test", checkUser.get().getCompanyname());
+        assertEquals(companyName, checkUser.get().getCompanyName());
     }
 
     @Test
     public void testUserSave() {
-        User user1  = new User(companyname,email,password);
+        String companyName = "test";
+        String email = "test@email.com";
+        String password = "password";
+        User user = new User(companyName, email, password);
 
-        User userSave = userRepository.save(user1);
+        User userSave = userRepository.save(user);
 
-        assertEquals("test", userSave.getCompanyname());
-        assertEquals("test@example.com", userSave.getEmail());
+        assertEquals(companyName, userSave.getCompanyName());
+        assertEquals(email, userSave.getEmail());
     }
 }
