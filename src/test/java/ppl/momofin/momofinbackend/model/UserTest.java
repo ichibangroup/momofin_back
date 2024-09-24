@@ -2,6 +2,7 @@ package ppl.momofin.momofinbackend.model;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import model.Organization;
 import model.User;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +15,7 @@ public class UserTest {
 
         assertNotNull(user);
         assertNull(user.getUserId());
+        assertNull(user.getOrganization());
         assertNull(user.getEmail());
         assertNull(user.getPassword());
         assertNull(user.getPosition());
@@ -23,15 +25,17 @@ public class UserTest {
 
     @Test
     public void testUserConstructorRolesNotSpecified() {
+        Organization organization = new Organization();
         String name = "testname";
         String email = "test@example.com";
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(name, email, password, position);
+        User user = new User(organization, name, email, password, position);
 
         assertNotNull(user);
         assertNull(user.getUserId());
+        assertEquals(organization, user.getOrganization());
         assertEquals(name, user.getName());
         assertEquals(email, user.getEmail());
         assertEquals(password, user.getPassword());
@@ -42,15 +46,17 @@ public class UserTest {
 
     @Test
     public void testUserConstructorOrganizationAdmin() {
+        Organization organization = new Organization();
         String name = "testname";
         String email = "test@example.com";
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User( name, email, password, position, true);
+        User user = new User(organization, name, email, password, position, true);
 
         assertNotNull(user);
         assertNull(user.getUserId());
+        assertEquals(organization, user.getOrganization());
         assertEquals(name, user.getName());
         assertEquals(email, user.getEmail());
         assertEquals(password, user.getPassword());
@@ -61,15 +67,17 @@ public class UserTest {
 
     @Test
     public void testUserConstructorMomofinAdmin() {
+        Organization organization = new Organization();
         String name = "testname";
         String email = "test@example.com";
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(name, email, password, position, false, true);
+        User user = new User(organization, name, email, password, position, false, true);
 
         assertNotNull(user);
         assertNull(user.getUserId());
+        assertEquals(organization, user.getOrganization());
         assertEquals(name, user.getName());
         assertEquals(email, user.getEmail());
         assertEquals(password, user.getPassword());
@@ -85,6 +93,15 @@ public class UserTest {
 
         user.setUserId(userId);
         assertEquals(userId, user.getUserId());
+    }
+
+    @Test
+    public void  testGetSetOrganization() {
+        Organization organization = new Organization();
+        User user = new User();
+
+        user.setOrganization(organization);
+        assertEquals(organization, user.getOrganization());
     }
 
     @Test
