@@ -1,6 +1,6 @@
-package utility;
+package ppl.momofin.momofinbackend.utility;
 
-import error.InvalidPasswordException;
+import ppl.momofin.momofinbackend.error.InvalidPasswordException;
 
 public class PasswordValidator {
     private static final int MIN_PASSWORD_LENGTH = 10;

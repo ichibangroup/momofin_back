@@ -1,4 +1,4 @@
-package error;
+package ppl.momofin.momofinbackend.error;
 
 public class InvalidCredentialsException extends RuntimeException {
     public InvalidCredentialsException() {

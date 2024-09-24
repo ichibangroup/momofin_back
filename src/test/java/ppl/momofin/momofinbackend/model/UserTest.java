@@ -2,8 +2,6 @@ package ppl.momofin.momofinbackend.model;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import model.Organization;
-import model.User;
 import org.junit.jupiter.api.Test;
 
 

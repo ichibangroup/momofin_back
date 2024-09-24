@@ -1,4 +1,4 @@
-package model;
+package ppl.momofin.momofinbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;

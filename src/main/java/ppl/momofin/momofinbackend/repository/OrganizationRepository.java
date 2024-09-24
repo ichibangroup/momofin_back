@@ -1,6 +1,6 @@
-package repository;
+package ppl.momofin.momofinbackend.repository;
 
-import model.Organization;
+import ppl.momofin.momofinbackend.model.Organization;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

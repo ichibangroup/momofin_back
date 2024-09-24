@@ -1,7 +1,7 @@
-package service;
+package ppl.momofin.momofinbackend.service;
 
-import model.Organization;
-import model.User;
+import ppl.momofin.momofinbackend.model.Organization;
+import ppl.momofin.momofinbackend.model.User;
 
 import java.util.List;
 

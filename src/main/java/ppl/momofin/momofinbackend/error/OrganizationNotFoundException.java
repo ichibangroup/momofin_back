@@ -1,4 +1,4 @@
-package error;
+package ppl.momofin.momofinbackend.error;
 
 public class OrganizationNotFoundException extends RuntimeException{
     public OrganizationNotFoundException(String organizationName) {

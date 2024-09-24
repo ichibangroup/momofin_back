@@ -1,20 +1,19 @@
 package ppl.momofin.momofinbackend.service;
 
-import error.InvalidCredentialsException;
-import error.InvalidPasswordException;
-import error.OrganizationNotFoundException;
-import error.UserAlreadyExistsException;
-import model.Organization;
-import model.User;
+import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
+import ppl.momofin.momofinbackend.error.InvalidPasswordException;
+import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
+import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
+import ppl.momofin.momofinbackend.model.Organization;
+import ppl.momofin.momofinbackend.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import repository.OrganizationRepository;
-import repository.UserRepository;
-import service.UserServiceImpl;
+import ppl.momofin.momofinbackend.repository.OrganizationRepository;
+import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;

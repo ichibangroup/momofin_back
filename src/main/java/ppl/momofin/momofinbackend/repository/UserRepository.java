@@ -1,7 +1,7 @@
-package repository;
+package ppl.momofin.momofinbackend.repository;
 
-import model.Organization;
-import model.User;
+import ppl.momofin.momofinbackend.model.Organization;
+import ppl.momofin.momofinbackend.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
