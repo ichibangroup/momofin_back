@@ -13,7 +13,7 @@ public class AuthRequestTest {
         assertNotNull(authRequest);
         assertNull(authRequest.getOrganizationName());
         assertNull(authRequest.getEmail());
-        assertNull(authRequest.getPassword);
+        assertNull(authRequest.getPassword());
     }
 
     @Test
