@@ -2,6 +2,8 @@ plugins {
     java
     id("org.springframework.boot") version "3.3.3"
     id("io.spring.dependency-management") version "1.1.6"
+    id("jacoco")
+    id("org.sonarqube") version "3.5.0.2730"
 }
 
 group = "ppl.momofin"
@@ -36,4 +38,10 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.jacocoTestReport {
+    reports {
+        xml.required = true
+    }
 }
