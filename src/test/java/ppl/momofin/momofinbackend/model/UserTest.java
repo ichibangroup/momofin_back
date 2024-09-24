@@ -38,7 +38,7 @@ public class UserTest {
     public void testGetSetEmail() {
         user.setEmail(email);
 
-        assertEquals("companyName", user.getEmail());
+        assertEquals("email", user.getEmail());
     }
 
     @Test
