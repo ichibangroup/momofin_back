@@ -9,7 +9,7 @@ public class OrganizationTest {
     public void testEmptyConstructor() {
         Organization organization = new Organization();
         assertNotNull(organization);
-        assertNull(organization.getOrganizationId);
+        assertNull(organization.getOrganizationId());
         assertNull(organization.getName());
     }
 
@@ -18,7 +18,7 @@ public class OrganizationTest {
         String name = "test organization name";
         Organization organization = new Organization(name);
         assertNotNull(organization);
-        assertNull(organization.getOrganizationId);
+        assertNull(organization.getOrganizationId());
         assertEquals(name, organization.getName());
     }
 
