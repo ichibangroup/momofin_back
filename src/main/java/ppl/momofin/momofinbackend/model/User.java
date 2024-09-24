@@ -7,14 +7,14 @@ import jakarta.persistence.*;
 @Getter
 @Setter
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long userId;
 
-    @Column(name = "companyname", nullable = false)
-    private String companyname;
+    @Column(name = "company_name", nullable = false)
+    private String companyName;
 
     @Column(name = "email", nullable = false)
     private String email;
@@ -22,11 +22,12 @@ public class User {
     @Column(name = "password", nullable = false)
     private String password;
 
-    public User(String companyname, String email, String password) {
-        this.companyname = companyname;
+    public User(String companyName, String email, String password) {
+        this.companyName = companyName;
         this.email = email;
         this.password = password;
     }
 
     public User() {}
+
 }
