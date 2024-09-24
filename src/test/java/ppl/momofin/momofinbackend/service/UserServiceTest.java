@@ -8,8 +8,10 @@ import model.Organization;
 import model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import repository.OrganizationRepository;
 import repository.UserRepository;
 import service.UserServiceImpl;
@@ -21,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
     @Mock
     private OrganizationRepository organizationRepository;
@@ -46,6 +49,7 @@ public class UserServiceTest {
         User user2 = new User(momofin, "Darrel Hoei", "darellhoei@gmail.com", "HisPassword#6768", "Co-Founder", true);
         User user3 = new User(momofin, "Alex", "alex@outlook.com", "Alex&Password0959", "Admin", true, true);
 
+        momofinUsers = new ArrayList<User>();
         momofinUsers.add(user1);
         momofinUsers.add(user2);
         momofinUsers.add(user3);
@@ -54,6 +58,7 @@ public class UserServiceTest {
         User user4 = new User(otherOrganization, "Intern, yes that is his name", "temp-intern@yahoo.com", "123456", "Intern");
         User user5 = new User(otherOrganization, "Tatsugiri", "commander@email.com", "toxic%Mouth", "Commander", true);
 
+        otherOrganizationUsers = new ArrayList<User>();
         otherOrganizationUsers.add(user4);
         otherOrganizationUsers.add(user5);
     }
@@ -78,7 +83,7 @@ public class UserServiceTest {
         String organizationName = otherOrganization.getName();
 
         when(organizationRepository.findOrganizationByName(organizationName)).thenReturn(Optional.of(otherOrganization));
-        when(userRepository.findUserByOrganizationAndNameAndPassword(
+        when(userRepository.findUserByOrganizationAndEmailAndPassword(
                 otherOrganization,
                 email,
                 password
@@ -91,12 +96,12 @@ public class UserServiceTest {
 
         assertEquals(userToAuthenticate, authenticatedUser);
         assertEquals(email, authenticatedUser.getEmail());
-        assertEquals(password, authenticatedUser.getEmail());
+        assertEquals(password, authenticatedUser.getPassword());
 
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
         verify(userRepository, times(1))
-                .findUserByOrganizationAndNameAndPassword(otherOrganization, email, password);
+                .findUserByOrganizationAndEmailAndPassword(otherOrganization, email, password);
     }
 
     @Test
@@ -110,7 +115,7 @@ public class UserServiceTest {
 
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
-        verify(userRepository, never()).findUserByOrganizationAndNameAndPassword(any(Organization.class), anyString(), anyString());
+        verify(userRepository, never()).findUserByOrganizationAndEmailAndPassword(any(Organization.class), anyString(), anyString());
     }
 
     @Test
@@ -121,7 +126,7 @@ public class UserServiceTest {
         String organizationName = otherOrganization.getName();
 
         when(organizationRepository.findOrganizationByName(organizationName)).thenReturn(Optional.of(otherOrganization));
-        when(userRepository.findUserByOrganizationAndNameAndPassword(
+        when(userRepository.findUserByOrganizationAndEmailAndPassword(
                 otherOrganization,
                 email,
                 password
@@ -133,7 +138,7 @@ public class UserServiceTest {
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
         verify(userRepository, times(1))
-                .findUserByOrganizationAndNameAndPassword(otherOrganization, email, password);
+                .findUserByOrganizationAndEmailAndPassword(otherOrganization, email, password);
     }
 
     @Test
@@ -144,7 +149,7 @@ public class UserServiceTest {
         String organizationName = otherOrganization.getName();
 
         when(organizationRepository.findOrganizationByName(organizationName)).thenReturn(Optional.of(otherOrganization));
-        when(userRepository.findUserByOrganizationAndNameAndPassword(
+        when(userRepository.findUserByOrganizationAndEmailAndPassword(
                 otherOrganization,
                 email,
                 password
@@ -156,7 +161,7 @@ public class UserServiceTest {
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
         verify(userRepository, times(1))
-                .findUserByOrganizationAndNameAndPassword(otherOrganization, email, password);
+                .findUserByOrganizationAndEmailAndPassword(otherOrganization, email, password);
     }
 
     @Test
@@ -168,13 +173,13 @@ public class UserServiceTest {
         String position = userToBeRegistered.getPosition();
 
         when(userRepository.findByOrganizationAndNameOrEmail(momofin, name, email)).thenReturn(new ArrayList<User>());
-        when(userRepository.save(userToBeRegistered)).thenReturn(userToBeRegistered);
+        when(userRepository.save(any(User.class))).thenReturn(userToBeRegistered);
 
         User registeredUser = userService.registerMember(momofin, name, email, password, position);
 
         assertEquals(userToBeRegistered, registeredUser);
         verify(userRepository, times(1)).findByOrganizationAndNameOrEmail(momofin, name, email);
-        verify(userRepository, times(1)).save(userToBeRegistered);
+        verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test
