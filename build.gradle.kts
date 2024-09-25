@@ -53,12 +53,6 @@ tasks.jacocoTestReport{
     dependsOn(tasks.test)
 }
 
-tasks.jacocoTestReport {
-    reports {
-        xml.required = true
-    }
-}
-
 sonar {
     properties {
         property("sonar.projectKey", "ichibangroup_momofin_back")
