@@ -14,6 +14,8 @@ public class UserTest {
         assertNotNull(user);
         assertNull(user.getUserId());
         assertNull(user.getOrganization());
+        assertNull(user.getUsername());
+        assertNull(user.getName());
         assertNull(user.getEmail());
         assertNull(user.getPassword());
         assertNull(user.getPosition());
@@ -24,16 +26,18 @@ public class UserTest {
     @Test
     void testUserConstructorRolesNotSpecified() {
         Organization organization = new Organization();
+        String username = "Manager_Test";
         String name = "testname";
         String email = "test@example.com";
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(organization, name, email, password, position);
+        User user = new User(organization, username, name, email, password, position);
 
         assertNotNull(user);
         assertNull(user.getUserId());
         assertEquals(organization, user.getOrganization());
+        assertEquals(username, user.getUsername());
         assertEquals(name, user.getName());
         assertEquals(email, user.getEmail());
         assertEquals(password, user.getPassword());
@@ -45,16 +49,18 @@ public class UserTest {
     @Test
     void testUserConstructorOrganizationAdmin() {
         Organization organization = new Organization();
+        String username = "Manager Test";
         String name = "testname";
         String email = "test@example.com";
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(organization, name, email, password, position, true);
+        User user = new User(organization, username, name, email, password, position, true);
 
         assertNotNull(user);
         assertNull(user.getUserId());
         assertEquals(organization, user.getOrganization());
+        assertEquals(username, user.getUsername());
         assertEquals(name, user.getName());
         assertEquals(email, user.getEmail());
         assertEquals(password, user.getPassword());
@@ -66,16 +72,18 @@ public class UserTest {
     @Test
     void testUserConstructorMomofinAdmin() {
         Organization organization = new Organization();
+        String username = "Manager Test";
         String name = "testname";
         String email = "test@example.com";
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(organization, name, email, password, position, false, true);
+        User user = new User(organization, username, name, email, password, position, false, true);
 
         assertNotNull(user);
         assertNull(user.getUserId());
         assertEquals(organization, user.getOrganization());
+        assertEquals(username, user.getUsername());
         assertEquals(name, user.getName());
         assertEquals(email, user.getEmail());
         assertEquals(password, user.getPassword());
@@ -101,6 +109,15 @@ public class UserTest {
         user.setOrganization(organization);
         assertEquals(organization, user.getOrganization());
     }
+    @Test
+    void testGetSetUsername() {
+        String username = "Position_Name or something";
+        User user = new User();
+
+        user.setName(username);
+        assertEquals(username, user.getName());
+    }
+
 
     @Test
     void testGetSetName() {
