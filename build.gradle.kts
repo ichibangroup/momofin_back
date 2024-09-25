@@ -3,7 +3,7 @@ plugins {
     id("org.springframework.boot") version "3.3.3"
     id("io.spring.dependency-management") version "1.1.6"
     id("jacoco")
-    id("org.sonarqube") version "3.5.0.2730"
+    id("org.sonarqube") version "4.4.1.3373"
 }
 
 group = "ppl.momofin"
@@ -56,5 +56,13 @@ tasks.jacocoTestReport{
 tasks.jacocoTestReport {
     reports {
         xml.required = true
+    }
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "ichibangroup_momofin_back")
+        property("sonar.organization", "ichibangroup")
+        property("sonar.host.url", "https://sonarcloud.io")
     }
 }
