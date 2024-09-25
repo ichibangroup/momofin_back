@@ -11,27 +11,40 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
+
+    private final String SECRET_KEY = "your_secret_key";
+
     public String generateToken(String email) {
-        return null;
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, email);
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
-        return null;
+        long EXPIRATION_TIME = 1000 * 60 * 60;
+
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .compact();
     }
 
     public boolean validateToken(String token, String email) {
-        return false;
+        final String extractedEmail = extractEmail(token);
+        return (extractedEmail.equals(email) && !isTokenExpired(token));
     }
 
     private boolean isTokenExpired(String token) {
-        return false;
+        return extractExpiration(token).before(new Date());
     }
 
     private Date extractExpiration(String token) {
-        return null;
+        return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody().getExpiration();
     }
 
     private String extractEmail(String token) {
-        return null;
+        return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody().getSubject();
     }
 }
