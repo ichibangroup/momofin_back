@@ -118,7 +118,7 @@ public class UserServiceTest {
     }
 
     @Test
-    void testAuthenticateIncorrectEmail() {
+    void testAuthenticateIncorrectUsername() {
         User userToAuthenticate = otherOrganizationUsers.getFirst();
         String username = "Wrong Username";
         String password = userToAuthenticate.getPassword();
@@ -166,7 +166,7 @@ public class UserServiceTest {
     @Test
     void testRegisterMember() {
         User userToBeRegistered = momofinUsers.getFirst();
-        String username = userToBeRegistered.getUsermame();
+        String username = userToBeRegistered.getUsername();
         String name = userToBeRegistered.getName();
         String email = userToBeRegistered.getEmail();
         String password = userToBeRegistered.getPassword();
@@ -185,7 +185,7 @@ public class UserServiceTest {
     @Test
     void testRegisterMemberPasswordTooShort() {
         User userToBeRegistered = momofinUsers.getFirst();
-        String username = userToBeRegistered.getUsermame();
+        String username = userToBeRegistered.getUsername();
         String name = userToBeRegistered.getName();
         String email = userToBeRegistered.getEmail();
         String password = "Thisistoo";
@@ -203,7 +203,7 @@ public class UserServiceTest {
     @Test
     void testRegisterMemberUsernameInUse() {
         User userToBeRegistered = momofinUsers.getFirst();
-        String username = userToBeRegistered.getUsermame();
+        String username = userToBeRegistered.getUsername();
         String name = userToBeRegistered.getName();
         String email = userToBeRegistered.getEmail();
         String password = userToBeRegistered.getPassword();
@@ -222,13 +222,13 @@ public class UserServiceTest {
 
         verify(userRepository, times(1)).findUserByUsernameOrEmail(username, email);
         verify(userRepository, never()).save(any(User.class));
-        assertEquals(exception.getMessage(), "The username "+username+" is already in use");
+        assertEquals("The username "+username+" is already in use", exception.getMessage());
     }
 
     @Test
     void testRegisterMemberEmailInUse() {
         User userToBeRegistered = momofinUsers.getFirst();
-        String username = userToBeRegistered.getUsermame();
+        String username = userToBeRegistered.getUsername();
         String name = userToBeRegistered.getName();
         String email = userToBeRegistered.getEmail();
         String password = userToBeRegistered.getPassword();
@@ -247,7 +247,7 @@ public class UserServiceTest {
 
         verify(userRepository, times(1)).findUserByUsernameOrEmail(username, email);
         verify(userRepository, never()).save(any(User.class));
-        assertEquals(exception.getMessage(), "The email "+email+" is already in use");
+        assertEquals("The email "+email+" is already in use", exception.getMessage());
     }
 
     @Test
@@ -256,7 +256,7 @@ public class UserServiceTest {
 
         List<User> fetchedUsers = userService.fetchUsersByOrganization(momofin);
 
-        assertEquals(fetchedUsers, momofinUsers);
+        assertEquals(momofinUsers, fetchedUsers);
         verify(userRepository, times(1)).findAllByOrganization(momofin);
     }
 
@@ -267,7 +267,7 @@ public class UserServiceTest {
 
         List<User> fetchedUsers = userService.fetchAllUsers();
 
-        assertEquals(fetchedUsers, momofinUsers);
+        assertEquals(momofinUsers, fetchedUsers);
         verify(userRepository, times(1)).findAll();
     }
 }

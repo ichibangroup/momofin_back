@@ -21,6 +21,9 @@ public class User {
     @Column(name = "position", nullable = false)
     private String position;
 
+    @Column(name = "username", nullable = false)
+    private String username;
+
     @Column(name = "is_organization_admin", nullable = false)
     private boolean isOrganizationAdmin;
 
@@ -35,21 +38,22 @@ public class User {
 
     }
 
-    public User(Organization organization, String name, String email, String password, String position) {
+    public User(Organization organization, String username, String name, String email, String password, String position) {
         this.organization = organization;
+        this.username = username;
         this.name = name;
         this.email = email;
         this.password = password;
         this.position = position;
     }
 
-    public User(Organization organization, String name, String email, String password, String position, boolean isOrganizationAdmin) {
-        this(organization,name, email, password, position);
+    public User(Organization organization, String username, String name, String email, String password, String position, boolean isOrganizationAdmin) {
+        this(organization, username,name, email, password, position);
         this.isOrganizationAdmin = isOrganizationAdmin;
     }
 
-    public User(Organization organization, String name, String email, String password, String position, boolean isOrganizationAdmin, boolean isMomofinAdmin) {
-        this(organization,name, email, password, position, isOrganizationAdmin);
+    public User(Organization organization, String username, String name, String email, String password, String position, boolean isOrganizationAdmin, boolean isMomofinAdmin) {
+        this(organization, username, name, email, password, position, isOrganizationAdmin);
         this.isMomofinAdmin = isMomofinAdmin;
     }
 }

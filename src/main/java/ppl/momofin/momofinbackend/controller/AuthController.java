@@ -31,10 +31,10 @@ public class AuthController {
         try {
             User authenticatedUser = userService.authenticate(
                     authRequest.getOrganizationName(),
-                    authRequest.getEmail(),
+                    authRequest.getUsername(),
                     authRequest.getPassword()
             );
-            String jwt = jwtUtil.generateToken(authenticatedUser.getEmail());
+            String jwt = jwtUtil.generateToken(authenticatedUser.getUsername());
 
             Map<String, Object> response = new HashMap<>();
 

@@ -21,7 +21,7 @@ class JwtUtilTest {
     @BeforeEach
     void setUp() {
         jwtUtil = new JwtUtil();
-        token = jwtUtil.generateToken("test@example.com");
+        token = jwtUtil.generateToken("Test User");
     }
 
     @Test
@@ -31,19 +31,19 @@ class JwtUtilTest {
 
     @Test
     void testValidateTokenSuccess() {
-        assertTrue(jwtUtil.validateToken(token, "test@example.com"));
+        assertTrue(jwtUtil.validateToken(token, "Test User"));
     }
 
     @Test
     void testValidateTokenFailure() {
-        assertFalse(jwtUtil.validateToken(token, "wrong@example.com"));
+        assertFalse(jwtUtil.validateToken(token, "Wrong User"));
     }
 
 
     @Test
     void testIsTokenExpired() {
         String shortLivedToken = Jwts.builder()
-                .setSubject("test@example.com")
+                .setSubject("Test User")
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000)) // 1 second
                 .signWith(SignatureAlgorithm.HS256, "your_secret_key")
@@ -56,7 +56,7 @@ class JwtUtilTest {
         }
 
         assertThrows(ExpiredJwtException.class,
-                () -> jwtUtil.validateToken(shortLivedToken, "test@example.com"));
+                () -> jwtUtil.validateToken(shortLivedToken, "Test User"));
     }
 }
 

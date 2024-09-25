@@ -23,14 +23,14 @@ public class UserServiceImpl implements UserService{
     OrganizationRepository organizationRepository;
 
     @Override
-    public User authenticate(String organizationName, String email, String password) {
+    public User authenticate(String organizationName, String username, String password) {
         Optional<Organization> organization = organizationRepository.findOrganizationByName(organizationName);
 
         if(organization.isEmpty()) {
             throw new OrganizationNotFoundException(organizationName);
         }
 
-        Optional<User> user = userRepository.findUserByOrganizationAndEmailAndPassword(organization.get(), email, password);
+        Optional<User> user = userRepository.findUserByOrganizationAndUsernameAndPassword(organization.get(), username, password);
 
         if(user.isEmpty()) {
             throw new InvalidCredentialsException();
@@ -45,22 +45,22 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public User registerMember(Organization organization, String name, String email, String password, String position) {
+    public User registerMember(Organization organization, String username, String name, String email, String password, String position) {
         PasswordValidator.validatePassword(password);
 
-        List<User> fetchResults = userRepository.findByOrganizationAndNameOrEmail(organization, name, email);
+        List<User> fetchResults = userRepository.findUserByUsernameOrEmail(username, email);
 
         if (!fetchResults.isEmpty()) {
             User existingUser = fetchResults.getFirst();
 
             if (email.equals(existingUser.getEmail())) {
                 throw new UserAlreadyExistsException("The email "+email+" is already in use");
-            } else if (name.equals(existingUser.getName())) {
-                throw new UserAlreadyExistsException("You have already registered a "+ name +" to the organization");
+            } else if (username.equals(existingUser.getUsername())) {
+                throw new UserAlreadyExistsException("The username "+username+" is already in use");
             }
         }
 
-        return userRepository.save(new User(organization, name, email, password, position));
+        return userRepository.save(new User(organization, username, name, email, password, position));
     }
 
     @Override

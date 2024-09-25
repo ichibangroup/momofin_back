@@ -29,7 +29,7 @@ public class AuthRequestTest {
         String username = "Test User";
         AuthRequest authRequest = new AuthRequest();
         authRequest.setUsername(username);
-        assertEquals(username, authRequest.getEmail());
+        assertEquals(username, authRequest.getUsername());
     }
 
     @Test
