@@ -13,10 +13,7 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAllByOrganization(Organization organization);
-    Optional<User> findUserByOrganizationAndEmailAndPassword(Organization organization, String email, String password);
+    Optional<User> findUserByOrganizationAndUsernameAndPassword(Organization organization, String Username, String password);
 
-    @Query("SELECT u FROM User u WHERE (u.organization = :organization AND u.name = :name) OR u.email = :email")
-    List<User> findByOrganizationAndNameOrEmail(@Param("organization") Organization organization,
-                                                    @Param("name") String name,
-                                                    @Param("email") String email);
+    List<User> findUserByUsernameOrEmail(String username, String email);
 }
