@@ -12,7 +12,7 @@ public class AuthRequestTest {
         AuthRequest authRequest = new AuthRequest();
         assertNotNull(authRequest);
         assertNull(authRequest.getOrganizationName());
-        assertNull(authRequest.getEmail());
+        assertNull(authRequest.getUsername());
         assertNull(authRequest.getPassword());
     }
 
@@ -25,11 +25,11 @@ public class AuthRequestTest {
     }
 
     @Test
-    void testGetSetEmail() {
-        String email = "test@email.com";
+    void testGetSetUsername() {
+        String username = "Test User";
         AuthRequest authRequest = new AuthRequest();
-        authRequest.setEmail(email);
-        assertEquals(email, authRequest.getEmail());
+        authRequest.setUsername(username);
+        assertEquals(username, authRequest.getEmail());
     }
 
     @Test

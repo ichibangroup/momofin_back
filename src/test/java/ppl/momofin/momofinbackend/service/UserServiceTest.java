@@ -201,7 +201,7 @@ public class UserServiceTest {
     }
 
     @Test
-    void testRegisterMemberAlreadyExists() {
+    void testRegisterMemberUsernameInUse() {
         User userToBeRegistered = momofinUsers.getFirst();
         String username = userToBeRegistered.getUsermame();
         String name = userToBeRegistered.getName();
@@ -209,16 +209,45 @@ public class UserServiceTest {
         String password = userToBeRegistered.getPassword();
         String position = userToBeRegistered.getPosition();
 
+        User existingUser = new User();
+        existingUser.setUsername(username);
+
         List<User> fetchResult = new ArrayList<>();
-        fetchResult.add(userToBeRegistered);
+        fetchResult.add(existingUser);
 
         when(userRepository.findUserByUsernameOrEmail(username, email)).thenReturn(fetchResult);
 
-        assertThrows(UserAlreadyExistsException.class,
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
                 () -> userService.registerMember(momofin, username, name, email, password, position));
 
         verify(userRepository, times(1)).findUserByUsernameOrEmail(username, email);
         verify(userRepository, never()).save(any(User.class));
+        assertEquals(exception.getMessage(), "The username "+username+" is already in use");
+    }
+
+    @Test
+    void testRegisterMemberEmailInUse() {
+        User userToBeRegistered = momofinUsers.getFirst();
+        String username = userToBeRegistered.getUsermame();
+        String name = userToBeRegistered.getName();
+        String email = userToBeRegistered.getEmail();
+        String password = userToBeRegistered.getPassword();
+        String position = userToBeRegistered.getPosition();
+
+        User existingUser = new User();
+        existingUser.setEmail(email);
+
+        List<User> fetchResult = new ArrayList<>();
+        fetchResult.add(existingUser);
+
+        when(userRepository.findUserByUsernameOrEmail(username, email)).thenReturn(fetchResult);
+
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
+                () -> userService.registerMember(momofin, username, name, email, password, position));
+
+        verify(userRepository, times(1)).findUserByUsernameOrEmail(username, email);
+        verify(userRepository, never()).save(any(User.class));
+        assertEquals(exception.getMessage(), "The email "+email+" is already in use");
     }
 
     @Test

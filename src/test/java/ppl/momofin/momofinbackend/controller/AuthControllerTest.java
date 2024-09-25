@@ -39,7 +39,7 @@ public class AuthControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         mockUser = new User();
-        mockUser.setEmail("test@example.com");
+        mockUser.setUsername("test User");
         mockUser.setPassword("testPassword");
     }
 
@@ -54,7 +54,7 @@ public class AuthControllerTest {
         // Create an authentication request object
         AuthRequest authRequest = new AuthRequest();
         authRequest.setOrganizationName("My Organization");
-        authRequest.setEmail("test@example.com");
+        authRequest.setUsername("test User");
         authRequest.setPassword("testPassword");
 
         // Perform the POST request to /auth/login
@@ -74,7 +74,7 @@ public class AuthControllerTest {
         // Create an authentication request object
         AuthRequest authRequest = new AuthRequest();
         authRequest.setOrganizationName("My Organization");
-        authRequest.setEmail("invalid@example.com");
+        authRequest.setUsername("Hobo Steve Invalid");
         authRequest.setPassword("wrongPassword");
 
         // Perform the POST request to /auth/login
