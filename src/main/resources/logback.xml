@@ -1,0 +1,14 @@
+<configuration>
+    <appender name="DB" class="ch.qos.logback.classic.db.DBAppender">
+        <connectionSource class ="ch.qos.logback.core.db.DriverManageConnectionSource">
+            <driverClass>com.mysql.cj.jdbc.Driver</driverClass>
+            <url>${DB_URL}</url>
+            <user>${DB_USER)</user>
+            <password>${DB_USER}</password>
+        </connectionSource>
+    </appender>
+
+    <root lovel="info">
+        <appender-ref ref="DB" />
+    </root>
+</configuration>
