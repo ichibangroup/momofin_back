@@ -6,8 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import ppl.momofin.momofinbackend.config.SecurityConfig;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.service.UserService;
@@ -21,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
+@Import(SecurityConfig.class)
 public class AuthControllerTest {
 
     @Autowired
@@ -67,17 +70,14 @@ public class AuthControllerTest {
 
     @Test
     void testAuthenticateUserInvalidCredentials() throws Exception {
-        // Mock UserService's authenticate method to throw an InvalidCredentialsException
         when(userService.authenticate(anyString(), anyString(), anyString()))
                 .thenThrow(new InvalidCredentialsException());
 
-        // Create an authentication request object
         AuthRequest authRequest = new AuthRequest();
         authRequest.setOrganizationName("My Organization");
         authRequest.setUsername("Hobo Steve Invalid");
         authRequest.setPassword("wrongPassword");
 
-        // Perform the POST request to /auth/login
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(authRequest)))

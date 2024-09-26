@@ -83,7 +83,7 @@ public class UserServiceTest {
         User userToAuthenticate = otherOrganizationUsers.getFirst();
         String username = userToAuthenticate.getUsername();
         String encryptedPassword = userToAuthenticate.getPassword();
-        String password = "My#Money9078";
+        String password = "123456";
         String organizationName = otherOrganization.getName();
 
         when(organizationRepository.findOrganizationByName(organizationName)).thenReturn(Optional.of(otherOrganization));
@@ -101,7 +101,8 @@ public class UserServiceTest {
 
         assertEquals(userToAuthenticate, authenticatedUser);
         assertEquals(username, authenticatedUser.getUsername());
-        assertEquals(password, authenticatedUser.getPassword());
+        assertEquals(encryptedPassword, authenticatedUser.getPassword());
+        assertNotEquals(password, authenticatedUser.getPassword());
 
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
@@ -130,7 +131,7 @@ public class UserServiceTest {
         User userToAuthenticate = otherOrganizationUsers.getFirst();
         String username = "Wrong Username";
         String encryptedPassword = userToAuthenticate.getPassword();
-        String password = "My#Money9078";
+        String password = "123456";
         String organizationName = otherOrganization.getName();
 
         when(organizationRepository.findOrganizationByName(organizationName)).thenReturn(Optional.of(otherOrganization));

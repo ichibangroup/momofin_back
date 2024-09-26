@@ -1,6 +1,7 @@
 package ppl.momofin.momofinbackend.service;
 
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
 import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
@@ -21,6 +22,8 @@ public class UserServiceImpl implements UserService{
     UserRepository userRepository;
     @Autowired
     OrganizationRepository organizationRepository;
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
     @Override
     public User authenticate(String organizationName, String username, String password) {
@@ -30,9 +33,9 @@ public class UserServiceImpl implements UserService{
             throw new OrganizationNotFoundException(organizationName);
         }
 
-        Optional<User> user = userRepository.findUserByOrganizationAndUsernameAndPassword(organization.get(), username, password);
+        Optional<User> user = userRepository.findUserByOrganizationAndUsername(organization.get(), username);
 
-        if(user.isEmpty()) {
+        if(user.isEmpty()|| !passwordEncoder.matches(password, user.get().getPassword())) {
             throw new InvalidCredentialsException();
         }
 
@@ -60,7 +63,9 @@ public class UserServiceImpl implements UserService{
             }
         }
 
-        return userRepository.save(new User(organization, username, name, email, password, position));
+        String encodedPassword = passwordEncoder.encode(password);
+
+        return userRepository.save(new User(organization, username, name, email, encodedPassword, position));
     }
 
     @Override
