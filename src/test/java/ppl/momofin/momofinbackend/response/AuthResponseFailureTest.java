@@ -1,11 +1,10 @@
 package ppl.momofin.momofinbackend.response;
 
 import org.junit.jupiter.api.Test;
-import ppl.momofin.momofinbackend.model.User;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AuthResponseFailureTest {
+class AuthResponseFailureTest {
     @Test
     void testAuthResponseFailureConstructorEmpty() {
         AuthResponseFailure responseFailure = new AuthResponseFailure();

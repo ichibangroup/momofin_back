@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 
 
-public class UserTest {
+class UserTest {
     @Test
     void testUserConstructorEmpty() {
         User user = new User();

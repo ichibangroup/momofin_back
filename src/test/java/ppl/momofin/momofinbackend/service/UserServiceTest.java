@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceTest {
+class UserServiceTest {
     @Mock
     private OrganizationRepository organizationRepository;
 
@@ -128,7 +128,6 @@ public class UserServiceTest {
 
     @Test
     void testAuthenticateIncorrectUsername() {
-        User userToAuthenticate = otherOrganizationUsers.getFirst();
         String username = "Wrong Username";
         String password = "123456";
         String organizationName = otherOrganization.getName();
