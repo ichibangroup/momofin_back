@@ -6,6 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
 import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.response.AuthResponse;
+import ppl.momofin.momofinbackend.response.AuthResponseFailure;
+import ppl.momofin.momofinbackend.response.AuthResponseSuccess;
 import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.request.AuthRequest;
 import ppl.momofin.momofinbackend.utility.JwtUtil;
@@ -26,7 +29,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody AuthRequest authRequest) {
+    public ResponseEntity<AuthResponse> authenticateUser(@RequestBody AuthRequest authRequest) {
         try {
             User authenticatedUser = userService.authenticate(
                     authRequest.getOrganizationName(),
@@ -35,15 +38,11 @@ public class AuthController {
             );
             String jwt = jwtUtil.generateToken(authenticatedUser.getUsername());
 
-            Map<String, Object> response = new HashMap<>();
+            AuthResponseSuccess response = new AuthResponseSuccess(authenticatedUser, jwt);
 
-            response.put("jwt", jwt);
-            response.put("authenticatedUser", authenticatedUser);
             return ResponseEntity.ok(response);
         } catch (InvalidCredentialsException e) {
-            Map<String,String> response = new HashMap<>();
-
-            response.put("errorMessage", e.getMessage());
+            AuthResponseFailure response = new AuthResponseFailure(e.getMessage());
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
