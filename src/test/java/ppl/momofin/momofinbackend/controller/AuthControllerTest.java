@@ -13,10 +13,9 @@ import ppl.momofin.momofinbackend.config.SecurityConfig;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.service.UserService;
-import ppl.momofin.momofinbackend.utility.AuthRequest;
+import ppl.momofin.momofinbackend.request.AuthRequest;
 import ppl.momofin.momofinbackend.utility.JwtUtil;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

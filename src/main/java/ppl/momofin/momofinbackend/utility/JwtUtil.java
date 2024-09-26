@@ -1,6 +1,5 @@
 package ppl.momofin.momofinbackend.utility;
 
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
@@ -12,7 +11,8 @@ import java.util.Map;
 @Component
 public class JwtUtil {
 
-    private final String SECRET_KEY = "your_secret_key";
+    private static final String SECRET_KEY = System.getenv("SECRET_KEY");
+    private static final long EXPIRATION_TIME = 1000L * 60 * 60;
 
     public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
@@ -20,8 +20,6 @@ public class JwtUtil {
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
-        long EXPIRATION_TIME = 1000 * 60 * 60;
-
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)

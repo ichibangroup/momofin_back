@@ -3,6 +3,10 @@ package ppl.momofin.momofinbackend.utility;
 import ppl.momofin.momofinbackend.error.InvalidPasswordException;
 
 public class PasswordValidator {
+    private PasswordValidator() {
+        throw new IllegalStateException("Utility class");
+    }
+
     private static final int MIN_PASSWORD_LENGTH = 10;
 
     public static void validatePassword(String password) {

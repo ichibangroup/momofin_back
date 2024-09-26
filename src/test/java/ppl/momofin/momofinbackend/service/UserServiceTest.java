@@ -130,7 +130,6 @@ public class UserServiceTest {
     void testAuthenticateIncorrectUsername() {
         User userToAuthenticate = otherOrganizationUsers.getFirst();
         String username = "Wrong Username";
-        String encryptedPassword = userToAuthenticate.getPassword();
         String password = "123456";
         String organizationName = otherOrganization.getName();
 

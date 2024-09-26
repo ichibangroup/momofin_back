@@ -2,13 +2,12 @@ package ppl.momofin.momofinbackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.service.UserService;
-import ppl.momofin.momofinbackend.utility.AuthRequest;
+import ppl.momofin.momofinbackend.request.AuthRequest;
 import ppl.momofin.momofinbackend.utility.JwtUtil;
 
 import java.util.HashMap;

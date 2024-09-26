@@ -1,8 +1,7 @@
 val persistenceVersion = "3.1.0"
-
 val postgresVersion = "42.6.0"
-
 val jsonWebTokenVersion = "0.9.1"
+val javaxVersion = "2.3.1"
 
 plugins {
     java
@@ -38,7 +37,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("jakarta.persistence:jakarta.persistence-api:$persistenceVersion")
     implementation("io.jsonwebtoken:jjwt:$jsonWebTokenVersion")
-    implementation("javax.xml.bind:jaxb-api:2.3.1")
+    implementation("javax.xml.bind:jaxb-api:$javaxVersion")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     annotationProcessor("org.projectlombok:lombok")

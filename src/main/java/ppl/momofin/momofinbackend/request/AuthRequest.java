@@ -1,4 +1,4 @@
-package ppl.momofin.momofinbackend.utility;
+package ppl.momofin.momofinbackend.request;
 
 import lombok.Getter;
 import lombok.Setter;

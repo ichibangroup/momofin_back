@@ -46,7 +46,7 @@ class JwtUtilTest {
                 .setSubject("Test User")
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000)) // 1 second
-                .signWith(SignatureAlgorithm.HS256, "your_secret_key")
+                .signWith(SignatureAlgorithm.HS256, System.getenv("SECRET_KEY"))
                 .compact();
 
         try {

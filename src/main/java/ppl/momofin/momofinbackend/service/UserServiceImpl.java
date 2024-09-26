@@ -18,12 +18,16 @@ import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService{
+    private final UserRepository userRepository;
+    private final OrganizationRepository organizationRepository;
+    private final PasswordEncoder passwordEncoder;
+
     @Autowired
-    UserRepository userRepository;
-    @Autowired
-    OrganizationRepository organizationRepository;
-    @Autowired
-    PasswordEncoder passwordEncoder;
+    public UserServiceImpl(UserRepository userRepository, OrganizationRepository organizationRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.organizationRepository = organizationRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public User authenticate(String organizationName, String username, String password) {

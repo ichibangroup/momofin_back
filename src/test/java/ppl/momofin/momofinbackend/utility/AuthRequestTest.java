@@ -1,6 +1,7 @@
 package ppl.momofin.momofinbackend.utility;
 
 import org.junit.jupiter.api.Test;
+import ppl.momofin.momofinbackend.request.AuthRequest;
 
 
 import static org.junit.jupiter.api.Assertions.*;
