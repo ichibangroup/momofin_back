@@ -33,7 +33,7 @@ public class DBAppender extends AppenderBase<ILoggingEvent> {
         if (connection != null) {
             try {
                 PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO log_table (timestamp, level, logger, message) VALUES (CURRENT_TIMESTAMP, ?, ?, ?)"
+                        "INSERT INTO logs (timestamp, level, logger_name, message) VALUES (CURRENT_TIMESTAMP, ?, ?, ?)"
                 );
                 statement.setString(1, event.getLevel().toString());
                 statement.setString(2, event.getLoggerName());
