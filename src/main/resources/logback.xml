@@ -1,0 +1,21 @@
+<configuration>
+    <appender name="DBAppender" class="ch.qos.logback.classic.db.DBAppender">
+        <connectionSource class ="ch.qos.logback.core.db.DriverManageConnectionSource">
+            <driverClass>org.postgresql.Driver</driverClass>
+            <url>${DB_URL}</url>
+            <user>${DB_USER)</user>
+            <password>${DB_USER}</password>
+        </connectionSource>
+
+        <sql>
+            <sql>
+                INSERT INTO log_table (timestamp, level, logger, message)
+                VALUES (CURRENT_TIMESTAMP, '%level', '%logger', '%msg')
+            </sql>
+        </sql>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="DB" />
+    </root>
+</configuration>
