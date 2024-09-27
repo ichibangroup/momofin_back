@@ -41,7 +41,7 @@ public class AuthController {
             AuthResponseSuccess response = new AuthResponseSuccess(authenticatedUser, jwt);
 
             return ResponseEntity.ok(response);
-        } catch (InvalidCredentialsException e) {
+        } catch (RuntimeException e) {
             AuthResponseFailure response = new AuthResponseFailure(e.getMessage());
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);

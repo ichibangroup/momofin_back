@@ -117,8 +117,10 @@ class UserServiceTest {
         when(organizationRepository.findOrganizationByName(organizationName)).thenReturn(Optional.empty());
 
 
-        assertThrows(OrganizationNotFoundException.class,
+        OrganizationNotFoundException error = assertThrows(OrganizationNotFoundException.class,
                 () -> userService.authenticate(organizationName, "email", "password"));
+
+        assertEquals("The organization "+ organizationName + " is not registered to our database", error.getMessage());
 
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
@@ -138,8 +140,10 @@ class UserServiceTest {
                 username
         )).thenReturn(Optional.empty());
 
-        assertThrows(InvalidCredentialsException.class,
+        InvalidCredentialsException error = assertThrows(InvalidCredentialsException.class,
                 () -> userService.authenticate(organizationName, username, password));
+
+        assertEquals("Your email or password is incorrect", error.getMessage());
 
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
@@ -164,8 +168,10 @@ class UserServiceTest {
 
         when(passwordEncoder.matches(password, encryptedPassword)).thenReturn(false);
 
-        assertThrows(InvalidCredentialsException.class,
+        InvalidCredentialsException error = assertThrows(InvalidCredentialsException.class,
                 () -> userService.authenticate(organizationName, username, password));
+
+        assertEquals("Your email or password is incorrect", error.getMessage());
 
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
