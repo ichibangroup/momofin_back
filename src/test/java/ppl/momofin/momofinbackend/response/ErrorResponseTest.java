@@ -4,27 +4,27 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class AuthResponseFailureTest {
+class ErrorResponseTest {
     @Test
-    void testAuthResponseFailureConstructorEmpty() {
-        AuthResponseFailure responseFailure = new AuthResponseFailure();
+    void testErrorResponseFailureConstructorEmpty() {
+        ErrorResponse responseFailure = new ErrorResponse();
 
         assertNotNull(responseFailure);
         assertNull(responseFailure.getErrorMessage());
     }
 
     @Test
-    void testAuthResponseFailureConstructor() {
+    void testErrorResponseFailureConstructor() {
         String errorMessage = "Invalid credentials";
-        AuthResponseFailure responseFailure = new AuthResponseFailure(errorMessage);
+        ErrorResponse responseFailure = new ErrorResponse(errorMessage);
 
         assertEquals(errorMessage, responseFailure.getErrorMessage());
     }
 
     @Test
-    void testGetSetJwt() {
+    void testGetSetErrorMessage() {
         String errorMessage = "Invalid credentials";
-        AuthResponseFailure responseFailure = new AuthResponseFailure();
+        ErrorResponse responseFailure = new ErrorResponse();
 
         responseFailure.setErrorMessage(errorMessage);
         assertEquals(errorMessage, responseFailure.getErrorMessage());
