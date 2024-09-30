@@ -4,14 +4,14 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter @Setter
-public class AuthResponseFailure implements AuthResponse{
+public class ErrorResponse implements AuthResponse{
     private String errorMessage;
 
-    public AuthResponseFailure() {
+    public ErrorResponse() {
 
     }
 
-    public AuthResponseFailure(String errorMessage) {
+    public ErrorResponse(String errorMessage) {
         this.errorMessage = errorMessage;
     }
 }
