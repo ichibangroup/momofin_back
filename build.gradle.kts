@@ -38,6 +38,12 @@ dependencies {
     implementation("jakarta.persistence:jakarta.persistence-api:$persistenceVersion")
     implementation("io.jsonwebtoken:jjwt:$jsonWebTokenVersion")
     implementation("javax.xml.bind:jaxb-api:$javaxVersion")
+    implementation("ch.qos.logback.db:logback-core-db:1.2.11.1")
+    implementation("ch.qos.logback.db:logback-classic-db:1.2.11.1")
+    implementation("ch.qos.logback.db:logback-access-db:1.2.11.1")
+    implementation("org.postgresql:postgresql:42.2.5")
+
+
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     annotationProcessor("org.projectlombok:lombok")
