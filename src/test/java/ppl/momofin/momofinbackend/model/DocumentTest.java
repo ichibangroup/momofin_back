@@ -49,4 +49,12 @@ public class DocumentTest {
         document.setHashString(hashString);
         assertEquals(hashString, document.getHashString());
     }
+
+    @Test
+    void testGetSetOwner() {
+        User user = new User();
+        Document document = new Document();
+        document.setOwner(user);
+        assertEquals(user, document.getOwner());
+    }
 }

@@ -1,18 +1,21 @@
 package ppl.momofin.momofinbackend.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter @Setter @Entity
+@Table(name = "document")
 public class Document {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long documentId;
+    @Column(name = "hash_string")
     private String hashString;
+    @Column(name = "name")
     private String name;
+    @ManyToOne
+    @JoinColumn(name = "users", referencedColumnName = "user_Id")
+    private User owner;
 
     public Document() {}
 
