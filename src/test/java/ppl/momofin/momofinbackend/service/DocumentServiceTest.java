@@ -38,7 +38,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    void submitDocumentNewDocument() throws Exception {
+    void submitDocumentNewDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         when(documentRepository.findByHashString(any())).thenReturn(Optional.empty());
         when(documentRepository.save(any())).thenReturn(new Document());
 
@@ -50,7 +50,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    void submitDocumentExistingDocument() throws Exception {
+    void submitDocumentExistingDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         when(documentRepository.findByHashString(any())).thenReturn(Optional.of(new Document()));
 
         String result = documentService.submitDocument(mockFile);
