@@ -32,7 +32,7 @@ public class User {
     private boolean isMomofinAdmin;
 
     @ManyToOne
-    @JoinColumn(name = "organization", referencedColumnName = "organization_Id")
+    @JoinColumn(name = "organization", referencedColumnName = "organizationId")
     private Organization organization;
 
     public User() {
