@@ -41,8 +41,6 @@ dependencies {
     implementation("ch.qos.logback.db:logback-core-db:1.2.11.1")
     implementation("ch.qos.logback.db:logback-classic-db:1.2.11.1")
     implementation("ch.qos.logback.db:logback-access-db:1.2.11.1")
-    implementation("org.postgresql:postgresql:42.2.5")
-
 
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
