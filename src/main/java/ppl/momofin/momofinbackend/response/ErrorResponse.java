@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Getter @Setter
-public class ErrorResponse implements AuthResponse{
+public class ErrorResponse implements Response {
     private String errorMessage;
 
     public ErrorResponse() {

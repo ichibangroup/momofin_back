@@ -56,6 +56,9 @@ class AuthControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         mockUser = new User();
+        mockUser.setName("test User real name");
+        mockUser.setEmail("test.user@gmail.com");
+        mockUser.setPosition("Tester");
         mockUser.setUsername("test User");
         mockUser.setPassword("testPassword");
         organization = new Organization("Momofin");
@@ -140,7 +143,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isOk()) // Assert that the status is 200 OK
-                .andExpect(jsonPath("$.jwt").value("mock-jwt-token"));
+                .andExpect(jsonPath("$.user.username").value("test User"))
+                .andExpect(jsonPath("$.user.password").value("testPassword"));
     }
 
     @Test
@@ -160,7 +164,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
-                .andExpect(status().isUnauthorized())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorMessage").value("The email "+usedEmail+" is already in use"));
     }
 
@@ -181,7 +185,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
-                .andExpect(status().isUnauthorized())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorMessage").value("The username "+usedUsername+" is already in use"));
     }
 }

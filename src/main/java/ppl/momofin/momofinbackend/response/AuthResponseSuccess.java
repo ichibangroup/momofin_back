@@ -5,7 +5,7 @@ import lombok.Setter;
 import ppl.momofin.momofinbackend.model.User;
 
 @Getter @Setter
-public class AuthResponseSuccess implements AuthResponse{
+public class AuthResponseSuccess implements Response {
     private String jwt;
     private User user;
 
