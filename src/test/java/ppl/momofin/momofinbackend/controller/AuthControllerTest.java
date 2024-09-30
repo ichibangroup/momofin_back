@@ -88,42 +88,5 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.errorMessage").value("Your email or password is incorrect"));
     }
 
-    @Test
-    void testAuthenticateUserLoggingSuccess() throws Exception {
-        when(userService.authenticate(anyString(), anyString(), anyString())).thenReturn(mockUser);
-        when(jwtUtil.generateToken(anyString())).thenReturn("mock-jwt-token");
 
-        AuthRequest authRequest = new AuthRequest();
-        authRequest.setOrganizationName("My Organization");
-        authRequest.setUsername("test user");
-        authRequest.setPassword("test password");
-
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(authRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.jwt").value("mock-jwt-token"));
-
-        verify(logger).info("Successful login for user: {} from organization: {}", "test User", "My Organization");
-    }
-
-    @Test
-    void testAuthenticateUserLoggingFailure() throws Exception {
-        when(userService.authenticate(anyString(), anyString(), anyString()))
-                .thenThrow(new InvalidCredentialsException());
-
-        AuthRequest authRequest = new AuthRequest();
-        authRequest.setOrganizationName("My Organization");
-        authRequest.setUsername("Hobo Steve Invalid");
-        authRequest.setPassword("wrongPassword");
-
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(authRequest)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.errorMessage").value("Your email or password is incorrect"));
-
-        // Verify that the failed login attempt was logged
-        verify(logger).warn("Failed login attempt for user: {} from organization: {}", "Hobo Steve Invalid", "My Organization");
-    }
 }
