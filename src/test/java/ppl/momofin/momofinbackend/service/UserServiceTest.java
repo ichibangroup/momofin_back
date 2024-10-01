@@ -1,10 +1,7 @@
 package ppl.momofin.momofinbackend.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
-import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
-import ppl.momofin.momofinbackend.error.InvalidPasswordException;
-import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
-import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
+import ppl.momofin.momofinbackend.error.*;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -293,5 +290,149 @@ class UserServiceTest {
 
         assertEquals(momofinUsers, fetchedUsers);
         verify(userRepository, times(1)).findAll();
+    }
+
+
+    @Test
+    void getUserById_ReturnsUser_WhenUserExists() {
+        Long userId = 1L;
+        User mockUser = new User();
+        mockUser.setUserId(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
+
+        User result = userService.getUserById(userId);
+
+        assertEquals(mockUser, result);
+    }
+
+    @Test
+    void getUserById_ThrowsException_WhenUserDoesNotExist() {
+        Long userId = 1L;
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> userService.getUserById(userId));
+    }
+
+    @Test
+    void updateUser_ReturnsUpdatedUser_WhenUpdateIsSuccessful() {
+        Long userId = 1L;
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("old@example.com");
+
+        User updatedUser = new User();
+        updatedUser.setEmail("new@example.com");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser);
+
+        assertEquals("new@example.com", result.getEmail());
+    }
+    @Test
+    void updateUser_UpdatesAllFields_WhenAllFieldsProvided() {
+        Long userId = 1L;
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("old@example.com");
+        existingUser.setUsername("oldUsername");
+        existingUser.setPassword("oldPassword");
+
+        User updatedUser = new User();
+        updatedUser.setEmail("new@example.com");
+        updatedUser.setUsername("newUsername");
+        updatedUser.setPassword("newPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(passwordEncoder.encode("newPassword")).thenReturn("encodedNewPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser);
+
+        assertEquals("new@example.com", result.getEmail());
+        assertEquals("newUsername", result.getUsername());
+        assertEquals("encodedNewPassword", result.getPassword());
+        verify(passwordEncoder).encode("newPassword");
+    }
+
+    @Test
+    void updateUser_UpdatesOnlyProvidedFields_WhenSomeFieldsAreNull() {
+        Long userId = 1L;
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("old@example.com");
+        existingUser.setUsername("oldUsername");
+        existingUser.setPassword("oldPassword");
+
+        User updatedUser = new User();
+        updatedUser.setEmail("new@example.com");
+        // username and password are not provided (null)
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser);
+
+        assertEquals("new@example.com", result.getEmail());
+        assertEquals("oldUsername", result.getUsername());
+        assertEquals("oldPassword", result.getPassword());
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void updateUser_ThrowsUserNotFoundException_WhenUserDoesNotExist() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        updatedUser.setEmail("new@example.com");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> userService.updateUser(userId, updatedUser));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_ValidatesPassword_WhenNewPasswordProvided() {
+        Long userId = 1L;
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setPassword("oldPassword");
+
+        User updatedUser = new User();
+        updatedUser.setPassword("invalidPw"); // Assuming this is an invalid password
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+
+        assertThrows(InvalidPasswordException.class, () -> userService.updateUser(userId, updatedUser));
+        verify(userRepository, never()).save(any(User.class));
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+    @Test
+    void registerMember_ThrowsUserAlreadyExistsException_WhenUsernameAlreadyExists() {
+        Organization organization = new Organization("TestOrg");
+        String username = "existingUser";
+        String name = "Test User";
+        String email = "test@example.com";
+        String password = "validPassword123";
+        String position = "Tester";
+
+        User existingUser = new User();
+        existingUser.setUsername(username);
+        existingUser.setEmail("different@example.com"); // Different email to trigger the username check
+
+        List<User> fetchResults = new ArrayList<>();
+        fetchResults.add(existingUser);
+
+        when(userRepository.findUserByUsernameOrEmail(username, email)).thenReturn(fetchResults);
+
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
+                () -> userService.registerMember(organization, username, name, email, password, position));
+
+        assertEquals("The username " + username + " is already in use", exception.getMessage());
+
+        verify(userRepository).findUserByUsernameOrEmail(username, email);
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).save(any(User.class));
     }
 }

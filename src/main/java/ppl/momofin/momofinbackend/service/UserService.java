@@ -11,4 +11,6 @@ public interface UserService {
     User registerMember(Organization organization, String username, String name, String email, String password, String position);
     List<User> fetchUsersByOrganization(Organization organization);
     List<User> fetchAllUsers();
+    User getUserById(Long userId);
+    User updateUser(Long userId, User updatedUser);
 }

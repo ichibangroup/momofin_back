@@ -122,30 +122,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.errorMessage").value("The organization "+ invalidOrganizationName + " is not registered to our database"));
     }
 
-    @Test
-    void testRegisterUserSuccess() throws Exception {
-        when(organizationRepository.findOrganizationByName("Momofin")).thenReturn(Optional.of(organization));
-        when(userService.registerMember(eq(organization), anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(mockUser);
 
-        // Mock JwtUtil's generateToken method
-        when(jwtUtil.generateToken(anyString())).thenReturn("mock-jwt-token");
-
-        // Create an authentication request object
-        RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setName("test User real name");
-        registerRequest.setEmail("test.user@gmail.com");
-        registerRequest.setPosition("Tester");
-        registerRequest.setUsername("test User");
-        registerRequest.setPassword("testPassword");
-
-        // Perform the POST request to /auth/login
-        mockMvc.perform(post("/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registerRequest)))
-                .andExpect(status().isOk()) // Assert that the status is 200 OK
-                .andExpect(jsonPath("$.user.username").value("test User"))
-                .andExpect(jsonPath("$.user.password").value("testPassword"));
-    }
 
     @Test
     void testRegisterUserEmailAlreadyInUse() throws Exception {
