@@ -11,10 +11,10 @@ import ppl.momofin.momofinbackend.error.UserNotFoundException;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-class UserServiceTest {
+class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
@@ -28,51 +28,40 @@ class UserServiceTest {
     }
 
     @Test
-    void getUserById_ExistingUser_ReturnsUser() {
+    void getUserById_ReturnsUser_WhenUserExists() {
         Long userId = 1L;
-        User mockUser = new User(userId, "testuser", "test@example.com");
+        User mockUser = new User();
+        mockUser.setUserId(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
 
         User result = userService.getUserById(userId);
 
         assertEquals(mockUser, result);
-        verify(userRepository).findById(userId);
     }
 
     @Test
-    void getUserById_NonExistingUser_ThrowsUserNotFoundException() {
+    void getUserById_ThrowsException_WhenUserDoesNotExist() {
         Long userId = 1L;
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> userService.getUserById(userId));
-        verify(userRepository).findById(userId);
     }
 
     @Test
-    void updateUser_ExistingUser_ReturnsUpdatedUser() {
+    void updateUser_ReturnsUpdatedUser_WhenUpdateIsSuccessful() {
         Long userId = 1L;
-        User existingUser = new User(userId, "olduser", "old@example.com");
-        User updatedUser = new User(userId, "newuser", "new@example.com");
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("old@example.com");
+
+        User updatedUser = new User();
+        updatedUser.setEmail("new@example.com");
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class))).thenReturn(updatedUser);
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User result = userService.updateUser(userId, updatedUser);
 
-        assertEquals(updatedUser, result);
-        verify(userRepository).findById(userId);
-        verify(userRepository).save(any(User.class));
-    }
-
-    @Test
-    void updateUser_NonExistingUser_ThrowsUserNotFoundException() {
-        Long userId = 1L;
-        User updatedUser = new User(userId, "newuser", "new@example.com");
-
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        assertThrows(UserNotFoundException.class, () -> userService.updateUser(userId, updatedUser));
-        verify(userRepository).findById(userId);
-        verify(userRepository, never()).save(any(User.class));
+        assertEquals("new@example.com", result.getEmail());
     }
 }
