@@ -18,13 +18,43 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
-
+@RestController
+@RequestMapping("/doc")
 public class DocumentVerificationController {
-    public ResponseEntity<Response> submitDocument(@RequestParam("file") MultipartFile file) {
-        return null;
+    private final DocumentService documentService;
+
+    @Autowired
+    public DocumentVerificationController(DocumentService documentService) {
+        this.documentService = documentService;
     }
 
+    @PostMapping("/submit")
+    public ResponseEntity<Response> submitDocument(@RequestParam("file") MultipartFile file) {
+        try {
+            String result = documentService.submitDocument(file);
+
+            DocumentSubmissionSuccessResponse successResponse = new DocumentSubmissionSuccessResponse(result);
+
+            return ResponseEntity.ok(successResponse);
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Error processing document: " + e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @PostMapping("/verify")
     public ResponseEntity<Response> verifyDocument(@RequestParam("file") MultipartFile file) {
-        return null;
+        try {
+            Document document = documentService.verifyDocument(file);
+
+            DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(document);
+
+            return ResponseEntity.ok(successResponse);
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }
