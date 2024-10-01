@@ -9,11 +9,10 @@ import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.response.AuthResponse;
 import ppl.momofin.momofinbackend.response.AuthResponseFailure;
 import ppl.momofin.momofinbackend.response.AuthResponseSuccess;
+import ppl.momofin.momofinbackend.service.LoggingService;
 import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.request.AuthRequest;
 import ppl.momofin.momofinbackend.utility.JwtUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,15 +20,16 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-
-    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
     private final UserService userService;
     private final JwtUtil jwtUtil;
 
+    private final LoggingService loggingService;
+
     @Autowired
-    public AuthController(UserService userService, JwtUtil jwtUtil) {
+    public AuthController(UserService userService, JwtUtil jwtUtil, LoggingService loggingService) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
+        this.loggingService = loggingService;
     }
 
     @PostMapping("/login")
@@ -42,15 +42,16 @@ public class AuthController {
             );
             String jwt = jwtUtil.generateToken(authenticatedUser.getUsername());
 
-            logger.info("Successful login for user: {} from organization: {}",
-                    authRequest.getUsername(), authRequest.getOrganizationName());
+            loggingService.log("INFO", "Successful login for user: " + authenticatedUser.getUsername() +
+                    " from organization: " + authRequest.getOrganizationName());
 
             AuthResponseSuccess response = new AuthResponseSuccess(authenticatedUser, jwt);
 
             return ResponseEntity.ok(response);
         } catch (InvalidCredentialsException e) {
-            logger.warn("Failed login attempt for user: {} from organization: {}",
-                    authRequest.getUsername(), authRequest.getOrganizationName());
+            loggingService.log("ERROR", "Failed login attempt for user: " + authRequest.getUsername() +
+                    " from organization: " + authRequest.getOrganizationName());
+
             AuthResponseFailure response = new AuthResponseFailure(e.getMessage());
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
