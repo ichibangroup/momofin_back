@@ -9,6 +9,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
+import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -29,9 +30,11 @@ public class DocumentServiceImpl implements DocumentService {
     private String SECRET_KEY;
 
     private final DocumentRepository documentRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public DocumentServiceImpl(DocumentRepository documentRepository) {
+    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository) {
+        this.userRepository = userRepository;
         this.documentRepository = documentRepository;
     }
 
@@ -53,7 +56,7 @@ public class DocumentServiceImpl implements DocumentService {
             return "Your document" + document.getName()+"has been successfully submitted";
         } else {
             logger.info("Document already exists: {}", documentFound.get().getName());
-            return documentFound.get().getName() + "has already been submitted before";
+            return documentFound.get().getName() + " has already been submitted before";
         }
     }
 

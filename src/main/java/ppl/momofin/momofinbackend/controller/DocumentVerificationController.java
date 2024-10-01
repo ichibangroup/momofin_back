@@ -51,7 +51,7 @@ public class DocumentVerificationController {
             DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(document);
 
             return ResponseEntity.ok(successResponse);
-        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
             ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
 
             return ResponseEntity.badRequest().body(errorResponse);
