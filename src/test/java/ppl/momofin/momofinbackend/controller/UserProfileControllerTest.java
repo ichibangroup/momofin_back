@@ -37,6 +37,18 @@ class UserProfileControllerTest {
 
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(mockUser, response.getBody());
+        verify(userService).getUserById(userId);
+    }
+
+    @Test
+    void getUserProfile_ReturnsNotFound_WhenUserDoesNotExist() {
+        Long userId = 1L;
+        when(userService.getUserById(userId)).thenThrow(new UserNotFoundException("User not found"));
+
+        ResponseEntity<User> response = userProfileController.getUserProfile(userId);
+
+        assertEquals(404, response.getStatusCodeValue());
+        verify(userService).getUserById(userId);
     }
 
     @Test
@@ -70,4 +82,17 @@ class UserProfileControllerTest {
         verify(userService).updateUser(eq(userId), any(User.class));
     }
 
+    @Test
+    void updateUserProfile_ReturnsInternalServerError_WhenUnexpectedErrorOccurs() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        updatedUser.setUserId(userId);
+
+        when(userService.updateUser(eq(userId), any(User.class))).thenThrow(new RuntimeException("Unexpected error"));
+
+        ResponseEntity<User> response = userProfileController.updateUserProfile(userId, updatedUser);
+
+        assertEquals(500, response.getStatusCodeValue());
+        verify(userService).updateUser(eq(userId), any(User.class));
+    }
 }
