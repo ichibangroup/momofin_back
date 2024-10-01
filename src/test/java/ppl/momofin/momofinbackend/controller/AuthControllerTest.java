@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.controller;
 
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.slf4j.Logger;
+import ppl.momofin.momofinbackend.service.LoggingService;
 import ppl.momofin.momofinbackend.config.SecurityConfig;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
 import ppl.momofin.momofinbackend.model.User;
@@ -36,7 +37,7 @@ public class AuthControllerTest {
     private JwtUtil jwtUtil;
 
     @MockBean
-    private Logger logger;
+    private LoggingService loggingService;
 
     private User mockUser;
     private ObjectMapper objectMapper;
@@ -69,6 +70,9 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isOk()) // Assert that the status is 200 OK
                 .andExpect(jsonPath("$.jwt").value("mock-jwt-token")); // Assert that the JWT token is in the response
+
+        verify(loggingService).log("INFO", "Successful login for user: test User from organization: My Organization");
+
     }
 
     @Test
@@ -86,7 +90,8 @@ public class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorMessage").value("Your email or password is incorrect"));
-    }
 
+        verify(loggingService).log("ERROR", "Failed login attempt for user: Hobo Steve Invalid from organization: My Organization");
+    }
 
 }
