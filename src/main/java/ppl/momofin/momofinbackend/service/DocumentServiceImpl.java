@@ -2,6 +2,7 @@ package ppl.momofin.momofinbackend.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -29,6 +30,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository documentRepository;
 
+    @Autowired
     public DocumentServiceImpl(DocumentRepository documentRepository) {
         this.documentRepository = documentRepository;
     }
@@ -48,10 +50,10 @@ public class DocumentServiceImpl implements DocumentService {
             document.setName(StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename())));
             documentRepository.save(document);
             logger.info("New document saved: {}", document.getName());
-            return hashString;
+            return "Your document" + document.getName()+"has been successfully submitted";
         } else {
             logger.info("Document already exists: {}", documentFound.get().getName());
-            return hashString + " this document has already been submitted before";
+            return documentFound.get().getName() + "has already been submitted before";
         }
     }
 

@@ -56,7 +56,7 @@ class DocumentServiceTest {
         String result = documentService.submitDocument(mockFile);
 
         assertNotNull(result);
-        assertTrue(result.contains("this document has already been submitted before"));
+        assertTrue(result.contains("has already been submitted before"));
         verify(documentRepository, never()).save(any(Document.class));
     }
 

@@ -14,7 +14,7 @@ import ppl.momofin.momofinbackend.response.AuthResponseSuccess;
 import ppl.momofin.momofinbackend.response.RegisterResponseSuccess;
 import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.request.AuthRequest;
-import ppl.momofin.momofinbackend.utility.JwtUtil;
+import ppl.momofin.momofinbackend.security.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -20,7 +20,7 @@ import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.request.RegisterRequest;
 import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.request.AuthRequest;
-import ppl.momofin.momofinbackend.utility.JwtUtil;
+import ppl.momofin.momofinbackend.security.JwtUtil;
 
 import java.util.Optional;
 

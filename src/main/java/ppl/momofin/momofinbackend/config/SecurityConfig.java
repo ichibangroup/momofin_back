@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,7 +16,7 @@ public class SecurityConfig {
         httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "auth/register").permitAll()
+                        .requestMatchers("/auth/login", "auth/register", "doc/submit", "doc/verify").permitAll()
                         .anyRequest().authenticated()
                 );
         return httpSecurity.build();

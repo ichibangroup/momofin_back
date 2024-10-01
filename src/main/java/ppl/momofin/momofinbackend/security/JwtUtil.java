@@ -1,4 +1,4 @@
-package ppl.momofin.momofinbackend.utility;
+package ppl.momofin.momofinbackend.security;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -10,7 +10,6 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
-
     private static final String SECRET_KEY = System.getenv("SECRET_KEY");
     private static final long EXPIRATION_TIME = 1000L * 60 * 60;
 
@@ -42,7 +41,7 @@ public class JwtUtil {
         return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody().getExpiration();
     }
 
-    private String extractUsername(String token) {
+    public String extractUsername(String token) {
         return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody().getSubject();
     }
 }

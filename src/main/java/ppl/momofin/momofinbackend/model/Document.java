@@ -14,7 +14,7 @@ public class Document {
     @Column(name = "name")
     private String name;
     @ManyToOne
-    @JoinColumn(name = "users", referencedColumnName = "userId")
+    @JoinColumn(name = "owner", referencedColumnName = "userId")
     private User owner;
 
     public Document() {}
