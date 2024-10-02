@@ -3,8 +3,8 @@ package ppl.momofin.momofinbackend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ppl.momofin.momofinbackend.dto.UserDTO;
 import ppl.momofin.momofinbackend.model.Organization;
-import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.service.OrganizationService;
 
 import java.util.List;
@@ -23,14 +23,14 @@ public class OrganizationController {
     }
 
     @GetMapping("/{orgId}/users")
-    public ResponseEntity<List<User>> getUsersInOrganization(@PathVariable Long orgId) {
-        List<User> users = organizationService.getUsersInOrganization(orgId);
+    public ResponseEntity<List<UserDTO>> getUsersInOrganization(@PathVariable Long orgId) {
+        List<UserDTO> users = organizationService.getUsersInOrganization(orgId);
         return ResponseEntity.ok(users);
     }
 
     @PostMapping("/{orgId}/users")
-    public ResponseEntity<User> addUserToOrganization(@PathVariable Long orgId, @RequestBody User user) {
-        User addedUser = organizationService.addUserToOrganization(orgId, user);
+    public ResponseEntity<UserDTO> addUserToOrganization(@PathVariable Long orgId, @RequestBody UserDTO userDTO) {
+        UserDTO addedUser = organizationService.addUserToOrganization(orgId, userDTO);
         return ResponseEntity.ok(addedUser);
     }
 
@@ -41,8 +41,8 @@ public class OrganizationController {
     }
 
     @PutMapping("/{orgId}/users/{userId}")
-    public ResponseEntity<User> updateUserInOrganization(@PathVariable Long orgId, @PathVariable Long userId, @RequestBody User userDetails) {
-        User updatedUser = organizationService.updateUserInOrganization(orgId, userId, userDetails);
+    public ResponseEntity<UserDTO> updateUserInOrganization(@PathVariable Long orgId, @PathVariable Long userId, @RequestBody UserDTO userDTO) {
+        UserDTO updatedUser = organizationService.updateUserInOrganization(orgId, userId, userDTO);
         return ResponseEntity.ok(updatedUser);
     }
 }
