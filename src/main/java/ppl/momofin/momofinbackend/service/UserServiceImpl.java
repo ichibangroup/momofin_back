@@ -106,4 +106,9 @@ public class UserServiceImpl implements UserService{
 
         return userRepository.save(existingUser);
     }
+
+    @Override
+    public User fetchUserByUsername(String username) {
+        return userRepository.findByUsername(username).get();
+    }
 }

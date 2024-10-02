@@ -8,6 +8,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 public interface DocumentService {
-    String submitDocument(MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException;
-    Document verifyDocument(MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException;
+    String submitDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException;
+    Document verifyDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException;
 }

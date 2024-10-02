@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
+import static ppl.momofin.momofinbackend.controller.DocumentVerificationController.getUsername;
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -62,11 +64,12 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Response> registerUser(@RequestBody RegisterRequest registerRequest) {
-        Optional<Organization> momofin = organizationRepository.findOrganizationByName("Momofin");
+    public ResponseEntity<Response> registerUser(@RequestHeader("Authorization") String token, @RequestBody RegisterRequest registerRequest) {
+        String username = authenticateAndGetUsername(token);
+        User user = userService.fetchUserByUsername(username);
         try {
             User registeredUser = userService.registerMember(
-                    momofin.get(),
+                    user.getOrganization(),
                     registerRequest.getUsername(),
                     registerRequest.getName(),
                     registerRequest.getEmail(),
@@ -75,7 +78,7 @@ public class AuthController {
             );
 
             logger.info("Successful register for user: {} from organization: {}",
-                    registerRequest.getUsername(), momofin.get().getName());
+                    registerRequest.getUsername(), user.getOrganization().getName());
 
             RegisterResponseSuccess response = new RegisterResponseSuccess(registeredUser);
 
@@ -85,5 +88,18 @@ public class AuthController {
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
+    }
+
+    @GetMapping("/info")
+    public ResponseEntity<User> getAuthenticatedUser(@RequestHeader("Authorization") String token) {
+        String username = authenticateAndGetUsername(token);
+
+        User user = userService.fetchUserByUsername(username);
+
+        return ResponseEntity.ok(user);
+    }
+
+    private String authenticateAndGetUsername(String token) {
+        return getUsername(token, jwtUtil);
     }
 }

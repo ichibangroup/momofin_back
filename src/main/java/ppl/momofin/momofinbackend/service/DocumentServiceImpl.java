@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
@@ -22,7 +23,6 @@ import java.util.Optional;
 
 @Service
 public class DocumentServiceImpl implements DocumentService {
-
     private static final Logger logger = LoggerFactory.getLogger(DocumentServiceImpl.class);
     private static final String ALGORITHM = "HmacSHA256";
 
@@ -39,7 +39,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public String submitDocument(MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    public String submitDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be null or empty");
         }
@@ -48,12 +48,14 @@ public class DocumentServiceImpl implements DocumentService {
         Optional<Document> documentFound = documentRepository.findByHashString(hashString);
 
         if (documentFound.isEmpty()) {
+            Optional<User> owner = userRepository.findByUsername(username);
             Document document = new Document();
             document.setHashString(hashString);
             document.setName(StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename())));
+            owner.ifPresent(document::setOwner);
             documentRepository.save(document);
             logger.info("New document saved: {}", document.getName());
-            return "Your document" + document.getName()+"has been successfully submitted";
+            return "Your document " + document.getName()+" has been successfully submitted";
         } else {
             logger.info("Document already exists: {}", documentFound.get().getName());
             return documentFound.get().getName() + " has already been submitted before";
@@ -61,7 +63,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Document verifyDocument(MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    public Document verifyDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be null or empty");
         }
