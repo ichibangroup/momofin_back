@@ -38,7 +38,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<Response> authenticateUser(@RequestBody AuthRequest authRequest) {
-        String log_name = "/auth/login";
+        String logName = "/auth/login";
 
         try {
             User authenticatedUser = userService.authenticate(
@@ -49,14 +49,14 @@ public class AuthController {
             String jwt = jwtUtil.generateToken(authenticatedUser.getUsername());
 
             loggingService.log("INFO", "Successful login for user: " + authenticatedUser.getUsername() +
-                    " from organization: " + authRequest.getOrganizationName(), log_name);
+                    " from organization: " + authRequest.getOrganizationName(), logName);
 
             AuthResponseSuccess response = new AuthResponseSuccess(authenticatedUser, jwt);
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             loggingService.log("ERROR", "Failed login attempt for user: " + authRequest.getUsername() +
-                    " from organization: " + authRequest.getOrganizationName(), log_name);
+                    " from organization: " + authRequest.getOrganizationName(), logName);
             ErrorResponse response = new ErrorResponse(e.getMessage());
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
