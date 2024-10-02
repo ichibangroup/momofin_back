@@ -93,7 +93,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isOk()) // Assert that the status is 200 OK
                 .andExpect(jsonPath("$.jwt").value("mock-jwt-token")); // Assert that the JWT token is in the response
-        verify(loggingService).log("INFO", "Successful login for user: test User from organization: My Organization", "/auth/login");
+        verify(loggingService).log("INFO", "Successful login for user: testUser from organization: My Organization", "/auth/login");
     }
 
     @Test
