@@ -44,13 +44,12 @@ public class AuthController {
                     authRequest.getUsername(),
                     authRequest.getPassword()
             );
-            String jwt = jwtUtil.generateToken(authenticatedUser);
+            String jwt = jwtUtil.generateToken(authenticatedUser);  // Make sure this line uses the User object
 
-            logger.info("Authenticated User: {}", authenticatedUser);  // Add this line
+            logger.info("Successful login for user: {} from organization: {}",
+                    authRequest.getUsername(), authRequest.getOrganizationName());
 
             AuthResponseSuccess response = new AuthResponseSuccess(authenticatedUser, jwt);
-
-            logger.info("Response: {}", response);  // Add this line
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {

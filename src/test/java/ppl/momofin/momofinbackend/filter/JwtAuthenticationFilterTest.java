@@ -1,6 +1,5 @@
 package ppl.momofin.momofinbackend.filter;
 
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -10,8 +9,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.core.context.SecurityContextHolder;
 import ppl.momofin.momofinbackend.security.JwtUtil;
-
-import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
@@ -42,13 +39,10 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_WithValidToken_ShouldSetAuthentication() throws Exception {
         String token = "valid_token";
         String username = "testuser";
-        Claims mockClaims = mock(Claims.class);
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtUtil.extractUsername(token)).thenReturn(username);
         when(jwtUtil.validateToken(token, username)).thenReturn(true);
-        when(jwtUtil.extractAllClaims(token)).thenReturn(mockClaims);
-        when(mockClaims.get("roles")).thenReturn(Arrays.asList("ROLE_USER"));
 
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 

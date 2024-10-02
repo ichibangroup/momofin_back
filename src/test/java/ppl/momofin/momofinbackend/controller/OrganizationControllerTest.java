@@ -67,6 +67,17 @@ class OrganizationControllerTest {
     }
 
     @Test
+    void addUserToOrganization_ShouldReturnAddedUser() throws Exception {
+        when(organizationService.addUserToOrganization(eq(1L), any(UserDTO.class))).thenReturn(testUserDTO);
+
+        mockMvc.perform(post("/api/organizations/1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"newuser\",\"name\":\"New User\",\"email\":\"new@example.com\",\"position\":\"Developer\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("testuser"));
+    }
+
+    @Test
     void removeUserFromOrganization_ShouldReturnNoContent() throws Exception {
         mockMvc.perform(delete("/api/organizations/1/users/1"))
                 .andExpect(status().isNoContent());

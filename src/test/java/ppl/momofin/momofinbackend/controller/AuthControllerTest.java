@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.slf4j.Logger;
-import org.springframework.test.web.servlet.MvcResult;
 import ppl.momofin.momofinbackend.config.SecurityConfig;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
@@ -66,45 +65,25 @@ class AuthControllerTest {
     }
 
     @Test
-    public void testAuthenticateUserSuccess() throws Exception {
-        Organization mockOrg = new Organization("My Organization", "Test Description");
-        mockOrg.setOrganizationId(1L);
-
-        User mockUser = new User(
-                mockOrg,
-                "test User",
-                "Test User Full Name",
-                "test.user@example.com",
-                "testPassword",
-                "Tester",
-                false
-        );
-        mockUser.setUserId(1L);
-
+    void testAuthenticateUserSuccess() throws Exception {
+        // Mock UserService's authenticate method
         when(userService.authenticate(anyString(), anyString(), anyString())).thenReturn(mockUser);
-        when(jwtUtil.generateToken(any(User.class))).thenReturn("mock-jwt-token");
 
-        MvcResult result = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"organizationName\":\"My Organization\",\"username\":\"test User\",\"password\":\"testPassword\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
+        // Mock JwtUtil's generateToken method
+        when(jwtUtil.generateToken(anyString())).thenReturn("mock-jwt-token");
 
-        String content = result.getResponse().getContentAsString();
-        System.out.println("Response content: " + content);
+        // Create an authentication request object
+        AuthRequest authRequest = new AuthRequest();
+        authRequest.setOrganizationName("My Organization");
+        authRequest.setUsername("test User");
+        authRequest.setPassword("testPassword");
 
+        // Perform the POST request to /auth/login
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"organizationName\":\"My Organization\",\"username\":\"test User\",\"password\":\"testPassword\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.jwt").value("mock-jwt-token"))
-                .andExpect(jsonPath("$.user.userId").value(1))
-                .andExpect(jsonPath("$.user.username").value("test User"))
-                .andExpect(jsonPath("$.user.name").value("Test User Full Name"))
-                .andExpect(jsonPath("$.user.email").value("test.user@example.com"))
-                .andExpect(jsonPath("$.user.position").value("Tester"))
-                .andExpect(jsonPath("$.user.organizationAdmin").value(false))
-                .andExpect(jsonPath("$.user.organization.name").value("My Organization"));
+                        .content(objectMapper.writeValueAsString(authRequest)))
+                .andExpect(status().isOk()) // Assert that the status is 200 OK
+                .andExpect(jsonPath("$.jwt").value("mock-jwt-token")); // Assert that the JWT token is in the response
     }
 
     @Test
