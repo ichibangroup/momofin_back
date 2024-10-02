@@ -74,9 +74,6 @@ public class AuthController {
                     registerRequest.getPosition()
             );
 
-            logger.info("Successful register for user: {} from organization: {}",
-                    registerRequest.getUsername(), momofin.get().getName());
-
             RegisterResponseSuccess response = new RegisterResponseSuccess(registeredUser);
 
             return ResponseEntity.ok(response);

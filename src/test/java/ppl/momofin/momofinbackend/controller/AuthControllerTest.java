@@ -45,6 +45,8 @@ class AuthControllerTest {
 
     @MockBean
     private LoggingService loggingService;
+
+    @MockBean
     private OrganizationRepository organizationRepository;
 
 
@@ -101,7 +103,7 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.errorMessage").value("The organization "+ invalidOrganizationName + " is not registered to our database"));
+                .andExpect(jsonPath("$.errorMessage").value("Your email or password is incorrect"));
         verify(loggingService).log("ERROR", "Failed login attempt for user: Hobo Steve Invalid from organization: My Organization");
 
     }
