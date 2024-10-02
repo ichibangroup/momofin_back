@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ppl.momofin.momofinbackend.model.User;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class JwtUtil {
 
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", new ArrayList<>(user.getRoles()));  // Convert Set to List
         claims.put("organizationId", user.getOrganization().getOrganizationId());
         claims.put("isOrganizationAdmin", user.isOrganizationAdmin());
         return createToken(claims, user.getUsername());
@@ -57,7 +59,7 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
     }
 

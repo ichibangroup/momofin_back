@@ -44,7 +44,7 @@ public class AuthController {
                     authRequest.getUsername(),
                     authRequest.getPassword()
             );
-            String jwt = jwtUtil.generateToken(authenticatedUser.getUsername());
+            String jwt = jwtUtil.generateToken(authenticatedUser);  // Make sure this line uses the User object
 
             logger.info("Successful login for user: {} from organization: {}",
                     authRequest.getUsername(), authRequest.getOrganizationName());
