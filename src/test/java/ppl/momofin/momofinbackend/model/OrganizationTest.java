@@ -36,4 +36,17 @@ class OrganizationTest {
         organization.setName(name);
         assertEquals(name, organization.getName());
     }
+    @Test
+    void testOrganizationCreation() {
+        Organization org = new Organization("Test Org");
+        assertEquals("Test Org", org.getName());
+        assertEquals("Default organization description", org.getDescription());
+    }
+
+    @Test
+    void testOrganizationCreationWithDescription() {
+        Organization org = new Organization("Test Org", "Custom Description");
+        assertEquals("Test Org", org.getName());
+        assertEquals("Custom Description", org.getDescription());
+    }
 }

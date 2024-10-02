@@ -9,9 +9,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import ppl.momofin.momofinbackend.config.SecurityConfig;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.security.JwtUtil;
 import ppl.momofin.momofinbackend.service.DocumentService;
 import java.security.NoSuchAlgorithmException;
 
@@ -29,6 +29,9 @@ public class DocumentVerificationControllerTest {
 
     @MockBean
     private DocumentService documentService;
+
+    @MockBean
+    private JwtUtil jwtUtil;
 
     @InjectMocks
     private DocumentVerificationController documentVerificationController;
