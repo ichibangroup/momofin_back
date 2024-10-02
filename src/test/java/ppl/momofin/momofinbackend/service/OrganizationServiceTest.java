@@ -54,16 +54,6 @@ class OrganizationServiceTest {
     }
 
     @Test
-    void addUserToOrganization_ShouldAddUserSuccessfully() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        when(userRepository.save(any(User.class))).thenReturn(testUser);
-
-        UserDTO result = organizationService.addUserToOrganization(1L, testUserDTO);
-
-        assertEquals(testUserDTO.getUsername(), result.getUsername());
-    }
-
-    @Test
     void removeUserFromOrganization_ShouldRemoveUserSuccessfully() {
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));

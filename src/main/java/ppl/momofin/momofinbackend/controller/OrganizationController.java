@@ -28,12 +28,6 @@ public class OrganizationController {
         return ResponseEntity.ok(users);
     }
 
-    @PostMapping("/{orgId}/users")
-    public ResponseEntity<UserDTO> addUserToOrganization(@PathVariable Long orgId, @RequestBody UserDTO userDTO) {
-        UserDTO addedUser = organizationService.addUserToOrganization(orgId, userDTO);
-        return ResponseEntity.ok(addedUser);
-    }
-
     @DeleteMapping("/{orgId}/users/{userId}")
     public ResponseEntity<Void> removeUserFromOrganization(@PathVariable Long orgId, @PathVariable Long userId) {
         organizationService.removeUserFromOrganization(orgId, userId);

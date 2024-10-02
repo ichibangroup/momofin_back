@@ -35,14 +35,6 @@ public class OrganizationService {
                 .collect(Collectors.toList());
     }
 
-    public UserDTO addUserToOrganization(Long orgId, UserDTO userDTO) {
-        Organization org = findOrganizationById(orgId);
-        User user = userDTO.toUser();
-        user.setOrganization(org);
-        User savedUser = userRepository.save(user);
-        return UserDTO.fromUser(savedUser);
-    }
-
     public void removeUserFromOrganization(Long orgId, Long userId) {
         Organization org = findOrganizationById(orgId);
         User user = findUserById(userId);
