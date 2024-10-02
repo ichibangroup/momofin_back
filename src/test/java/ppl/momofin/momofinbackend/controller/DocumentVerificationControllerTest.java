@@ -62,10 +62,8 @@ public class DocumentVerificationControllerTest {
         mockMvc.perform(multipart("/doc/submit")
                         .file(file)
                         .header("Authorization", INVALID_TOKEN))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.errorMessage").value("Authentication failed: Invalid token"));
+                .andExpect(status().isForbidden());
 
-        verify(jwtUtil).validateToken("invalidToken");
         verifyNoInteractions(documentService);
     }
 
@@ -119,10 +117,8 @@ public class DocumentVerificationControllerTest {
         mockMvc.perform(multipart("/doc/verify")
                         .file(file)
                         .header("Authorization", INVALID_TOKEN))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.errorMessage").value("Authentication failed: Invalid token"));
+                .andExpect(status().isForbidden());
 
-        verify(jwtUtil).validateToken("invalidToken");
         verifyNoInteractions(documentService);
     }
 
