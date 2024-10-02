@@ -18,6 +18,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "auth/register", "doc/submit", "doc/verify").permitAll()
                         .requestMatchers("/api/user/**").permitAll()
+                        .requestMatchers("/api/organizations/**").hasRole("ORGANIZATION_ADMIN")
                         .anyRequest().authenticated()
                 );
         return httpSecurity.build();
