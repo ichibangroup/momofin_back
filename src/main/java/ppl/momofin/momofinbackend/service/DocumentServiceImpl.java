@@ -27,7 +27,7 @@ public class DocumentServiceImpl implements DocumentService {
     private static final String ALGORITHM = "HmacSHA256";
 
     @Value("${hmac.secret.key}")
-    private String SECRET_KEY;
+    private String secretKey;
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
@@ -75,7 +75,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     private String generateHash(MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         try (InputStream fileStream = file.getInputStream()) {
-            SecretKeySpec secretKeySpec = new SecretKeySpec(SECRET_KEY.getBytes(), ALGORITHM);
+            SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getBytes(), ALGORITHM);
             Mac mac = Mac.getInstance(ALGORITHM);
             mac.init(secretKeySpec);
 

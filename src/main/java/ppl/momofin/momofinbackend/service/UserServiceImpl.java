@@ -109,6 +109,7 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public User fetchUserByUsername(String username) {
-        return userRepository.findByUsername(username).get();
+        Optional<User> user = userRepository.findByUsername(username);
+        return user.orElse(null);
     }
 }

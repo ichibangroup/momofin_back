@@ -40,7 +40,7 @@ class DocumentServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(documentService, "SECRET_KEY", System.getenv("SECRET_KEY"));
+        ReflectionTestUtils.setField(documentService, "secretKey", System.getenv("SECRET_KEY"));
         mockFile = new MockMultipartFile("file", "test.txt", "text/plain", "Hello, World!".getBytes());
         mockUsername = "test user";
         mockUser = new User();
@@ -130,7 +130,7 @@ class DocumentServiceTest {
         assertNotEquals(hash1, hash2, "Hash should be different for different files");
     }
 
-    private String invokeGenerateHash(MockMultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    private String invokeGenerateHash(MockMultipartFile file) {
         return (String) ReflectionTestUtils.invokeMethod(documentService, "generateHash", file);
     }
 }

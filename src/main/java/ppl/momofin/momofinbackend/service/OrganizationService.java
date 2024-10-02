@@ -15,11 +15,15 @@ import java.util.stream.Collectors;
 @Service
 public class OrganizationService {
 
-    @Autowired
-    private OrganizationRepository organizationRepository;
+    private final OrganizationRepository organizationRepository;
+
+    private final UserRepository userRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    public OrganizationService(OrganizationRepository organizationRepository, UserRepository userRepository) {
+        this.organizationRepository = organizationRepository;
+        this.userRepository = userRepository;
+    }
 
     public Organization updateOrganization(Long orgId, String name, String description) {
         Organization org = findOrganizationById(orgId);
@@ -32,7 +36,7 @@ public class OrganizationService {
         Organization org = findOrganizationById(orgId);
         return userRepository.findByOrganization(org).stream()
                 .map(UserDTO::fromUser)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public UserDTO addUserToOrganization(Long orgId, UserDTO userDTO) {
