@@ -3,12 +3,11 @@ package ppl.momofin.momofinbackend.response;
 import org.junit.jupiter.api.Test;
 import ppl.momofin.momofinbackend.model.Document;
 
-import javax.print.Doc;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DocumentVerificationSuccessResponseTest {
+class DocumentVerificationSuccessResponseTest {
     @Test
     void testDocumentVerificationSuccessResponseConstructorEmpty() {
         DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse();

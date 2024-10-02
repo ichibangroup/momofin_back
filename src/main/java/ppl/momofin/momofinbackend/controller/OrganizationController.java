@@ -13,8 +13,12 @@ import java.util.List;
 @RequestMapping("/api/organizations")
 public class OrganizationController {
 
+    private final OrganizationService organizationService;
+
     @Autowired
-    private OrganizationService organizationService;
+    public OrganizationController(OrganizationService organizationService) {
+        this.organizationService = organizationService;
+    }
 
     @PutMapping("/{orgId}")
     public ResponseEntity<Organization> updateOrganization(@PathVariable Long orgId, @RequestBody Organization organizationDetails) {

@@ -20,8 +20,6 @@ class UserDTOTest {
         assertEquals("test@example.com", userDTO.getEmail());
         assertEquals("Developer", userDTO.getPosition());
         assertFalse(userDTO.isOrganizationAdmin());
-        // Remove this assertion as UserDTO doesn't have a password field
-        // assertNull(userDTO.getPassword());
     }
 
     @Test
@@ -36,6 +34,6 @@ class UserDTOTest {
         assertEquals("test@example.com", user.getEmail());
         assertEquals("Developer", user.getPosition());
         assertFalse(user.isOrganizationAdmin());
-        assertNull(user.getPassword());  // Password should not be set from DTO
+        assertNull(user.getPassword());
     }
 }

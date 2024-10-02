@@ -1,16 +1,15 @@
 package ppl.momofin.momofinbackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.response.DocumentSubmissionSuccessResponse;
 import ppl.momofin.momofinbackend.response.DocumentVerificationSuccessResponse;
 import ppl.momofin.momofinbackend.response.ErrorResponse;
 import ppl.momofin.momofinbackend.response.Response;
+import ppl.momofin.momofinbackend.security.JwtUtil;
 import ppl.momofin.momofinbackend.service.DocumentService;
 import ppl.momofin.momofinbackend.model.Document;
 
@@ -22,16 +21,19 @@ import java.security.NoSuchAlgorithmException;
 @RequestMapping("/doc")
 public class DocumentVerificationController {
     private final DocumentService documentService;
+    private final JwtUtil jwtUtil;
 
     @Autowired
-    public DocumentVerificationController(DocumentService documentService) {
+    public DocumentVerificationController(DocumentService documentService, JwtUtil jwtUtil) {
         this.documentService = documentService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/submit")
-    public ResponseEntity<Response> submitDocument(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Response> submitDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) {
         try {
-            String result = documentService.submitDocument(file);
+            String username = authenticateAndGetUsername(token);
+            String result = documentService.submitDocument(file, username);
 
             DocumentSubmissionSuccessResponse successResponse = new DocumentSubmissionSuccessResponse(result);
 
@@ -40,13 +42,17 @@ public class DocumentVerificationController {
             ErrorResponse errorResponse = new ErrorResponse("Error processing document: " + e.getMessage());
 
             return ResponseEntity.badRequest().body(errorResponse);
+        } catch (IllegalArgumentException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Authentication failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<Response> verifyDocument(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) {
         try {
-            Document document = documentService.verifyDocument(file);
+            String username = authenticateAndGetUsername(token);
+            Document document = documentService.verifyDocument(file, username);
 
             DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(document);
 
@@ -55,6 +61,24 @@ public class DocumentVerificationController {
             ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
 
             return ResponseEntity.badRequest().body(errorResponse);
+        } catch (IllegalArgumentException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Authentication failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
+    }
+
+    private String authenticateAndGetUsername(String token) {
+        return getUsername(token, jwtUtil);
+    }
+
+    static String getUsername(String token, JwtUtil jwtUtil) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Invalid token format");
+        }
+        String jwtToken = token.substring(7);
+        if (!jwtUtil.validateToken(jwtToken)) {
+            throw new IllegalArgumentException("Invalid token");
+        }
+        return jwtUtil.extractUsername(jwtToken);
     }
 }

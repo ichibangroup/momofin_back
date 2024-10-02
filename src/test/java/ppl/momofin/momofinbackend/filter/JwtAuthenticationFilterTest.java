@@ -53,7 +53,7 @@ class JwtAuthenticationFilterTest {
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
         verify(jwtUtil).extractUsername(token);
-        verify(jwtUtil).validateToken(token, username);
+        verify(jwtUtil).validateToken(token);
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
     }

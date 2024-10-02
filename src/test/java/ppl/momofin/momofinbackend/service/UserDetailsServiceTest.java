@@ -8,13 +8,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
-public class UserDetailsServiceTest {
+ class UserDetailsServiceTest {
 
     @Autowired
     private UserDetailsService userDetailsService;
 
     @Test
-    public void testUserDetailsServiceBean() {
+    void testUserDetailsServiceBean() {
         assertNotNull(userDetailsService);
     }
 }
