@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.security.JwtUtil;
 
 import static org.junit.jupiter.api.Assertions.*;
 

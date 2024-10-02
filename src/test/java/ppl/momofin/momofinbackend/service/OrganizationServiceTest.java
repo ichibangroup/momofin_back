@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import ppl.momofin.momofinbackend.dto.UserDTO;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
@@ -30,6 +31,7 @@ class OrganizationServiceTest {
 
     private Organization testOrg;
     private User testUser;
+    private UserDTO testUserDTO;
 
     @BeforeEach
     void setUp() {
@@ -37,17 +39,18 @@ class OrganizationServiceTest {
         testOrg = new Organization("Test Org", "Test Description");
         testOrg.setOrganizationId(1L);
         testUser = new User(testOrg, "testuser", "Test User", "test@example.com", "password", "Developer", false);
+        testUserDTO = UserDTO.fromUser(testUser);
     }
 
     @Test
-    void getUsersInOrganization_ShouldReturnListOfUsers() {
+    void getUsersInOrganization_ShouldReturnListOfUserDTOs() {
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
         when(userRepository.findByOrganization(testOrg)).thenReturn(Arrays.asList(testUser));
 
-        List<User> result = organizationService.getUsersInOrganization(1L);
+        List<UserDTO> result = organizationService.getUsersInOrganization(1L);
 
         assertEquals(1, result.size());
-        assertEquals(testUser, result.get(0));
+        assertEquals(testUserDTO.getUsername(), result.get(0).getUsername());
     }
 
     @Test
@@ -55,10 +58,9 @@ class OrganizationServiceTest {
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        User result = organizationService.addUserToOrganization(1L, testUser);
+        UserDTO result = organizationService.addUserToOrganization(1L, testUserDTO);
 
-        assertEquals(testUser, result);
-        assertEquals(testOrg, result.getOrganization());
+        assertEquals(testUserDTO.getUsername(), result.getUsername());
     }
 
     @Test
@@ -77,12 +79,12 @@ class OrganizationServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        User updatedUser = new User(testOrg, "updateduser", "Updated User", "updated@example.com", "newpassword", "Senior Developer", false);
-        User result = organizationService.updateUserInOrganization(1L, 1L, updatedUser);
+        UserDTO updatedUserDTO = new UserDTO(1L, "updateduser", "Updated User", "updated@example.com", "Senior Developer", false);
+        UserDTO result = organizationService.updateUserInOrganization(1L, 1L, updatedUserDTO);
 
-        assertEquals(updatedUser.getUsername(), result.getUsername());
-        assertEquals(updatedUser.getName(), result.getName());
-        assertEquals(updatedUser.getEmail(), result.getEmail());
-        assertEquals(updatedUser.getPosition(), result.getPosition());
+        assertEquals(updatedUserDTO.getUsername(), result.getUsername());
+        assertEquals(updatedUserDTO.getName(), result.getName());
+        assertEquals(updatedUserDTO.getEmail(), result.getEmail());
+        assertEquals(updatedUserDTO.getPosition(), result.getPosition());
     }
 }
