@@ -3,12 +3,14 @@ package ppl.momofin.momofinbackend.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ppl.momofin.momofinbackend.dto.UserDTO;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OrganizationService {
@@ -26,15 +28,19 @@ public class OrganizationService {
         return organizationRepository.save(org);
     }
 
-    public List<User> getUsersInOrganization(Long orgId) {
+    public List<UserDTO> getUsersInOrganization(Long orgId) {
         Organization org = findOrganizationById(orgId);
-        return userRepository.findByOrganization(org);
+        return userRepository.findByOrganization(org).stream()
+                .map(UserDTO::fromUser)
+                .collect(Collectors.toList());
     }
 
-    public User addUserToOrganization(Long orgId, User user) {
+    public UserDTO addUserToOrganization(Long orgId, UserDTO userDTO) {
         Organization org = findOrganizationById(orgId);
+        User user = userDTO.toUser();
         user.setOrganization(org);
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        return UserDTO.fromUser(savedUser);
     }
 
     public void removeUserFromOrganization(Long orgId, Long userId) {
@@ -46,18 +52,19 @@ public class OrganizationService {
         userRepository.delete(user);
     }
 
-    public User updateUserInOrganization(Long orgId, Long userId, User updatedUser) {
+    public UserDTO updateUserInOrganization(Long orgId, Long userId, UserDTO updatedUserDTO) {
         Organization org = findOrganizationById(orgId);
         User user = findUserById(userId);
         if (!user.getOrganization().equals(org)) {
             throw new IllegalArgumentException("User does not belong to this organization");
         }
-        user.setName(updatedUser.getName());
-        user.setEmail(updatedUser.getEmail());
-        user.setPassword(updatedUser.getPassword());
-        user.setPosition(updatedUser.getPosition());
-        user.setUsername(updatedUser.getUsername());
-        return userRepository.save(user);
+        user.setName(updatedUserDTO.getName());
+        user.setEmail(updatedUserDTO.getEmail());
+        user.setPosition(updatedUserDTO.getPosition());
+        user.setUsername(updatedUserDTO.getUsername());
+        user.setOrganizationAdmin(updatedUserDTO.isOrganizationAdmin());
+        User savedUser = userRepository.save(user);
+        return UserDTO.fromUser(savedUser);
     }
 
     private Organization findOrganizationById(Long orgId) {
