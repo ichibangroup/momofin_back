@@ -42,12 +42,12 @@ class JwtAuthenticationFilterTest {
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtUtil.extractUsername(token)).thenReturn(username);
-        when(jwtUtil.validateToken(token, username)).thenReturn(true);
+        when(jwtUtil.validateToken(token)).thenReturn(true);
 
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
         verify(jwtUtil).extractUsername(token);
-        verify(jwtUtil).validateToken(token, username);
+        verify(jwtUtil).validateToken(token);
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
     }

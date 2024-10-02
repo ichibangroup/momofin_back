@@ -9,7 +9,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
+import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -26,49 +28,59 @@ class DocumentServiceTest {
     @Mock
     private DocumentRepository documentRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private DocumentServiceImpl documentService;
 
     private MockMultipartFile mockFile;
+    private User mockUser;
+    private String mockUsername;
 
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(documentService, "SECRET_KEY", System.getenv("SECRET_KEY"));
         mockFile = new MockMultipartFile("file", "test.txt", "text/plain", "Hello, World!".getBytes());
+        mockUsername = "test user";
+        mockUser = new User();
+        mockUser.setName(mockUsername);
     }
 
     @Test
     void submitDocumentNewDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         when(documentRepository.findByHashString(any())).thenReturn(Optional.empty());
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
         when(documentRepository.save(any())).thenReturn(new Document());
 
-        String result = documentService.submitDocument(mockFile);
+        String result = documentService.submitDocument(mockFile, mockUsername);
 
         assertNotNull(result);
         assertFalse(result.contains("this document has already been submitted before"));
+        verify(userRepository).findByUsername(mockUsername);
         verify(documentRepository).save(any(Document.class));
     }
 
     @Test
     void submitDocumentExistingDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         when(documentRepository.findByHashString(any())).thenReturn(Optional.of(new Document()));
-
-        String result = documentService.submitDocument(mockFile);
+        String result = documentService.submitDocument(mockFile, mockUsername);
 
         assertNotNull(result);
         assertTrue(result.contains("has already been submitted before"));
+        verify(userRepository, never()).findByUsername(mockUsername);
         verify(documentRepository, never()).save(any(Document.class));
     }
 
     @Test
     void submitDocumentNullFile() {
-        assertThrows(IllegalArgumentException.class, () -> documentService.submitDocument(null));
+        assertThrows(IllegalArgumentException.class, () -> documentService.submitDocument(null, mockUsername));
     }
 
     @Test
     void submitDocumentEmptyFile() {
         MockMultipartFile emptyFile = new MockMultipartFile("file", "empty.txt", "text/plain", new byte[0]);
-        assertThrows(IllegalArgumentException.class, () -> documentService.submitDocument(emptyFile));
+        assertThrows(IllegalArgumentException.class, () -> documentService.submitDocument(emptyFile, mockUsername));
     }
 
     @Test
@@ -76,7 +88,7 @@ class DocumentServiceTest {
         Document mockDocument = new Document();
         when(documentRepository.findByHashString(any())).thenReturn(Optional.of(mockDocument));
 
-        Document result = documentService.verifyDocument(mockFile);
+        Document result = documentService.verifyDocument(mockFile, mockUsername);
 
         assertNotNull(result);
         assertEquals(mockDocument, result);
@@ -86,18 +98,18 @@ class DocumentServiceTest {
     void verifyDocumentNonExistentDocument() {
         when(documentRepository.findByHashString(any())).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> documentService.verifyDocument(mockFile));
+        assertThrows(IllegalStateException.class, () -> documentService.verifyDocument(mockFile, mockUsername));
     }
 
     @Test
     void verifyDocumentNullFile() {
-        assertThrows(IllegalArgumentException.class, () -> documentService.verifyDocument(null));
+        assertThrows(IllegalArgumentException.class, () -> documentService.verifyDocument(null, mockUsername));
     }
 
     @Test
     void verifyDocumentEmptyFile() {
         MockMultipartFile emptyFile = new MockMultipartFile("file", "empty.txt", "text/plain", new byte[0]);
-        assertThrows(IllegalArgumentException.class, () -> documentService.verifyDocument(emptyFile));
+        assertThrows(IllegalArgumentException.class, () -> documentService.verifyDocument(emptyFile, mockUsername));
     }
 
     @Test

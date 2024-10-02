@@ -25,7 +25,7 @@ class JwtUtilTest {
     void generateToken_ShouldIncludeOrganizationAndAdminInfo() {
         String token = jwtUtil.generateToken(testUser);
 
-        assertTrue(jwtUtil.validateToken(token, testUser.getUsername()));
+        assertTrue(jwtUtil.validateToken(token));
         assertEquals(testUser.getUsername(), jwtUtil.extractUsername(token));
         assertEquals(testUser.getOrganization().getOrganizationId(), jwtUtil.extractOrganizationId(token));
         assertTrue(jwtUtil.extractIsOrganizationAdmin(token));

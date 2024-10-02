@@ -51,6 +51,9 @@ class AuthControllerTest {
     private User mockUser;
     private ObjectMapper objectMapper;
     private Organization organization;
+    private User mockAdmin;
+    private static final String VALID_TOKEN = "Bearer validToken";
+    private static final String TEST_USERNAME = "testUser";
 
     @BeforeEach
     void setUp() {
@@ -59,9 +62,13 @@ class AuthControllerTest {
         mockUser.setName("test User real name");
         mockUser.setEmail("test.user@gmail.com");
         mockUser.setPosition("Tester");
-        mockUser.setUsername("test User");
+        mockUser.setUsername(TEST_USERNAME);
         mockUser.setPassword("testPassword");
         organization = new Organization("Momofin");
+
+        mockAdmin = new User();
+        mockAdmin.setUsername(TEST_USERNAME);
+        mockAdmin.setOrganization(organization);
     }
 
     @Test
@@ -128,6 +135,9 @@ class AuthControllerTest {
     void testRegisterUserEmailAlreadyInUse() throws Exception {
         String usedEmail = "duplicated.address@gmail.com";
         when(organizationRepository.findOrganizationByName("Momofin")).thenReturn(Optional.of(organization));
+        when(jwtUtil.validateToken("validToken")).thenReturn(true);
+        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
+        when(userService.fetchUserByUsername(TEST_USERNAME)).thenReturn(mockAdmin);
         when(userService.registerMember(eq(organization), anyString(), anyString(), eq(usedEmail), anyString(), anyString()))
                 .thenThrow(new UserAlreadyExistsException("The email "+usedEmail+" is already in use"));
 
@@ -140,7 +150,8 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registerRequest)))
+                        .content(objectMapper.writeValueAsString(registerRequest))
+                        .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorMessage").value("The email "+usedEmail+" is already in use"));
     }
@@ -149,6 +160,9 @@ class AuthControllerTest {
     void testRegisterUserUsernameAlreadyInUse() throws Exception {
         String usedUsername = "Doppelganger";
         when(organizationRepository.findOrganizationByName("Momofin")).thenReturn(Optional.of(organization));
+        when(jwtUtil.validateToken("validToken")).thenReturn(true);
+        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
+        when(userService.fetchUserByUsername(TEST_USERNAME)).thenReturn(mockAdmin);
         when(userService.registerMember(eq(organization), eq(usedUsername), anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new UserAlreadyExistsException("The username "+usedUsername+" is already in use"));
 
@@ -161,7 +175,8 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(registerRequest)))
+                        .content(objectMapper.writeValueAsString(registerRequest))
+                        .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorMessage").value("The username "+usedUsername+" is already in use"));
     }
