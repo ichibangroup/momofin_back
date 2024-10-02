@@ -15,11 +15,8 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
-    private String secret;
-
-    @Value("${jwt.expiration}")
-    private Long expiration;
+    private static final String SECRET_KEY = System.getenv("SECRET_KEY");
+    private static final long EXPIRATION_TIME = 1000L * 60 * 60;
 
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
@@ -51,8 +48,8 @@ public class JwtUtil {
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
-                .signWith(SignatureAlgorithm.HS256, secret).compact();
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME * 1000))
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY).compact();
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -61,7 +58,7 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser().setSigningKey(secret).parseClaimsJws(token).getBody();
+        return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
     }
 
     private Boolean isTokenExpired(String token) {
