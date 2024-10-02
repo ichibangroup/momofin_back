@@ -42,18 +42,16 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_WithValidToken_ShouldSetAuthentication() throws Exception {
         String token = "valid_token";
         String username = "testuser";
-        Claims mockClaims = mock(Claims.class);
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtUtil.extractUsername(token)).thenReturn(username);
-        when(jwtUtil.validateToken(token)).thenReturn(true);
-        when(jwtUtil.extractAllClaims(token)).thenReturn(mockClaims);
-        when(mockClaims.get("roles")).thenReturn(Arrays.asList("ROLE_USER"));
+        when(jwtUtil.validateToken(eq(token), eq(username))).thenReturn(true);
+        when(jwtUtil.extractAllClaims(token)).thenReturn(mock(Claims.class));
 
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
         verify(jwtUtil).extractUsername(token);
-        verify(jwtUtil).validateToken(token);
+        verify(jwtUtil).validateToken(token, username);
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
     }

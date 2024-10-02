@@ -50,7 +50,6 @@ class AuthControllerTest {
     @MockBean
     private OrganizationRepository organizationRepository;
 
-
     private User mockUser;
     private ObjectMapper objectMapper;
     private Organization organization;
@@ -76,27 +75,24 @@ class AuthControllerTest {
 
     @Test
     public void testAuthenticateUserSuccess() throws Exception {
-        // Mock UserService's authenticate method
-        when(userService.authenticate(anyString(), anyString(), anyString())).thenReturn(mockUser);
-
-        // Mock JwtUtil's generateToken method
+        User loginUser = new User(new Organization("My Organization"), "testUser", "Test User Full Name", "test@example.com", "password", "Tester", false);
+        when(userService.authenticate(anyString(), anyString(), anyString())).thenReturn(loginUser);
         when(jwtUtil.generateToken(any(User.class))).thenReturn("mock-jwt-token");
 
-        // Create an authentication request object
-        AuthRequest authRequest = new AuthRequest();
-        authRequest.setOrganizationName("My Organization");
-        authRequest.setUsername("testUser");
-        authRequest.setPassword("testPassword");
-
-        // Perform the POST request to /auth/login
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(authRequest)))
-                .andExpect(status().isOk()) // Assert that the status is 200 OK
-                .andExpect(jsonPath("$.jwt").value("mock-jwt-token")); // Assert that the JWT token is in the response
-      verify(loggingService).log("INFO", "Successful login for user: testUser from organization: My Organization", "/auth/login");
-    }
+                        .content("{\"organizationName\":\"My Organization\",\"username\":\"testUser\",\"password\":\"testPassword\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jwt").value("mock-jwt-token"))
+                .andExpect(jsonPath("$.user.username").value("testUser"))
+                .andExpect(jsonPath("$.user.name").value("Test User Full Name"))
+                .andExpect(jsonPath("$.user.email").value("test@example.com"))
+                .andExpect(jsonPath("$.user.position").value("Tester"));
 
+        verify(loggingService).log(eq("INFO"),
+                eq("Successful login for user: testUser from organization: My Organization"),
+                eq("/auth/login"));
+    }
     @Test
     void testAuthenticateUserInvalidCredentials() throws Exception {
         String wrongPassword = "wrongPassword";

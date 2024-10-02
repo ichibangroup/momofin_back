@@ -32,15 +32,12 @@ public class DocumentVerificationController {
     @PostMapping("/submit")
     public ResponseEntity<Response> submitDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) {
         try {
-            String username = authenticateAndGetUsername(token);
+            String username = getUsername(token, jwtUtil);
             String result = documentService.submitDocument(file, username);
-
             DocumentSubmissionSuccessResponse successResponse = new DocumentSubmissionSuccessResponse(result);
-
             return ResponseEntity.ok(successResponse);
         } catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
             ErrorResponse errorResponse = new ErrorResponse("Error processing document: " + e.getMessage());
-
             return ResponseEntity.badRequest().body(errorResponse);
         } catch (IllegalArgumentException e) {
             ErrorResponse errorResponse = new ErrorResponse("Authentication failed: " + e.getMessage());
@@ -51,15 +48,12 @@ public class DocumentVerificationController {
     @PostMapping("/verify")
     public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) {
         try {
-            String username = authenticateAndGetUsername(token);
+            String username = getUsername(token, jwtUtil);
             Document document = documentService.verifyDocument(file, username);
-
             DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(document);
-
             return ResponseEntity.ok(successResponse);
         } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
             ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
-
             return ResponseEntity.badRequest().body(errorResponse);
         } catch (IllegalArgumentException e) {
             ErrorResponse errorResponse = new ErrorResponse("Authentication failed: " + e.getMessage());
@@ -67,11 +61,7 @@ public class DocumentVerificationController {
         }
     }
 
-    private String authenticateAndGetUsername(String token) {
-        return getUsername(token, jwtUtil);
-    }
-
-    static String getUsername(String token, JwtUtil jwtUtil) {
+    public static String getUsername(String token, JwtUtil jwtUtil) {
         if (token == null || !token.startsWith("Bearer ")) {
             throw new IllegalArgumentException("Invalid token format");
         }
