@@ -52,8 +52,6 @@ public class AuthController {
 
             AuthResponseSuccess response = new AuthResponseSuccess(authenticatedUser, jwt);
 
-            logger.info("Response: {}", response);  // Add this line
-
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             loggingService.log("ERROR", "Failed login attempt for user: " + authRequest.getUsername() +
