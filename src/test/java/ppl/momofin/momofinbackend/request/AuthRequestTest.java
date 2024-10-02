@@ -1,13 +1,12 @@
 package ppl.momofin.momofinbackend.request;
 
 import org.junit.jupiter.api.Test;
-import ppl.momofin.momofinbackend.request.AuthRequest;
 
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AuthRequestTest {
+class AuthRequestTest {
     @Test
     void testEmptyConstructor() {
         AuthRequest authRequest = new AuthRequest();

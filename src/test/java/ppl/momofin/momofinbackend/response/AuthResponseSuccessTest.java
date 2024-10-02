@@ -5,7 +5,7 @@ import ppl.momofin.momofinbackend.model.User;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AuthResponseSuccessTest {
+class AuthResponseSuccessTest {
     @Test
     void testAuthResponseSuccessConstructorEmpty() {
         AuthResponseSuccess responseSuccess = new AuthResponseSuccess();
