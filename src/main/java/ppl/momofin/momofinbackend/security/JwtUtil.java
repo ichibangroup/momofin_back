@@ -1,4 +1,4 @@
-package ppl.momofin.momofinbackend.utility;
+package ppl.momofin.momofinbackend.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
