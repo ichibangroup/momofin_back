@@ -19,10 +19,13 @@ public class Log {
     private LocalDateTime timestamp;
     private String level;
     private String message;
-    public Log(LocalDateTime timestamp, String level, String message) {
+    private String log_name;
+
+    public Log(LocalDateTime timestamp, String level, String message, String log_name) {
         this.timestamp = timestamp;
         this.level = level;
         this.message = message;
+        this.log_name = log_name;
     }
 
     public Log() {
