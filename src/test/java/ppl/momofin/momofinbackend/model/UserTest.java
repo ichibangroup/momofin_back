@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
 
 
 class UserTest {
@@ -169,6 +170,30 @@ class UserTest {
 
         user.setMomofinAdmin(true);
         assertTrue(user.isMomofinAdmin());
+    }
+
+    @Test
+    void testGetRoles() {
+        User regularUser = new User();
+        regularUser.setOrganizationAdmin(false);
+        regularUser.setMomofinAdmin(false);
+
+        User orgAdmin = new User();
+        orgAdmin.setOrganizationAdmin(true);
+        orgAdmin.setMomofinAdmin(false);
+
+        User momofinAdmin = new User();
+        momofinAdmin.setOrganizationAdmin(false);
+        momofinAdmin.setMomofinAdmin(true);
+
+        User superAdmin = new User();
+        superAdmin.setOrganizationAdmin(true);
+        superAdmin.setMomofinAdmin(true);
+
+        assertEquals(Set.of("ROLE_USER"), regularUser.getRoles());
+        assertEquals(Set.of("ROLE_USER", "ROLE_ORG_ADMIN"), orgAdmin.getRoles());
+        assertEquals(Set.of("ROLE_USER", "ROLE_MOMOFIN_ADMIN"), momofinAdmin.getRoles());
+        assertEquals(Set.of("ROLE_USER", "ROLE_ORG_ADMIN", "ROLE_MOMOFIN_ADMIN"), superAdmin.getRoles());
     }
 }
 

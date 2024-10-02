@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ErrorResponseTest {
     @Test
-    void testErrorResponseFailureConstructorEmpty() {
+    void testErrorResponseConstructorEmpty() {
         ErrorResponse responseFailure = new ErrorResponse();
 
         assertNotNull(responseFailure);
@@ -14,7 +14,7 @@ class ErrorResponseTest {
     }
 
     @Test
-    void testErrorResponseFailureConstructor() {
+    void testErrorResponseConstructor() {
         String errorMessage = "Invalid credentials";
         ErrorResponse responseFailure = new ErrorResponse(errorMessage);
 
