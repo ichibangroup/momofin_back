@@ -14,8 +14,6 @@ import ppl.momofin.momofinbackend.config.SecurityConfig;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.service.DocumentService;
 import java.security.NoSuchAlgorithmException;
-import org.springframework.security.oauth2.jwt.Jwt.Builder;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 
 import java.io.IOException;
 
