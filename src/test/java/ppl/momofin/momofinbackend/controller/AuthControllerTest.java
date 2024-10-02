@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.controller;
 
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,7 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.slf4j.Logger;
+import ppl.momofin.momofinbackend.service.LoggingService;
 import ppl.momofin.momofinbackend.config.SecurityConfig;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
@@ -43,10 +44,11 @@ class AuthControllerTest {
     private JwtUtil jwtUtil;
 
     @MockBean
-    private OrganizationRepository organizationRepository;
+    private LoggingService loggingService;
 
     @MockBean
-    private Logger logger;
+    private OrganizationRepository organizationRepository;
+
 
     private User mockUser;
     private ObjectMapper objectMapper;
@@ -91,6 +93,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isOk()) // Assert that the status is 200 OK
                 .andExpect(jsonPath("$.jwt").value("mock-jwt-token")); // Assert that the JWT token is in the response
+        verify(loggingService).log("INFO", "Successful login for user: testUser from organization: My Organization", "/auth/login");
     }
 
     @Test
@@ -103,12 +106,13 @@ class AuthControllerTest {
         authRequest.setOrganizationName("My Organization");
         authRequest.setUsername("Hobo Steve Invalid");
         authRequest.setPassword(wrongPassword);
-
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorMessage").value("Your email or password is incorrect"));
+        verify(loggingService).log("ERROR", "Failed login attempt for user: Hobo Steve Invalid from organization: My Organization", "/auth/login");
+
     }
 
     @Test
@@ -119,14 +123,15 @@ class AuthControllerTest {
 
         AuthRequest authRequest = new AuthRequest();
         authRequest.setOrganizationName(invalidOrganizationName);
-        authRequest.setUsername("Hobo Steve Invalid");
-        authRequest.setPassword("wrongPassword");
+        authRequest.setUsername("test User");
+        authRequest.setPassword("testPassword");
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorMessage").value("The organization "+ invalidOrganizationName + " is not registered to our database"));
+        verify(loggingService).log("ERROR", "Failed login attempt for user: test User from organization: Not Organization", "/auth/login");
     }
 
 
@@ -180,4 +185,5 @@ class AuthControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorMessage").value("The username "+usedUsername+" is already in use"));
     }
+
 }
