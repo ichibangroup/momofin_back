@@ -30,8 +30,9 @@ public class LogServiceTest {
     void testLogMethod() {
         String level = "ERROR";
         String message = "Failed Login Attempt";
+        String log_name = "/auth/login";
 
-        loggingService.log(level, message);
+        loggingService.log(level, message, log_name);
 
         ArgumentCaptor<Log> logCaptor = ArgumentCaptor.forClass(Log.class);
         verify(logRepository).save(logCaptor.capture());
@@ -39,6 +40,7 @@ public class LogServiceTest {
         Log savedlog = logCaptor.getValue();
         assertEquals(level, savedlog.getLevel(), "Log Level Should Match");
         assertEquals(message, savedlog.getMessage(), "Log Message Should Match");
+        assertEquals(log_name, savedlog.getLog_name(), "Log Name Should Match");
         assertNotNull(savedlog.getTimestamp(), "Timestamp Should Not Be Null");
         assertTrue(savedlog.getTimestamp().isBefore(LocalDateTime.now()) ||
                 savedlog.getTimestamp().isEqual(LocalDateTime.now()), "Timestamp Should be Current");

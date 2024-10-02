@@ -86,7 +86,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isOk()) // Assert that the status is 200 OK
                 .andExpect(jsonPath("$.jwt").value("mock-jwt-token")); // Assert that the JWT token is in the response
-        verify(loggingService).log("INFO", "Successful login for user: test User from organization: My Organization");
+        verify(loggingService).log("INFO", "Successful login for user: test User from organization: My Organization", "/auth/login");
     }
 
     @Test
@@ -104,7 +104,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorMessage").value("Your email or password is incorrect"));
-        verify(loggingService).log("ERROR", "Failed login attempt for user: Hobo Steve Invalid from organization: My Organization");
+        verify(loggingService).log("ERROR", "Failed login attempt for user: Hobo Steve Invalid from organization: My Organization", "/auth/login");
 
     }
 
@@ -124,7 +124,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorMessage").value("The organization "+ invalidOrganizationName + " is not registered to our database"));
-        verify(loggingService).log("ERROR", "Failed login attempt for user: test User from organization: Not Organization");
+        verify(loggingService).log("ERROR", "Failed login attempt for user: test User from organization: Not Organization", "/auth/login");
     }
 
 
