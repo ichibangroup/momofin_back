@@ -45,7 +45,6 @@ class DocumentVerificationControllerTest {
     void setUp() {
         when(jwtUtil.validateToken(eq("validToken"), eq(TEST_USERNAME))).thenReturn(true);
         when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
-
         Claims claims = new DefaultClaims();
         claims.put("roles", Collections.singletonList("ROLE_USER"));
         when(jwtUtil.extractAllClaims("validToken")).thenReturn(claims);
@@ -74,10 +73,11 @@ class DocumentVerificationControllerTest {
     void submitDocument_Unauthorized() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
 
+        when(jwtUtil.validateToken("validToken")).thenReturn(false);
         mockMvc.perform(multipart("/doc/submit")
                         .file(file)
                         .header("Authorization", "Bearer invalidToken"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
 
         verifyNoInteractions(documentService);
     }

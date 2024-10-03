@@ -39,9 +39,6 @@ public class DocumentVerificationController {
         } catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
             ErrorResponse errorResponse = new ErrorResponse("Error processing document: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
-        } catch (IllegalArgumentException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Authentication failed: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
     }
 
@@ -55,20 +52,11 @@ public class DocumentVerificationController {
         } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
             ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
-        } catch (IllegalArgumentException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Authentication failed: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
     }
 
     public static String getUsername(String token, JwtUtil jwtUtil) {
-        if (token == null || !token.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Invalid token format");
-        }
         String jwtToken = token.substring(7);
-        if (!jwtUtil.validateToken(jwtToken)) {
-            throw new IllegalArgumentException("Invalid token");
-        }
         return jwtUtil.extractUsername(jwtToken);
     }
 }
