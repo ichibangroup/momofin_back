@@ -14,7 +14,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import ppl.momofin.momofinbackend.security.JwtUtil;
 
 import java.util.Collections;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -52,7 +51,7 @@ class JwtAuthenticationFilterTest {
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtUtil.extractUsername(token)).thenReturn(username);
-        when(jwtUtil.validateToken(eq(token), eq(username))).thenReturn(true);
+        when(jwtUtil.validateToken(token, username)).thenReturn(true);
         when(jwtUtil.extractAllClaims(token)).thenReturn(claims);
         when(claims.get("roles")).thenReturn(Collections.singletonList("ROLE_USER"));
 
@@ -94,7 +93,7 @@ class JwtAuthenticationFilterTest {
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtUtil.extractUsername(token)).thenReturn(username);
-        when(jwtUtil.validateToken(eq(token), eq(username))).thenReturn(false);
+        when(jwtUtil.validateToken(token, username)).thenReturn(false);
 
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
 
@@ -109,7 +108,7 @@ class JwtAuthenticationFilterTest {
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtUtil.extractUsername(token)).thenReturn(username);
-        when(jwtUtil.validateToken(eq(token), eq(username))).thenReturn(true);
+        when(jwtUtil.validateToken(token, username)).thenReturn(true);
         when(jwtUtil.extractAllClaims(token)).thenReturn(claims);
         when(claims.get("roles")).thenReturn(null);
 
@@ -129,7 +128,7 @@ class JwtAuthenticationFilterTest {
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtUtil.extractUsername(token)).thenReturn(username);
-        when(jwtUtil.validateToken(eq(token), eq(username))).thenReturn(true);
+        when(jwtUtil.validateToken(token, username)).thenReturn(true);
         when(jwtUtil.extractAllClaims(token)).thenReturn(claims);
         when(claims.get("roles")).thenReturn("NOT_A_LIST");
 
@@ -148,7 +147,7 @@ class JwtAuthenticationFilterTest {
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtUtil.extractUsername(token)).thenReturn(username);
-        when(jwtUtil.validateToken(eq(token), eq(username))).thenReturn(true);
+        when(jwtUtil.validateToken(token, username)).thenReturn(true);
         when(jwtUtil.extractAllClaims(token)).thenReturn(claims);
         when(claims.get("roles")).thenReturn(Collections.emptyList());
 

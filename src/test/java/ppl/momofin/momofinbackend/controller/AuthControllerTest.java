@@ -106,9 +106,9 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.user.email").value("test@example.com"))
                 .andExpect(jsonPath("$.user.position").value("Tester"));
 
-        verify(loggingService).log(eq("INFO"),
-                eq("Successful login for user: testUser from organization: My Organization"),
-                eq("/auth/login"));
+        verify(loggingService).log("INFO",
+                "Successful login for user: testUser from organization: My Organization",
+                "/auth/login");
     }
     @Test
     void testAuthenticateUserInvalidCredentials() throws Exception {
