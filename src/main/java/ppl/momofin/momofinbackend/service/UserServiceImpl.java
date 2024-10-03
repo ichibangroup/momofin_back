@@ -5,6 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
 import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
+import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +63,7 @@ public class UserServiceImpl implements UserService{
 
             if (email.equals(existingUser.getEmail())) {
                 throw new UserAlreadyExistsException("The email "+email+" is already in use");
-            } else if (username.equals(existingUser.getUsername())) {
+            } else {
                 throw new UserAlreadyExistsException("The username "+username+" is already in use");
             }
         }
@@ -80,5 +81,35 @@ public class UserServiceImpl implements UserService{
     @Override
     public List<User> fetchAllUsers() {
         return userRepository.findAll();
+    }
+    @Override
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+    }
+
+    @Override
+    public User updateUser(Long userId, User updatedUser) {
+        User existingUser = getUserById(userId);
+
+        if (updatedUser.getEmail() != null) {
+            existingUser.setEmail(updatedUser.getEmail());
+        }
+        if (updatedUser.getUsername() != null) {
+            existingUser.setUsername(updatedUser.getUsername());
+        }
+        if (updatedUser.getPassword() != null) {
+            PasswordValidator.validatePassword(updatedUser.getPassword());
+            String encodedPassword = passwordEncoder.encode(updatedUser.getPassword());
+            existingUser.setPassword(encodedPassword);
+        }
+
+        return userRepository.save(existingUser);
+    }
+
+    @Override
+    public User fetchUserByUsername(String username) {
+        Optional<User> user = userRepository.findByUsername(username);
+        return user.orElse(null);
     }
 }

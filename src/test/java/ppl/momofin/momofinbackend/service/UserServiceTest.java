@@ -1,10 +1,7 @@
 package ppl.momofin.momofinbackend.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
-import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
-import ppl.momofin.momofinbackend.error.InvalidPasswordException;
-import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
-import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
+import ppl.momofin.momofinbackend.error.*;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
+import ppl.momofin.momofinbackend.utility.Roles;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -24,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceTest {
+class UserServiceTest {
     @Mock
     private OrganizationRepository organizationRepository;
 
@@ -50,7 +48,7 @@ public class UserServiceTest {
         momofin = new Organization("Momofin");
         User user1 = new User(momofin, "Momofin Financial Samuel","Samuel", "samuel@gmail.com", "encodedMy#Money9078", "Finance Manager");
         User user2 = new User(momofin, "Momofin CEO Darrel", "Darrel Hoei", "darellhoei@gmail.com", "encodedHisPassword#6768", "Co-Founder", true);
-        User user3 = new User(momofin, "Momofin Admin Alex", "Alex", "alex@outlook.com", "encodedAlex&Password0959", "Admin", true, true);
+        User user3 = new User(momofin, "Momofin Admin Alex", "Alex", "alex@outlook.com", "encodedAlex&Password0959", "Admin", new Roles(true,true));
 
         momofinUsers = new ArrayList<User>();
         momofinUsers.add(user1);
@@ -117,8 +115,10 @@ public class UserServiceTest {
         when(organizationRepository.findOrganizationByName(organizationName)).thenReturn(Optional.empty());
 
 
-        assertThrows(OrganizationNotFoundException.class,
+        OrganizationNotFoundException error = assertThrows(OrganizationNotFoundException.class,
                 () -> userService.authenticate(organizationName, "email", "password"));
+
+        assertEquals("The organization "+ organizationName + " is not registered to our database", error.getMessage());
 
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
@@ -128,7 +128,6 @@ public class UserServiceTest {
 
     @Test
     void testAuthenticateIncorrectUsername() {
-        User userToAuthenticate = otherOrganizationUsers.getFirst();
         String username = "Wrong Username";
         String password = "123456";
         String organizationName = otherOrganization.getName();
@@ -139,8 +138,10 @@ public class UserServiceTest {
                 username
         )).thenReturn(Optional.empty());
 
-        assertThrows(InvalidCredentialsException.class,
+        InvalidCredentialsException error = assertThrows(InvalidCredentialsException.class,
                 () -> userService.authenticate(organizationName, username, password));
+
+        assertEquals("Your email or password is incorrect", error.getMessage());
 
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
@@ -165,8 +166,10 @@ public class UserServiceTest {
 
         when(passwordEncoder.matches(password, encryptedPassword)).thenReturn(false);
 
-        assertThrows(InvalidCredentialsException.class,
+        InvalidCredentialsException error = assertThrows(InvalidCredentialsException.class,
                 () -> userService.authenticate(organizationName, username, password));
+
+        assertEquals("Your email or password is incorrect", error.getMessage());
 
         verify(organizationRepository, times(1))
                 .findOrganizationByName(organizationName);
@@ -288,5 +291,170 @@ public class UserServiceTest {
 
         assertEquals(momofinUsers, fetchedUsers);
         verify(userRepository, times(1)).findAll();
+    }
+
+
+    @Test
+    void getUserById_ReturnsUser_WhenUserExists() {
+        Long userId = 1L;
+        User mockUser = new User();
+        mockUser.setUserId(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
+
+        User result = userService.getUserById(userId);
+
+        assertEquals(mockUser, result);
+    }
+
+    @Test
+    void getUserById_ThrowsException_WhenUserDoesNotExist() {
+        Long userId = 1L;
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> userService.getUserById(userId));
+    }
+
+    @Test
+    void updateUser_ReturnsUpdatedUser_WhenUpdateIsSuccessful() {
+        Long userId = 1L;
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("old@example.com");
+
+        User updatedUser = new User();
+        updatedUser.setEmail("new@example.com");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser);
+
+        assertEquals("new@example.com", result.getEmail());
+    }
+    @Test
+    void updateUser_UpdatesAllFields_WhenAllFieldsProvided() {
+        Long userId = 1L;
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("old@example.com");
+        existingUser.setUsername("oldUsername");
+        existingUser.setPassword("oldPassword");
+
+        User updatedUser = new User();
+        updatedUser.setEmail("new@example.com");
+        updatedUser.setUsername("newUsername");
+        updatedUser.setPassword("newPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(passwordEncoder.encode("newPassword")).thenReturn("encodedNewPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser);
+
+        assertEquals("new@example.com", result.getEmail());
+        assertEquals("newUsername", result.getUsername());
+        assertEquals("encodedNewPassword", result.getPassword());
+        verify(passwordEncoder).encode("newPassword");
+    }
+
+    @Test
+    void updateUser_UpdatesOnlyProvidedFields_WhenSomeFieldsAreNull() {
+        Long userId = 1L;
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("old@example.com");
+        existingUser.setUsername("oldUsername");
+        existingUser.setPassword("oldPassword");
+
+        User updatedUser = new User();
+        updatedUser.setEmail("new@example.com");
+        // username and password are not provided (null)
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser);
+
+        assertEquals("new@example.com", result.getEmail());
+        assertEquals("oldUsername", result.getUsername());
+        assertEquals("oldPassword", result.getPassword());
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+
+    @Test
+    void updateUser_ThrowsUserNotFoundException_WhenUserDoesNotExist() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        updatedUser.setEmail("new@example.com");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> userService.updateUser(userId, updatedUser));
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_ValidatesPassword_WhenNewPasswordProvided() {
+        Long userId = 1L;
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setPassword("oldPassword");
+
+        User updatedUser = new User();
+        updatedUser.setPassword("invalidPw"); // Assuming this is an invalid password
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+
+        assertThrows(InvalidPasswordException.class, () -> userService.updateUser(userId, updatedUser));
+        verify(userRepository, never()).save(any(User.class));
+        verify(passwordEncoder, never()).encode(anyString());
+    }
+    @Test
+    void registerMember_ThrowsUserAlreadyExistsException_WhenUsernameAlreadyExists() {
+        Organization organization = new Organization("TestOrg");
+        String username = "existingUser";
+        String name = "Test User";
+        String email = "test@example.com";
+        String password = "validPassword123";
+        String position = "Tester";
+
+        User existingUser = new User();
+        existingUser.setUsername(username);
+        existingUser.setEmail("different@example.com"); // Different email to trigger the username check
+
+        List<User> fetchResults = new ArrayList<>();
+        fetchResults.add(existingUser);
+
+        when(userRepository.findUserByUsernameOrEmail(username, email)).thenReturn(fetchResults);
+
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
+                () -> userService.registerMember(organization, username, name, email, password, position));
+
+        assertEquals("The username " + username + " is already in use", exception.getMessage());
+
+        verify(userRepository).findUserByUsernameOrEmail(username, email);
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void fetchUserSuccess() {
+        User user = momofinUsers.getFirst();
+        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+
+        User fetchedUser = userService.fetchUserByUsername(user.getUsername());
+
+        assertEquals(user, fetchedUser);
+        verify(userRepository).findByUsername(user.getUsername());
+    }
+
+    @Test
+    void fetchUserNull () {
+        when(userRepository.findByUsername("invalid user")).thenReturn(Optional.empty());
+
+        User fetchedUser = userService.fetchUserByUsername("invalid user");
+
+        assertNull(fetchedUser);
+        verify(userRepository).findByUsername("invalid user");
     }
 }

@@ -3,10 +3,12 @@ package ppl.momofin.momofinbackend.model;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
+import ppl.momofin.momofinbackend.utility.Roles;
+
+import java.util.Set;
 
 
-
-public class UserTest {
+class UserTest {
     @Test
     void testUserConstructorEmpty() {
         User user = new User();
@@ -78,7 +80,7 @@ public class UserTest {
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(organization, username, name, email, password, position, false, true);
+        User user = new User(organization, username, name, email, password, position, new Roles(false, true));
 
         assertNotNull(user);
         assertNull(user.getUserId());
@@ -169,6 +171,30 @@ public class UserTest {
 
         user.setMomofinAdmin(true);
         assertTrue(user.isMomofinAdmin());
+    }
+
+    @Test
+    void testGetRoles() {
+        User regularUser = new User();
+        regularUser.setOrganizationAdmin(false);
+        regularUser.setMomofinAdmin(false);
+
+        User orgAdmin = new User();
+        orgAdmin.setOrganizationAdmin(true);
+        orgAdmin.setMomofinAdmin(false);
+
+        User momofinAdmin = new User();
+        momofinAdmin.setOrganizationAdmin(false);
+        momofinAdmin.setMomofinAdmin(true);
+
+        User superAdmin = new User();
+        superAdmin.setOrganizationAdmin(true);
+        superAdmin.setMomofinAdmin(true);
+
+        assertEquals(Set.of("ROLE_USER"), regularUser.getRoles());
+        assertEquals(Set.of("ROLE_USER", "ROLE_ORG_ADMIN"), orgAdmin.getRoles());
+        assertEquals(Set.of("ROLE_USER", "ROLE_MOMOFIN_ADMIN"), momofinAdmin.getRoles());
+        assertEquals(Set.of("ROLE_USER", "ROLE_ORG_ADMIN", "ROLE_MOMOFIN_ADMIN"), superAdmin.getRoles());
     }
 }
 

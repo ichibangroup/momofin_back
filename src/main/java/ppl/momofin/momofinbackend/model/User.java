@@ -3,6 +3,11 @@ package ppl.momofin.momofinbackend.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import ppl.momofin.momofinbackend.utility.Roles;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity @Getter @Setter
 @Table(name = "users")
@@ -16,6 +21,7 @@ public class User {
     @Column(name = "email", nullable = false)
     private String email;
 
+    @JsonIgnore
     @Column(name = "password", nullable = false)
     private String password;
 
@@ -53,8 +59,21 @@ public class User {
         this.isOrganizationAdmin = isOrganizationAdmin;
     }
 
-    public User(Organization organization, String username, String name, String email, String password, String position, boolean isOrganizationAdmin, boolean isMomofinAdmin) {
-        this(organization, username, name, email, password, position, isOrganizationAdmin);
-        this.isMomofinAdmin = isMomofinAdmin;
+    public User(Organization organization, String username, String name, String email, String password, String position, Roles roles) {
+        this(organization, username, name, email, password, position);
+        this.isOrganizationAdmin = roles.isOrganizationalAdmin();
+        this.isMomofinAdmin = roles.isMomofinAdmin();
+    }
+
+    public Set<String> getRoles() {
+        Set<String> roles = new HashSet<>();
+        roles.add("ROLE_USER");  // All users have the USER role
+        if (isOrganizationAdmin) {
+            roles.add("ROLE_ORG_ADMIN");
+        }
+        if (isMomofinAdmin) {
+            roles.add("ROLE_MOMOFIN_ADMIN");
+        }
+        return roles;
     }
 }
