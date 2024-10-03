@@ -138,8 +138,11 @@ class DocumentVerificationControllerTest {
 
     @Test
     void findAllDocumentsByOwner_Success() throws Exception {
-        when(jwtUtil.validateToken("validToken")).thenReturn(true);
-        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
+        String strippedToken = "validToken";
+
+        when(jwtUtil.validateToken(strippedToken, TEST_USERNAME)).thenReturn(true);
+        when(jwtUtil.extractUsername(strippedToken)).thenReturn(TEST_USERNAME);
+
         when(userService.fetchUserByUsername(eq(TEST_USERNAME))).thenReturn(TEST_USER);
         TEST_USER.setName(TEST_USERNAME);
         when(documentService.findAllDocumentsByOwner(eq(TEST_USER))).thenReturn(List.of(new Document()));
@@ -150,9 +153,9 @@ class DocumentVerificationControllerTest {
                 .andExpect(jsonPath("$.user.name").value(TEST_USERNAME))
                 .andExpect(jsonPath("$.documents").isArray());
 
-        verify(jwtUtil, times(2)).validateToken("validToken");
-        verify(jwtUtil, times(2)).extractUsername("validToken");
-        verify(documentService).findAllDocumentsByOwner(eq(TEST_USER));
+        verify(jwtUtil, times(1)).validateToken(strippedToken, TEST_USERNAME);
+        verify(jwtUtil, times(2)).extractUsername(strippedToken);  // Expecting 2 invocations (filter + controller)
+        verify(documentService, times(1)).findAllDocumentsByOwner(eq(TEST_USER));
     }
 
     @Test
