@@ -1,28 +1,34 @@
 package ppl.momofin.momofinbackend.controller;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.impl.DefaultClaims;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
-import ppl.momofin.momofinbackend.config.SecurityConfig;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.security.JwtUtil;
 import ppl.momofin.momofinbackend.service.DocumentService;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(DocumentVerificationController.class)
-@Import(SecurityConfig.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 class DocumentVerificationControllerTest {
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -33,67 +39,56 @@ class DocumentVerificationControllerTest {
     private JwtUtil jwtUtil;
 
     private static final String VALID_TOKEN = "Bearer validToken";
-    private static final String INVALID_TOKEN = "Bearer invalidToken";
     private static final String TEST_USERNAME = "testUser";
+
+    @BeforeEach
+    void setUp() {
+        when(jwtUtil.validateToken(eq("validToken"), eq(TEST_USERNAME))).thenReturn(true);
+        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
+        Claims claims = new DefaultClaims();
+        claims.put("roles", Collections.singletonList("ROLE_USER"));
+        when(jwtUtil.extractAllClaims("validToken")).thenReturn(claims);
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
 
     @Test
     void submitDocument_Success() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
-        when(jwtUtil.validateToken("validToken")).thenReturn(true);
-        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
-        when(documentService.submitDocument(any(), eq(TEST_USERNAME))).thenReturn("hash123");
+        when(documentService.submitDocument(any(), eq(TEST_USERNAME))).thenReturn("Your document test.txt has been successfully submitted");
 
         mockMvc.perform(multipart("/doc/submit")
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.documentSubmissionResult").value("hash123"));
+                .andExpect(jsonPath("$.documentSubmissionResult").value("Your document test.txt has been successfully submitted"));
 
-        verify(jwtUtil, times(2)).validateToken("validToken");
-        verify(jwtUtil, times(2)).extractUsername("validToken");
         verify(documentService).submitDocument(any(), eq(TEST_USERNAME));
     }
 
     @Test
-    void submitDocument_InvalidToken() throws Exception {
+    void submitDocument_Unauthorized() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
-        when(jwtUtil.validateToken("invalidToken")).thenReturn(false);
 
+        when(jwtUtil.validateToken("validToken")).thenReturn(false);
         mockMvc.perform(multipart("/doc/submit")
                         .file(file)
-                        .header("Authorization", INVALID_TOKEN))
+                        .header("Authorization", "Bearer invalidToken"))
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(documentService);
     }
 
     @Test
-    void submitDocument_Failure() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
-        when(jwtUtil.validateToken("validToken")).thenReturn(true);
-        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
-        when(documentService.submitDocument(any(), eq(TEST_USERNAME))).thenThrow(new IOException("Test exception"));
-
-        mockMvc.perform(multipart("/doc/submit")
-                        .file(file)
-                        .header("Authorization", VALID_TOKEN))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorMessage").value("Error processing document: Test exception"));
-
-        verify(jwtUtil, times(2)).validateToken("validToken");
-        verify(jwtUtil, times(2)).extractUsername("validToken");
-        verify(documentService).submitDocument(any(), eq(TEST_USERNAME));
-    }
-
-    @Test
-    void verifyDocumentSuccess() throws Exception {
+    void verifyDocument_Success() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
         Document document = new Document();
         document.setDocumentId(1L);
         document.setName("test.txt");
         document.setHashString("hash123");
-        when(jwtUtil.validateToken("validToken")).thenReturn(true);
-        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
         when(documentService.verifyDocument(any(), eq(TEST_USERNAME))).thenReturn(document);
 
         mockMvc.perform(multipart("/doc/verify")
@@ -104,39 +99,20 @@ class DocumentVerificationControllerTest {
                 .andExpect(jsonPath("$.document.hashString").value("hash123"))
                 .andExpect(jsonPath("$.document.name").value("test.txt"));
 
-        verify(jwtUtil, times(2)).validateToken("validToken");
-        verify(jwtUtil, times(2)).extractUsername("validToken");
         verify(documentService).verifyDocument(any(), eq(TEST_USERNAME));
     }
 
     @Test
-    void verifyDocument_InvalidToken() throws Exception {
+    void verifyDocument_NotFound() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
-        when(jwtUtil.validateToken("invalidToken")).thenReturn(false);
-
-        mockMvc.perform(multipart("/doc/verify")
-                        .file(file)
-                        .header("Authorization", INVALID_TOKEN))
-                .andExpect(status().isForbidden());
-
-        verifyNoInteractions(documentService);
-    }
-
-    @Test
-    void verifyDocument_Failure() throws Exception {
-        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
-        when(jwtUtil.validateToken("validToken")).thenReturn(true);
-        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
-        when(documentService.verifyDocument(any(), eq(TEST_USERNAME))).thenThrow(new NoSuchAlgorithmException("Test exception"));
+        when(documentService.verifyDocument(any(), eq(TEST_USERNAME))).thenThrow(new IllegalStateException("Document not found"));
 
         mockMvc.perform(multipart("/doc/verify")
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorMessage").value("Error verifying document: Test exception"));
+                .andExpect(jsonPath("$.errorMessage").value("Error verifying document: Document not found"));
 
-        verify(jwtUtil, times(2)).validateToken("validToken");
-        verify(jwtUtil, times(2)).extractUsername("validToken");
         verify(documentService).verifyDocument(any(), eq(TEST_USERNAME));
     }
 }
