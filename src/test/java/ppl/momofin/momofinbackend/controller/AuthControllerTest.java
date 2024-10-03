@@ -77,7 +77,7 @@ class AuthControllerTest {
         mockAdmin.setUsername(TEST_USERNAME);
         mockAdmin.setOrganization(organization);
 
-        when(jwtUtil.validateToken(eq("validToken"), eq(TEST_USERNAME))).thenReturn(true);
+        when(jwtUtil.validateToken("validToken", TEST_USERNAME)).thenReturn(true);
         when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
         when(jwtUtil.validateToken("validToken")).thenReturn(true);
 

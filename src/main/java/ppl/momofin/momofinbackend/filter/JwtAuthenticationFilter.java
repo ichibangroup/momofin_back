@@ -43,34 +43,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            if (jwtUtil.validateToken(jwt, username)) {
-                Claims claims = jwtUtil.extractAllClaims(jwt);
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null && jwtUtil.validateToken(jwt, username)) {
+            Claims claims = jwtUtil.extractAllClaims(jwt);
 
-                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
-                // Check if 'roles' claim exists
-                if (claims.get("roles") != null) {
-                    Object rolesObj = claims.get("roles");
-                    if (rolesObj instanceof List) {
-                        List<?> rolesList = (List<?>) rolesObj;
-                        authorities = rolesList.stream()
-                                .filter(role -> role instanceof String)
-                                .map(role -> new SimpleGrantedAuthority((String) role))
-                                .collect(Collectors.toList());
-                    } else {
-                    }
-                } else {
-                    // You might want to add a default role here
-                    authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+            // Check if 'roles' claim exists
+            if (claims.get("roles") != null) {
+                Object rolesObj = claims.get("roles");
+                if (rolesObj instanceof List) {
+                    List<?> rolesList = (List<?>) rolesObj;
+                    authorities = rolesList.stream()
+                            .filter(String.class::isInstance)
+                            .map(role -> new SimpleGrantedAuthority((String) role))
+                            .collect(Collectors.toList());
                 }
-
-                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                        username, null, authorities);
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
+            } else {
+                // You might want to add a default role here
+                authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
             }
+
+            UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                    username, null, authorities);
+            authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
         }
 
         chain.doFilter(request, response);

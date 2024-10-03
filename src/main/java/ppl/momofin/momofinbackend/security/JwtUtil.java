@@ -31,7 +31,7 @@ public class JwtUtil {
         return createToken(new HashMap<>(), username);
     }
 
-    public Boolean validateToken(String token, String username) {
+    public boolean validateToken(String token, String username) {
         final String extractedUsername = extractUsername(token);
         return (extractedUsername.equals(username));
     }

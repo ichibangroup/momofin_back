@@ -3,6 +3,8 @@ package ppl.momofin.momofinbackend;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 @SpringBootTest
 class MomofinbackendApplicationTests {
 
@@ -14,7 +16,10 @@ class MomofinbackendApplicationTests {
     @Test
     void testMain() {
         // Test the main method to ensure it doesn't throw any exceptions
-        MomofinbackendApplication.main(new String[]{});
+        assertDoesNotThrow(() -> {
+            // Your code that should not throw an exception
+            MomofinbackendApplication.main(new String[]{});
+        });
     }
 
 }
