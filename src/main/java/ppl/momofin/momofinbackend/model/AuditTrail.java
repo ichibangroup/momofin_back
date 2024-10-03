@@ -3,10 +3,12 @@ package ppl.momofin.momofinbackend.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Getter @Setter
+@Table(name = "audit_trail")
 public class AuditTrail {
 
     @Id
@@ -27,16 +29,18 @@ public class AuditTrail {
     @Column(name = "action", nullable = false)
     private String action;
 
-    @Column(name = "verificationResult", nullable = false)
-    private String verificationResult;
+    @Column(name = "audit_outcome", nullable = false)
+    private String auditOutcome;
 
-    public AuditTrail() {}
+    public AuditTrail() {
+        this.timestamp = LocalDateTime.now();
+    }
 
-    public AuditTrail(Document document, User user, String action, String verificationResult, LocalDateTime timestamp) {
+    public AuditTrail(Document document, User user, String action, String auditOutcome) {
+        this();
         this.document = document;
         this.user = user;
         this.action = action;
-        this.verificationResult = verificationResult;
-        this.timestamp = timestamp;
+        this.auditOutcome = auditOutcome;
     }
 }
