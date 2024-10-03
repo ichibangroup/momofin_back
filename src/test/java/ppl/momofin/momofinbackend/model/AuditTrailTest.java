@@ -1,24 +1,51 @@
 package ppl.momofin.momofinbackend.model;
 
 import org.junit.jupiter.api.Test;
+
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class AuditTrailTest {
+class AuditTrailTest {
 
     @Test
-    public void testAuditTrailCreation() {
-        Document document = new Document("dummy_hash", "dummy_doc");
-        User user = new User(new Organization(), "dummy_username", "dummy_name", "dummy@test.com", "dummy_pass", "dummy_manager", true);
+    void testDefaultConstructor() {
+        AuditTrail auditTrail = new AuditTrail();
 
-        AuditTrail auditTrail = new AuditTrail(document, user, "CREATE", "SUCCESS");
+        assertNotNull(auditTrail.getTimestamp());
+        assertTrue(auditTrail.getTimestamp().isBefore(LocalDateTime.now().plusSeconds(1)));
+    }
 
-        assertNotNull(auditTrail);
-        assertEquals("CREATE", auditTrail.getAction());
-        assertEquals("SUCCESS", auditTrail.getAuditOutcome());
+    @Test
+    void testParameterizedConstructor() {
+        Document document = new Document();
+        User user = new User();
+        String action = "CREATE";
+        String auditOutcome = "SUCCESS";
+
+        AuditTrail auditTrail = new AuditTrail(document, user, action, auditOutcome);
+
         assertEquals(document, auditTrail.getDocument());
         assertEquals(user, auditTrail.getUser());
+        assertEquals(action, auditTrail.getAction());
+        assertEquals(auditOutcome, auditTrail.getAuditOutcome());
         assertNotNull(auditTrail.getTimestamp());
+    }
+
+    @Test
+    void testSettersAndGetters() {
+        AuditTrail auditTrail = new AuditTrail();
+        Document document = new Document();
+        User user = new User();
+
+        auditTrail.setDocument(document);
+        auditTrail.setUser(user);
+        auditTrail.setAction("UPDATE");
+        auditTrail.setAuditOutcome("FAILURE");
+
+        assertEquals(document, auditTrail.getDocument());
+        assertEquals(user, auditTrail.getUser());
+        assertEquals("UPDATE", auditTrail.getAction());
+        assertEquals("FAILURE", auditTrail.getAuditOutcome());
     }
 }
