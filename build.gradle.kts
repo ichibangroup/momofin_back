@@ -1,3 +1,8 @@
+val persistenceVersion = "3.1.0"
+val postgresVersion = "42.6.0"
+val jsonWebTokenVersion = "0.9.1"
+val javaxVersion = "2.3.1"
+
 plugins {
     java
     id("org.springframework.boot") version "3.3.3"
@@ -24,20 +29,29 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("jakarta.persistence:jakarta.persistence-api:$persistenceVersion")
+    implementation("io.jsonwebtoken:jjwt:$jsonWebTokenVersion")
+    implementation("javax.xml.bind:jaxb-api:$javaxVersion")
+
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     annotationProcessor("org.projectlombok:lombok")
+
+    compileOnly("org.projectlombok:lombok")
+
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
+    runtimeOnly("org.postgresql:postgresql:$postgresVersion")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("com.h2database:h2")
+
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    runtimeOnly("org.postgresql:postgresql:42.6.0")
 }
+
 
 tasks.withType<Test> {
     useJUnitPlatform()
