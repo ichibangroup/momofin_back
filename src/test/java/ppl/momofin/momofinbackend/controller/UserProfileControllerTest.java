@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.User;
@@ -35,7 +36,7 @@ class UserProfileControllerTest {
 
         ResponseEntity<User> response = userProfileController.getUserProfile(userId);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(mockUser, response.getBody());
         verify(userService).getUserById(userId);
     }
@@ -47,7 +48,7 @@ class UserProfileControllerTest {
 
         ResponseEntity<User> response = userProfileController.getUserProfile(userId);
 
-        assertEquals(404, response.getStatusCodeValue());
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         verify(userService).getUserById(userId);
     }
 
@@ -63,7 +64,7 @@ class UserProfileControllerTest {
 
         ResponseEntity<User> response = userProfileController.updateUserProfile(userId, updatedUser);
 
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(updatedUser, response.getBody());
         verify(userService).updateUser(eq(userId), any(User.class));
     }
@@ -78,7 +79,7 @@ class UserProfileControllerTest {
 
         ResponseEntity<User> response = userProfileController.updateUserProfile(userId, updatedUser);
 
-        assertEquals(404, response.getStatusCodeValue());
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         verify(userService).updateUser(eq(userId), any(User.class));
     }
 
@@ -92,7 +93,7 @@ class UserProfileControllerTest {
 
         ResponseEntity<User> response = userProfileController.updateUserProfile(userId, updatedUser);
 
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         verify(userService).updateUser(eq(userId), any(User.class));
     }
 }

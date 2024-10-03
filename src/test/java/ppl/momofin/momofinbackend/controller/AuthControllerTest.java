@@ -12,7 +12,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import ppl.momofin.momofinbackend.service.LoggingService;
 import ppl.momofin.momofinbackend.config.SecurityConfig;
 import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
@@ -87,7 +86,7 @@ class AuthControllerTest {
     }
 
     @Test
-    public void testAuthenticateUserSuccess() throws Exception {
+    void testAuthenticateUserSuccess() throws Exception {
         User loginUser = new User(new Organization("My Organization"), "testUser", "Test User Full Name", "test@example.com", "password", "Tester", false);
         when(userService.authenticate(anyString(), anyString(), anyString())).thenReturn(loginUser);
         when(jwtUtil.generateToken(any(User.class))).thenReturn("mock-jwt-token");

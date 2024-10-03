@@ -59,7 +59,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             .collect(Collectors.toList());
                 }
             } else {
-                // You might want to add a default role here
                 authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
             }
 

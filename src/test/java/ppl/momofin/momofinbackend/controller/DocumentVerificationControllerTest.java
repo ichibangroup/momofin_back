@@ -43,7 +43,7 @@ class DocumentVerificationControllerTest {
 
     @BeforeEach
     void setUp() {
-        when(jwtUtil.validateToken(eq("validToken"), eq(TEST_USERNAME))).thenReturn(true);
+        when(jwtUtil.validateToken("validToken", TEST_USERNAME)).thenReturn(true);
         when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
         Claims claims = new DefaultClaims();
         claims.put("roles", Collections.singletonList("ROLE_USER"));

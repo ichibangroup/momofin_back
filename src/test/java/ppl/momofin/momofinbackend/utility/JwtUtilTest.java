@@ -6,7 +6,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.security.JwtUtil;
@@ -17,8 +16,6 @@ import java.util.Date;
 import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 class JwtUtilTest {
 
     private JwtUtil jwtUtil;
