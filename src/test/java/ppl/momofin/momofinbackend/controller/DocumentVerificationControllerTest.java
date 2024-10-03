@@ -16,13 +16,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.security.JwtUtil;
 import ppl.momofin.momofinbackend.service.DocumentService;
+import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.service.UserService;
+import java.util.List;
 
 import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -38,8 +41,13 @@ class DocumentVerificationControllerTest {
     @MockBean
     private JwtUtil jwtUtil;
 
+    @MockBean
+    private UserService userService;
+
     private static final String VALID_TOKEN = "Bearer validToken";
+    private static final String INVALID_TOKEN = "Bearer invalidToken";
     private static final String TEST_USERNAME = "testUser";
+    private static final User TEST_USER = new User();
 
     @BeforeEach
     void setUp() {
@@ -126,5 +134,35 @@ class DocumentVerificationControllerTest {
                 .andExpect(jsonPath("$.errorMessage").value("Error verifying document: Document not found"));
 
         verify(documentService).verifyDocument(any(), eq(TEST_USERNAME));
+    }
+
+    @Test
+    void findAllDocumentsByOwner_Success() throws Exception {
+        when(jwtUtil.validateToken("validToken")).thenReturn(true);
+        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
+        when(userService.fetchUserByUsername(eq(TEST_USERNAME))).thenReturn(TEST_USER);
+        TEST_USER.setName(TEST_USERNAME);
+        when(documentService.findAllDocumentsByOwner(eq(TEST_USER))).thenReturn(List.of(new Document()));
+
+        mockMvc.perform(get("/doc/view")
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.name").value(TEST_USERNAME))
+                .andExpect(jsonPath("$.documents").isArray());
+
+        verify(jwtUtil, times(2)).validateToken("validToken");
+        verify(jwtUtil, times(2)).extractUsername("validToken");
+        verify(documentService).findAllDocumentsByOwner(eq(TEST_USER));
+    }
+
+    @Test
+    void findAllDocumentsByOwner_InvalidToken() throws Exception {
+        when(jwtUtil.validateToken("invalidToken")).thenReturn(false);
+
+        mockMvc.perform(get("/doc/view")
+                        .header("Authorization", INVALID_TOKEN))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(documentService);
     }
 }
