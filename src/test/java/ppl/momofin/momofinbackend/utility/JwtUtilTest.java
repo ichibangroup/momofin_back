@@ -188,41 +188,4 @@ class JwtUtilTest {
             assertTrue(true, "ExpiredJwtException was thrown, which is equivalent to returning false for an expired token");
         }
     }
-    @Test
-    void validateToken_ComprehensiveTest() {
-        // Case 1: Valid token and matching username (true && true)
-        String validToken = jwtUtil.generateToken(testUser);
-        assertTrue(jwtUtil.validateToken(validToken, testUser.getUsername()),
-                "Should return true for valid token and matching username");
-
-        // Case 2: Valid token but non-matching username (false && true)
-        assertFalse(jwtUtil.validateToken(validToken, "wrongUsername"),
-                "Should return false for valid token but non-matching username");
-
-        // Case 3: Expired token and matching username (true && false)
-        String expiredToken = Jwts.builder()
-                .setClaims(new HashMap<>())
-                .setSubject(testUser.getUsername())
-                .setIssuedAt(new Date(System.currentTimeMillis() - 2000))
-                .setExpiration(new Date(System.currentTimeMillis() - 1000))
-                .signWith(SignatureAlgorithm.HS256, secretKey)
-                .compact();
-
-        try {
-            assertFalse(jwtUtil.validateToken(expiredToken, testUser.getUsername()),
-                    "Should return false for expired token, even with matching username");
-        } catch (ExpiredJwtException e) {
-            // If an ExpiredJwtException is thrown, we consider this equivalent to returning false
-            assertTrue(true, "ExpiredJwtException was thrown, which is equivalent to returning false for an expired token");
-        }
-
-        // Case 4: Expired token and non-matching username (false && false)
-        try {
-            assertFalse(jwtUtil.validateToken(expiredToken, "wrongUsername"),
-                    "Should return false for expired token and non-matching username");
-        } catch (ExpiredJwtException e) {
-            // If an ExpiredJwtException is thrown, we consider this equivalent to returning false
-            assertTrue(true, "ExpiredJwtException was thrown, which is equivalent to returning false for an expired token");
-        }
-    }
 }

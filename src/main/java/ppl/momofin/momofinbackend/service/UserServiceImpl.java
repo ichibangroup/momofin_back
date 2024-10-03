@@ -63,7 +63,7 @@ public class UserServiceImpl implements UserService{
 
             if (email.equals(existingUser.getEmail())) {
                 throw new UserAlreadyExistsException("The email "+email+" is already in use");
-            } else if (username.equals(existingUser.getUsername())) {
+            } else {
                 throw new UserAlreadyExistsException("The username "+username+" is already in use");
             }
         }

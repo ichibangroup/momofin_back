@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -221,4 +222,18 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.errorMessage").value("The username "+usedUsername+" is already in use"));
     }
 
+    @Test
+    void testGetAuthenticatedUser() throws Exception {
+        when(userService.fetchUserByUsername(TEST_USERNAME)).thenReturn(mockUser);
+
+        mockMvc.perform(get("/auth/info")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(mockUser.getUsername()))
+                .andExpect(jsonPath("$.name").value(mockUser.getName()))
+                .andExpect(jsonPath("$.email").value(mockUser.getEmail()))
+                .andExpect(jsonPath("$.position").value(mockUser.getPosition()));
+
+    }
 }

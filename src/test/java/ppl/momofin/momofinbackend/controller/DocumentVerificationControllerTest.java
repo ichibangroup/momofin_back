@@ -83,6 +83,18 @@ class DocumentVerificationControllerTest {
     }
 
     @Test
+    void submitDocument_IllegalState() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+
+        when(documentService.submitDocument(file, TEST_USERNAME)).thenThrow(new IllegalStateException("File must not be null or empty"));
+        mockMvc.perform(multipart("/doc/submit")
+                        .file(file)
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Error processing document: File must not be null or empty"));
+    }
+
+    @Test
     void verifyDocument_Success() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
         Document document = new Document();

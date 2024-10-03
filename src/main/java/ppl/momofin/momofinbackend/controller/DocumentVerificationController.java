@@ -36,7 +36,7 @@ public class DocumentVerificationController {
             String result = documentService.submitDocument(file, username);
             DocumentSubmissionSuccessResponse successResponse = new DocumentSubmissionSuccessResponse(result);
             return ResponseEntity.ok(successResponse);
-        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
             ErrorResponse errorResponse = new ErrorResponse("Error processing document: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }

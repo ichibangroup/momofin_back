@@ -435,4 +435,25 @@ class UserServiceTest {
         verify(passwordEncoder, never()).encode(anyString());
         verify(userRepository, never()).save(any(User.class));
     }
+
+    @Test
+    void fetchUserSuccess() {
+        User user = momofinUsers.getFirst();
+        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.of(user));
+
+        User fetchedUser = userService.fetchUserByUsername(user.getUsername());
+
+        assertEquals(user, fetchedUser);
+        verify(userRepository).findByUsername(user.getUsername());
+    }
+
+    @Test
+    void fetchUserNull () {
+        when(userRepository.findByUsername("invalid user")).thenReturn(Optional.empty());
+
+        User fetchedUser = userService.fetchUserByUsername("invalid user");
+
+        assertNull(fetchedUser);
+        verify(userRepository).findByUsername("invalid user");
+    }
 }
