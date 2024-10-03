@@ -60,7 +60,8 @@ public class User {
     }
 
     public User(Organization organization, String username, String name, String email, String password, String position, Roles roles) {
-        this(organization, username, name, email, password, position, roles.isOrganizationalAdmin());
+        this(organization, username, name, email, password, position);
+        this.isOrganizationAdmin = roles.isOrganizationalAdmin();
         this.isMomofinAdmin = roles.isMomofinAdmin();
     }
 
