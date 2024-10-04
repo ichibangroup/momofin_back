@@ -133,4 +133,16 @@ class DocumentServiceTest {
     private String invokeGenerateHash(MockMultipartFile file) {
         return (String) ReflectionTestUtils.invokeMethod(documentService, "generateHash", file);
     }
+
+    @Test
+    void findalldocumentsbyowner() {
+        when(documentRepository.findAllByOwner(any())).thenReturn(null);
+        documentService.findAllDocumentsByOwner(mockUser);
+        verify(documentRepository).findAllByOwner(mockUser);
+    }
+
+    @Test
+    void findalldocumentsbyownerNull() {
+        assertThrows(IllegalArgumentException.class, () -> documentService.findAllDocumentsByOwner(null));
+    }
 }
