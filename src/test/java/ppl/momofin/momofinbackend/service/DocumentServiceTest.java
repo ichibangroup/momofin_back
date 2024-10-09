@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
@@ -31,6 +32,9 @@ class DocumentServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CDNService cdnService;
+
     @InjectMocks
     private DocumentServiceImpl documentService;
 
@@ -44,7 +48,9 @@ class DocumentServiceTest {
         mockFile = new MockMultipartFile("file", "test.txt", "text/plain", "Hello, World!".getBytes());
         mockUsername = "test user";
         mockUser = new User();
+        Organization organization = new Organization("Momofin");
         mockUser.setName(mockUsername);
+        mockUser.setOrganization(organization);
     }
 
     @Test
@@ -63,11 +69,11 @@ class DocumentServiceTest {
 
     @Test
     void submitDocumentExistingDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-        when(documentRepository.findByHashString(any())).thenReturn(Optional.of(new Document()));
+        when(documentRepository.findByHashString(any())).thenReturn(Optional.of(new Document("hashString", "Existing Document")));
         String result = documentService.submitDocument(mockFile, mockUsername);
 
         assertNotNull(result);
-        assertTrue(result.contains("has already been submitted before"));
+        assertTrue(result.contains("has already been stored before"));
         verify(userRepository, never()).findByUsername(mockUsername);
         verify(documentRepository, never()).save(any(Document.class));
     }
@@ -75,6 +81,15 @@ class DocumentServiceTest {
     @Test
     void submitDocumentNullFile() {
         assertThrows(IllegalArgumentException.class, () -> documentService.submitDocument(null, mockUsername));
+        verify(documentRepository, never()).save(any(Document.class));
+    }
+
+    @Test
+    void submitDocumentNoUser() {
+        when(documentRepository.findByHashString(any())).thenReturn(Optional.empty());
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
+        assertThrows(RuntimeException.class, () -> documentService.submitDocument(mockFile, mockUsername));
+        verify(documentRepository, never()).save(any(Document.class));
     }
 
     @Test
