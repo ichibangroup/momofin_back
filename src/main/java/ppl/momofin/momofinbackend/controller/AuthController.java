@@ -14,8 +14,6 @@ import ppl.momofin.momofinbackend.response.RegisterResponseSuccess;
 import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.request.AuthRequest;
 import ppl.momofin.momofinbackend.security.JwtUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static ppl.momofin.momofinbackend.controller.DocumentVerificationController.getUsername;
 
@@ -44,10 +42,12 @@ public class AuthController {
                     authRequest.getUsername(),
                     authRequest.getPassword()
             );
-            String jwt = jwtUtil.generateToken(authenticatedUser.getUsername());
+            String jwt = jwtUtil.generateToken(authenticatedUser);
 
-            loggingService.log("INFO", "Successful login for user: " + authenticatedUser.getUsername() +
-                    " from organization: " + authRequest.getOrganizationName(), logName);
+            loggingService.log("INFO",
+                    String.format("Successful login for user: %s from organization: %s",
+                            authRequest.getUsername(), authRequest.getOrganizationName()),
+                    "/auth/login");
 
             AuthResponseSuccess response = new AuthResponseSuccess(authenticatedUser, jwt);
 

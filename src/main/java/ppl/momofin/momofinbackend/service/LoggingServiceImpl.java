@@ -10,8 +10,12 @@ import java.time.LocalDateTime;
 @Service
 public class LoggingServiceImpl implements LoggingService{
 
+    private final LogRepository logRepository;
+
     @Autowired
-    private LogRepository logRepository;
+    public LoggingServiceImpl(LogRepository logRepository) {
+        this.logRepository = logRepository;
+    }
 
     @Override
     public void log(String level, String message, String logName) {

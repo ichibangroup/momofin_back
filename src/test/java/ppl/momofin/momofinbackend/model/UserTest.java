@@ -3,6 +3,7 @@ package ppl.momofin.momofinbackend.model;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
+import ppl.momofin.momofinbackend.utility.Roles;
 
 import java.util.Set;
 
@@ -79,7 +80,7 @@ class UserTest {
         String password = "testpassword";
         String position = "Manager";
 
-        User user = new User(organization, username, name, email, password, position, false, true);
+        User user = new User(organization, username, name, email, password, position, new Roles(false, true));
 
         assertNotNull(user);
         assertNull(user.getUserId());

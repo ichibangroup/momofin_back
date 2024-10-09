@@ -1,5 +1,7 @@
 package ppl.momofin.momofinbackend.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +13,8 @@ import ppl.momofin.momofinbackend.error.UserNotFoundException;
 @RequestMapping("/api/user")
 public class UserProfileController {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserProfileController.class);
+
     private final UserService userService;
 
     @Autowired
@@ -20,28 +24,28 @@ public class UserProfileController {
 
     @GetMapping("/profile/{userId}")
     public ResponseEntity<User> getUserProfile(@PathVariable Long userId) {
-        System.out.println("GET request received for user ID: " + userId);
+        logger.info("GET request received for user ID: {}", userId);
         try {
             User user = userService.getUserById(userId);
             return ResponseEntity.ok(user);
         } catch (UserNotFoundException e) {
-            System.out.println("User not found: " + userId);
+            logger.warn("User not found: {}", userId);
             return ResponseEntity.notFound().build();
         }
     }
 
     @PostMapping("/profile/{userId}")
     public ResponseEntity<User> updateUserProfile(@PathVariable Long userId, @RequestBody User updatedUser) {
-        System.out.println("POST request received for user ID: " + userId);
-        System.out.println("Updated user data: " + updatedUser);
+        logger.info("POST request received for user ID: {}", userId);
+        logger.debug("Updated user data: {}", updatedUser);
         try {
             User user = userService.updateUser(userId, updatedUser);
             return ResponseEntity.ok(user);
         } catch (UserNotFoundException e) {
-            System.out.println("User not found: " + userId);
+            logger.warn("User not found: {}", userId);
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            System.out.println("Error updating user: " + e.getMessage());
+            logger.error("Error updating user: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }

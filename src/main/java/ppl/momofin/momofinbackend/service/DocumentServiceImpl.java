@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -96,5 +97,13 @@ public class DocumentServiceImpl implements DocumentService {
             result.append(String.format("%02x", b));
         }
         return result.toString();
+    }
+
+    @Override
+    public List<Document> findAllDocumentsByOwner(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User must not be null");
+        }
+        return documentRepository.findAllByOwner(user);
     }
 }

@@ -113,7 +113,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    void generateHashConsistentResults() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    void generateHashConsistentResults() {
         String hash1 = invokeGenerateHash(mockFile);
         String hash2 = invokeGenerateHash(mockFile);
 
@@ -121,7 +121,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    void generateHashDifferentResults() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    void generateHashDifferentResults()  {
         String hash1 = invokeGenerateHash(mockFile);
 
         MockMultipartFile differentFile = new MockMultipartFile("file", "different.txt", "text/plain", "Different content".getBytes());
@@ -132,5 +132,17 @@ class DocumentServiceTest {
 
     private String invokeGenerateHash(MockMultipartFile file) {
         return (String) ReflectionTestUtils.invokeMethod(documentService, "generateHash", file);
+    }
+
+    @Test
+    void findalldocumentsbyowner() {
+        when(documentRepository.findAllByOwner(any())).thenReturn(null);
+        documentService.findAllDocumentsByOwner(mockUser);
+        verify(documentRepository).findAllByOwner(mockUser);
+    }
+
+    @Test
+    void findalldocumentsbyownerNull() {
+        assertThrows(IllegalArgumentException.class, () -> documentService.findAllDocumentsByOwner(null));
     }
 }
