@@ -64,6 +64,7 @@ class AuthControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         mockUser = new User();
+        mockUser.setUserId(1L);
         mockUser.setName("test User real name");
         mockUser.setEmail("test.user@gmail.com");
         mockUser.setPosition("Tester");
@@ -106,9 +107,9 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.user.email").value("test@example.com"))
                 .andExpect(jsonPath("$.user.position").value("Tester"));
 
-        verify(loggingService).log("INFO",
-                "Successful login for user: testUser from organization: My Organization",
-                "/auth/login");
+        verify(loggingService).log(eq(mockUser.getUserId()), eq("INFO"),
+                eq("Successful login for user: testUser from organization: My Organization"),
+                eq("/auth/login"), anyString());
     }
     @Test
     void testAuthenticateUserInvalidCredentials() throws Exception {
@@ -125,8 +126,9 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorMessage").value("Your email or password is incorrect"));
-        verify(loggingService).log("ERROR", "Failed login attempt for user: Hobo Steve Invalid from organization: My Organization", "/auth/login");
-
+        verify(loggingService).log(eq(null), eq("ERROR"),
+                eq("Failed login attempt for user: Hobo Steve Invalid from organization: My Organization"),
+                eq("/auth/login"), anyString());
     }
 
     @Test
@@ -145,7 +147,9 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(authRequest)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorMessage").value("The organization "+ invalidOrganizationName + " is not registered to our database"));
-        verify(loggingService).log("ERROR", "Failed login attempt for user: test User from organization: Not Organization", "/auth/login");
+        verify(loggingService).log(eq(null), eq("ERROR"),
+                eq("Failed login attempt for user: test User from organization: Not Organization"),
+                eq("/auth/login"), anyString());
     }
 
 
@@ -172,8 +176,13 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.user.name").value(mockUser.getName()))
                 .andExpect(jsonPath("$.user.email").value(mockUser.getEmail()))
                 .andExpect(jsonPath("$.user.position").value(mockUser.getPosition()));
+        verify(loggingService).log(eq(null), ("INFO"),
+                contains("User : " + mockUser.getUsername() + " with Name : " + mockUser.getName() +
+                        " using Email: " + mockUser.getEmail() +
+                        " With Position: " + mockUser.getPosition()),
+                eq("/auth/register"),
+                anyString());
     }
-
 
     @Test
     void testRegisterUserEmailAlreadyInUse() throws Exception {
