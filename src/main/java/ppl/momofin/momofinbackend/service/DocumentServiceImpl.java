@@ -32,11 +32,13 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
+    private final CDNService cdnService;
 
     @Autowired
-    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository) {
+    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService) {
         this.userRepository = userRepository;
         this.documentRepository = documentRepository;
+        this.cdnService = cdnService;
     }
 
     @Override
@@ -50,16 +52,25 @@ public class DocumentServiceImpl implements DocumentService {
 
         if (documentFound.isEmpty()) {
             Optional<User> owner = userRepository.findByUsername(username);
+
+            if (owner.isEmpty()) throw new RuntimeException();
+
+            User user = owner.get();
+            String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+            String folderName = user.getOrganization().getName() +"/" + user.getName();
+            cdnService.uploadFile(file.getBytes(), folderName, fileName);
+
             Document document = new Document();
             document.setHashString(hashString);
-            document.setName(StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename())));
-            owner.ifPresent(document::setOwner);
+            document.setName(fileName);
+            document.setOwner(user);
             documentRepository.save(document);
-            logger.info("New document saved: {}", document.getName());
-            return "Your document " + document.getName()+" has been successfully submitted";
+
+            logger.info("New document saved: {}", fileName);
+            return "Your document " + fileName+" has been successfully stored";
         } else {
             logger.info("Document already exists: {}", documentFound.get().getName());
-            return documentFound.get().getName() + " has already been submitted before";
+            return documentFound.get().getName() + " has already been stored before";
         }
     }
 
