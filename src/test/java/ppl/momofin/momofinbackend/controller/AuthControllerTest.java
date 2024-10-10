@@ -89,6 +89,7 @@ class AuthControllerTest {
     @Test
     void testAuthenticateUserSuccess() throws Exception {
         User loginUser = new User(new Organization("My Organization"), "testUser", "Test User Full Name", "test@example.com", "password", "Tester", false);
+        loginUser.setUserId(mockUser.getUserId());
         when(userService.authenticate(anyString(), anyString(), anyString())).thenReturn(loginUser);
         when(jwtUtil.generateToken(any(User.class))).thenReturn("mock-jwt-token");
 
@@ -176,12 +177,11 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.user.name").value(mockUser.getName()))
                 .andExpect(jsonPath("$.user.email").value(mockUser.getEmail()))
                 .andExpect(jsonPath("$.user.position").value(mockUser.getPosition()));
-        verify(loggingService).log(eq(null), ("INFO"),
-                contains("User : " + mockUser.getUsername() + " with Name : " + mockUser.getName() +
+        verify(loggingService).log(eq(mockUser.getUserId()), eq("INFO"),
+                eq("User: " + mockUser.getUsername() + " with Name: " + mockUser.getName() +
                         " using Email: " + mockUser.getEmail() +
-                        " With Position: " + mockUser.getPosition()),
-                eq("/auth/register"),
-                anyString());
+                        " with Position: " + mockUser.getPosition()),
+                eq("/auth/register"), anyString());
     }
 
     @Test
