@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
+import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
 import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.response.ErrorResponse;
@@ -62,6 +63,19 @@ public class MomofinAdminController {
                 request.getAdminPassword(),
                 null
         );
+    }
+    @PutMapping("/organizations/{orgId}")
+    public ResponseEntity<OrganizationResponse> updateOrganization(@PathVariable Long orgId, @RequestBody AddOrganizationRequest request) {
+        try {
+            Organization updatedOrganization = organizationService.updateOrganization(orgId, request.getName(), request.getDescription());
+            return ResponseEntity.ok(OrganizationResponse.fromOrganization(updatedOrganization));
+        } catch (OrganizationNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (InvalidOrganizationException e) {
+            return ResponseEntity.badRequest().body(new OrganizationResponse(null, e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new OrganizationResponse(null, "An unexpected error occurred", null));
+        }
     }
 
 

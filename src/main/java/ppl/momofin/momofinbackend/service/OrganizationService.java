@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ppl.momofin.momofinbackend.dto.UserDTO;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
+import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
@@ -27,7 +28,16 @@ public class OrganizationService {
     }
 
     public Organization updateOrganization(Long orgId, String name, String description) {
-        Organization org = findOrganizationById(orgId);
+        if (orgId == null) {
+            throw new InvalidOrganizationException("Organization ID cannot be null");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            throw new InvalidOrganizationException("Organization name cannot be empty");
+        }
+
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new OrganizationNotFoundException("Organization not found with id: " + orgId));
+
         org.setName(name);
         org.setDescription(description);
         return organizationRepository.save(org);
