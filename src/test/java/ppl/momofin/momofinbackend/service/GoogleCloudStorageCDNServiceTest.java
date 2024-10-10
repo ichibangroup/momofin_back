@@ -47,7 +47,7 @@ class GoogleCloudStorageCDNServiceTest {
         bucketName = System.getenv("GCP_BUCKET_NAME");
         projectId = System.getenv("GCP_PROJECT");
         privateKeyId = System.getenv("GCP_SA_PRIVATE_KEY_ID");
-        privateKeyFilePath = "D:/gcp_sa_private_key.pem";
+        privateKeyFilePath = System.getenv("PKEY_DIRECTORY") + "/gcp_sa_private_key.pem";
         serviceName = System.getenv("GCP_SA_NAME");
         clientId =System.getenv("GCP_SA_CLIENT_ID");
 
@@ -89,7 +89,7 @@ class GoogleCloudStorageCDNServiceTest {
     @Test
     void testConstructorWithInvalidCredentials() {
         assertThrows(RuntimeException.class, () -> {
-            new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, "D:/wrongkey.pem", serviceName, clientId, documentRepository);
+            new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, System.getenv("PKEY_DIRECTORY")+"/wrongkey.pem", serviceName, clientId, documentRepository);
         });
     }
 }

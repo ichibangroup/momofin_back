@@ -35,9 +35,9 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Set up GCP Service Account Key
-        run: echo "${{ secrets.GCP_SA_PRIVATE_KEY }}" > D:/gcp_sa_private_key.pem
+        run: echo "${{ secrets.GCP_SA_PRIVATE_KEY }}" > /home/runner/work/gcp_sa_private_key.pem
       - name: Set up wrong key file for testing
-        run: echo "wrong key" > D:/wrongkey.pem
+        run: echo "wrong key" > /home/runner/work/wrongkey.pem
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,4 +51,5 @@ jobs:
           GCP_SA_PRIVATE_KEY_ID: ${{ secrets.GCP_SA_PRIVATE_KEY_ID }}
           GCP_SA_NAME: ${{ secrets.GCP_SA_NAME }}
           GCP_SA_CLIENT_ID: ${{ secrets.GCP_SA_CLIENT_ID }}
+          PKEY_DIRECTORY: /home/runner/work
         run: ./gradlew build sonar --info
