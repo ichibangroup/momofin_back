@@ -37,15 +37,15 @@ public class MomofinAdminController {
     }
 
     @PostMapping("/organizations")
-    public ResponseEntity<?> addOrganization(@RequestBody AddOrganizationRequest request) {
+    public ResponseEntity<OrganizationResponse> addOrganization(@RequestBody AddOrganizationRequest request) {
         try {
             Organization newOrganization = createOrganization(request);
             createOrganizationAdmin(newOrganization, request);
             return ResponseEntity.ok(OrganizationResponse.fromOrganization(newOrganization));
         } catch (InvalidOrganizationException | UserAlreadyExistsException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().body(new OrganizationResponse(null, e.getMessage(), null));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new ErrorResponse("An unexpected error occurred"));
+            return ResponseEntity.internalServerError().body(new OrganizationResponse(null, "An unexpected error occurred", null));
         }
     }
 

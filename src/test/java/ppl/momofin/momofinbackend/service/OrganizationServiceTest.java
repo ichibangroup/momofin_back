@@ -187,4 +187,20 @@ class OrganizationServiceTest {
         assertEquals("New Org", result.getName());
         assertEquals("New Desc", result.getDescription());
     }
+    @Test
+    void updateOrganization_shouldUpdateAndReturnOrganization() {
+        // Arrange
+        Long orgId = 1L;
+        Organization existingOrg = new Organization("Old Org", "Old Desc");
+        existingOrg.setOrganizationId(orgId);
+        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(existingOrg));
+        when(organizationRepository.save(any(Organization.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        // Act
+        Organization result = organizationService.updateOrganization(orgId, "Updated Org", "Updated Desc");
+
+        // Assert
+        assertEquals("Updated Org", result.getName());
+        assertEquals("Updated Desc", result.getDescription());
+    }
 }

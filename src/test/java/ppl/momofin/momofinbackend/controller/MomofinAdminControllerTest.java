@@ -83,4 +83,23 @@ class MomofinAdminControllerTest {
         assertEquals("New Description", response.getBody().getDescription());
         verify(userService).registerOrganizationAdmin(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull());
     }
+    @Test
+    void updateOrganization_shouldUpdateExistingOrganization() {
+        // Arrange
+        Long orgId = 1L;
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("Updated Org");
+        request.setDescription("Updated Description");
+
+        Organization updatedOrg = new Organization("Updated Org", "Updated Description");
+        when(organizationService.updateOrganization(orgId, "Updated Org", "Updated Description")).thenReturn(updatedOrg);
+
+        // Act
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
+
+        // Assert
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals("Updated Org", response.getBody().getName());
+        assertEquals("Updated Description", response.getBody().getDescription());
+    }
 }
