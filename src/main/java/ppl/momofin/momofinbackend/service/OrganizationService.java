@@ -76,4 +76,8 @@ public class OrganizationService {
     public List<Organization> getAllOrganizations() {
         return organizationRepository.findAll();
     }
+    public Organization createOrganization(String name, String description) {
+        Organization newOrganization = new Organization(name, description);
+        return organizationRepository.save(newOrganization);
+    }
 }

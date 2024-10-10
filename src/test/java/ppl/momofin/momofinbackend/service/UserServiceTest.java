@@ -403,23 +403,22 @@ class UserServiceTest {
     }
 
     @Test
-    void registerMember_shouldCreateAndReturnNewUser() {
+    void registerOrganizationAdmin_shouldCreateAndReturnNewAdminUser() {
         // Arrange
         Organization org = new Organization("Org", "Desc");
-        when(userRepository.findUserByUsernameOrEmail(anyString(), anyString())).thenReturn(Collections.emptyList());
-        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArguments()[0]);
+        User newUser = new User(org, "admin", "Admin Name", null, "encodedPassword", null);
+        newUser.setOrganizationAdmin(true);
+        when(userRepository.save(any(User.class))).thenReturn(newUser);
 
         // Act
-        User result = userService.registerMember(org, "username", "name", "email", "password", "position", true);
+        User result = userService.registerOrganizationAdmin(org, "admin", "Admin Name", null, "password", null);
 
         // Assert
         assertNotNull(result);
-        assertEquals("username", result.getUsername());
-        assertEquals("name", result.getName());
-        assertEquals("email", result.getEmail());
-        assertEquals("encodedPassword", result.getPassword());
-        assertEquals("position", result.getPosition());
+        assertEquals("admin", result.getUsername());
+        assertEquals("Admin Name", result.getName());
+        assertNull(result.getEmail());
+        assertNull(result.getPosition());
         assertTrue(result.isOrganizationAdmin());
     }
 }

@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.ResponseEntity;
 import ppl.momofin.momofinbackend.model.Organization;
+import ppl.momofin.momofinbackend.request.AddOrganizationRequest;
 import ppl.momofin.momofinbackend.service.OrganizationService;
 import ppl.momofin.momofinbackend.response.OrganizationResponse;
 import ppl.momofin.momofinbackend.service.UserService;
@@ -70,7 +71,7 @@ class MomofinAdminControllerTest {
         when(organizationService.createOrganization("New Org", "New Description")).thenReturn(newOrg);
 
         User adminUser = new User();
-        when(userService.registerMember(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull(), eq(true)))
+        when(userService.registerOrganizationAdmin(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull()))
                 .thenReturn(adminUser);
 
         // Act
@@ -80,6 +81,6 @@ class MomofinAdminControllerTest {
         assertEquals(200, response.getStatusCodeValue());
         assertEquals("New Org", response.getBody().getName());
         assertEquals("New Description", response.getBody().getDescription());
-        verify(userService).registerMember(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull(), eq(true));
+        verify(userService).registerOrganizationAdmin(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull());
     }
 }
