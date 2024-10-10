@@ -2,6 +2,8 @@ package ppl.momofin.momofinbackend.controller;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.impl.DefaultClaims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +25,11 @@ import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.request.AuthRequest;
 import ppl.momofin.momofinbackend.security.JwtUtil;
 
+import java.util.Collections;
 import java.util.Optional;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -49,7 +53,6 @@ class AuthControllerTest {
     @MockBean
     private OrganizationRepository organizationRepository;
 
-
     private User mockUser;
     private ObjectMapper objectMapper;
     private Organization organization;
@@ -67,35 +70,46 @@ class AuthControllerTest {
         mockUser.setUsername(TEST_USERNAME);
         mockUser.setPassword("testPassword");
         organization = new Organization("Momofin");
+        mockUser.setOrganization(organization);
 
         mockAdmin = new User();
         mockAdmin.setUsername(TEST_USERNAME);
         mockAdmin.setOrganization(organization);
+
+        when(jwtUtil.validateToken("validToken", TEST_USERNAME)).thenReturn(true);
+        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
+        when(jwtUtil.validateToken("validToken")).thenReturn(true);
+
+        Claims claims = new DefaultClaims();
+        claims.put("roles", Collections.singletonList("ROLE_USER"));
+        when(jwtUtil.extractAllClaims("validToken")).thenReturn(claims);
     }
 
     @Test
     void testAuthenticateUserSuccess() throws Exception {
-        // Mock UserService's authenticate method
-        when(userService.authenticate(anyString(), anyString(), anyString())).thenReturn(mockUser);
+        User loginUser = new User(new Organization("My Organization"), "testUser", "Test User Full Name", "test@example.com", "password", "Tester", false);
+        when(userService.authenticate(anyString(), anyString(), anyString())).thenReturn(loginUser);
+        when(jwtUtil.generateToken(any(User.class))).thenReturn("mock-jwt-token");
 
-        // Mock JwtUtil's generateToken method
-        when(jwtUtil.generateToken(anyString())).thenReturn("mock-jwt-token");
-
-        // Create an authentication request object
         AuthRequest authRequest = new AuthRequest();
         authRequest.setOrganizationName("My Organization");
-        authRequest.setUsername("test User");
+        authRequest.setUsername("testUser");
         authRequest.setPassword("testPassword");
 
-        // Perform the POST request to /auth/login
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(authRequest)))
-                .andExpect(status().isOk()) // Assert that the status is 200 OK
-                .andExpect(jsonPath("$.jwt").value("mock-jwt-token")); // Assert that the JWT token is in the response
-        verify(loggingService).log("INFO", "Successful login for user: testUser from organization: My Organization", "/auth/login");
-    }
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jwt").value("mock-jwt-token"))
+                .andExpect(jsonPath("$.user.username").value("testUser"))
+                .andExpect(jsonPath("$.user.name").value("Test User Full Name"))
+                .andExpect(jsonPath("$.user.email").value("test@example.com"))
+                .andExpect(jsonPath("$.user.position").value("Tester"));
 
+        verify(loggingService).log("INFO",
+                "Successful login for user: testUser from organization: My Organization",
+                "/auth/login");
+    }
     @Test
     void testAuthenticateUserInvalidCredentials() throws Exception {
         String wrongPassword = "wrongPassword";
@@ -135,13 +149,36 @@ class AuthControllerTest {
     }
 
 
+    @Test
+    void testRegisterSuccess() throws Exception {
+        when(organizationRepository.findOrganizationByName("Momofin")).thenReturn(Optional.of(organization));
+        when(userService.fetchUserByUsername(TEST_USERNAME)).thenReturn(mockAdmin);
+        when(userService.registerMember(eq(organization), anyString(), anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(mockUser);
+
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setName(mockUser.getName());
+        registerRequest.setEmail(mockUser.getEmail());
+        registerRequest.setPosition(mockUser.getPosition());
+        registerRequest.setUsername(mockUser.getUsername());
+        registerRequest.setPassword(mockUser.getPassword());
+
+        mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerRequest))
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.username").value(mockUser.getUsername()))
+                .andExpect(jsonPath("$.user.name").value(mockUser.getName()))
+                .andExpect(jsonPath("$.user.email").value(mockUser.getEmail()))
+                .andExpect(jsonPath("$.user.position").value(mockUser.getPosition()));
+    }
+
 
     @Test
     void testRegisterUserEmailAlreadyInUse() throws Exception {
         String usedEmail = "duplicated.address@gmail.com";
         when(organizationRepository.findOrganizationByName("Momofin")).thenReturn(Optional.of(organization));
-        when(jwtUtil.validateToken("validToken")).thenReturn(true);
-        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
         when(userService.fetchUserByUsername(TEST_USERNAME)).thenReturn(mockAdmin);
         when(userService.registerMember(eq(organization), anyString(), anyString(), eq(usedEmail), anyString(), anyString()))
                 .thenThrow(new UserAlreadyExistsException("The email "+usedEmail+" is already in use"));
@@ -165,8 +202,6 @@ class AuthControllerTest {
     void testRegisterUserUsernameAlreadyInUse() throws Exception {
         String usedUsername = "Doppelganger";
         when(organizationRepository.findOrganizationByName("Momofin")).thenReturn(Optional.of(organization));
-        when(jwtUtil.validateToken("validToken")).thenReturn(true);
-        when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
         when(userService.fetchUserByUsername(TEST_USERNAME)).thenReturn(mockAdmin);
         when(userService.registerMember(eq(organization), eq(usedUsername), anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new UserAlreadyExistsException("The username "+usedUsername+" is already in use"));
@@ -186,4 +221,18 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.errorMessage").value("The username "+usedUsername+" is already in use"));
     }
 
+    @Test
+    void testGetAuthenticatedUser() throws Exception {
+        when(userService.fetchUserByUsername(TEST_USERNAME)).thenReturn(mockUser);
+
+        mockMvc.perform(get("/auth/info")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(mockUser.getUsername()))
+                .andExpect(jsonPath("$.name").value(mockUser.getName()))
+                .andExpect(jsonPath("$.email").value(mockUser.getEmail()))
+                .andExpect(jsonPath("$.position").value(mockUser.getPosition()));
+
+    }
 }

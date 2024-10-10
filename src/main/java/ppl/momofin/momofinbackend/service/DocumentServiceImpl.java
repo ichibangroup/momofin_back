@@ -5,8 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -31,11 +31,13 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
+    private final CDNService cdnService;
 
     @Autowired
-    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository) {
+    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService) {
         this.userRepository = userRepository;
         this.documentRepository = documentRepository;
+        this.cdnService = cdnService;
     }
 
     @Override
@@ -49,16 +51,17 @@ public class DocumentServiceImpl implements DocumentService {
 
         if (documentFound.isEmpty()) {
             Optional<User> owner = userRepository.findByUsername(username);
-            Document document = new Document();
-            document.setHashString(hashString);
-            document.setName(StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename())));
-            owner.ifPresent(document::setOwner);
-            documentRepository.save(document);
+
+            if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");
+
+            User user = owner.get();
+            Document document = cdnService.uploadFile(file, user, hashString);
+
             logger.info("New document saved: {}", document.getName());
-            return "Your document " + document.getName()+" has been successfully submitted";
+            return "Your document " + document.getName()+" has been successfully stored";
         } else {
             logger.info("Document already exists: {}", documentFound.get().getName());
-            return documentFound.get().getName() + " has already been submitted before";
+            return documentFound.get().getName() + " has already been stored before";
         }
     }
 
@@ -96,5 +99,13 @@ public class DocumentServiceImpl implements DocumentService {
             result.append(String.format("%02x", b));
         }
         return result.toString();
+    }
+
+    @Override
+    public List<Document> findAllDocumentsByOwner(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User must not be null");
+        }
+        return documentRepository.findAllByOwner(user);
     }
 }

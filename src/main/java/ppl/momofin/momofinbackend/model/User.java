@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import ppl.momofin.momofinbackend.utility.Roles;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -58,9 +59,10 @@ public class User {
         this.isOrganizationAdmin = isOrganizationAdmin;
     }
 
-    public User(Organization organization, String username, String name, String email, String password, String position, boolean isOrganizationAdmin, boolean isMomofinAdmin) {
-        this(organization, username, name, email, password, position, isOrganizationAdmin);
-        this.isMomofinAdmin = isMomofinAdmin;
+    public User(Organization organization, String username, String name, String email, String password, String position, Roles roles) {
+        this(organization, username, name, email, password, position);
+        this.isOrganizationAdmin = roles.isOrganizationalAdmin();
+        this.isMomofinAdmin = roles.isMomofinAdmin();
     }
 
     public Set<String> getRoles() {

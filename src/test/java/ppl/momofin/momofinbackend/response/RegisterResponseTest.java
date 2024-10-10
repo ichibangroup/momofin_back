@@ -6,7 +6,7 @@ import ppl.momofin.momofinbackend.model.User;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class RegisterResponseTest {
+class RegisterResponseTest {
     @Test
     void testRegisterResponseSuccessConstructorEmpty() {
         RegisterResponseSuccess responseSuccess = new RegisterResponseSuccess();

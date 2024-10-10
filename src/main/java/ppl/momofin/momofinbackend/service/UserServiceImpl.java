@@ -56,16 +56,10 @@ public class UserServiceImpl implements UserService{
     public User registerMember(Organization organization, String username, String name, String email, String password, String position) {
         PasswordValidator.validatePassword(password);
 
-        List<User> fetchResults = userRepository.findUserByUsernameOrEmail(username, email);
+        Optional<User> fetchResults = userRepository.findByUsername(username);
 
-        if (!fetchResults.isEmpty()) {
-            User existingUser = fetchResults.getFirst();
-
-            if (email.equals(existingUser.getEmail())) {
-                throw new UserAlreadyExistsException("The email "+email+" is already in use");
-            } else if (username.equals(existingUser.getUsername())) {
-                throw new UserAlreadyExistsException("The username "+username+" is already in use");
-            }
+        if (fetchResults.isPresent()) {
+            throw new UserAlreadyExistsException("The username "+username+" is already in use");
         }
 
         String encodedPassword = passwordEncoder.encode(password);
