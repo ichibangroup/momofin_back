@@ -401,4 +401,25 @@ class UserServiceTest {
         assertNull(fetchedUser);
         verify(userRepository).findByUsername("invalid user");
     }
+
+    @Test
+    void registerMember_shouldCreateAndReturnNewUser() {
+        // Arrange
+        Organization org = new Organization("Org", "Desc");
+        when(userRepository.findUserByUsernameOrEmail(anyString(), anyString())).thenReturn(Collections.emptyList());
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        // Act
+        User result = userService.registerMember(org, "username", "name", "email", "password", "position", true);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("username", result.getUsername());
+        assertEquals("name", result.getName());
+        assertEquals("email", result.getEmail());
+        assertEquals("encodedPassword", result.getPassword());
+        assertEquals("position", result.getPosition());
+        assertTrue(result.isOrganizationAdmin());
+    }
 }

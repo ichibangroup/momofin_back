@@ -173,4 +173,18 @@ class OrganizationServiceTest {
         assertEquals("Org1", result.get(0).getName());
         assertEquals("Org2", result.get(1).getName());
     }
+
+    @Test
+    void createOrganization_shouldCreateAndReturnNewOrganization() {
+        // Arrange
+        Organization newOrg = new Organization("New Org", "New Desc");
+        when(organizationRepository.save(any(Organization.class))).thenReturn(newOrg);
+
+        // Act
+        Organization result = organizationService.createOrganization("New Org", "New Desc");
+
+        // Assert
+        assertEquals("New Org", result.getName());
+        assertEquals("New Desc", result.getDescription());
+    }
 }
