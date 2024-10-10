@@ -52,7 +52,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (documentFound.isEmpty()) {
             Optional<User> owner = userRepository.findByUsername(username);
 
-            if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");;
+            if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");
 
             User user = owner.get();
             Document document = cdnService.uploadFile(file, user, hashString);
