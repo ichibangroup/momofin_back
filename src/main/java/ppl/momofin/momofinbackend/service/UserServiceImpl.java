@@ -110,6 +110,9 @@ public class UserServiceImpl implements UserService{
     }
     @Override
     public User registerOrganizationAdmin(Organization organization, String username, String name, String email, String password, String position) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new UserAlreadyExistsException("An admin with this username already exists");
+        }
         User newUser = registerMember(organization, username, name, email, password, position);
         newUser.setOrganizationAdmin(true);
         return userRepository.save(newUser);

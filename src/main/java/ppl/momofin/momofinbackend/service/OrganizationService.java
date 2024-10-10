@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ppl.momofin.momofinbackend.dto.UserDTO;
+import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
@@ -77,6 +78,9 @@ public class OrganizationService {
         return organizationRepository.findAll();
     }
     public Organization createOrganization(String name, String description) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new InvalidOrganizationException("Organization name cannot be empty");
+        }
         Organization newOrganization = new Organization(name, description);
         return organizationRepository.save(newOrganization);
     }

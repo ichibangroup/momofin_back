@@ -3,7 +3,10 @@ package ppl.momofin.momofinbackend.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
+import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
 import ppl.momofin.momofinbackend.model.Organization;
+import ppl.momofin.momofinbackend.response.ErrorResponse;
 import ppl.momofin.momofinbackend.service.OrganizationService;
 import ppl.momofin.momofinbackend.response.OrganizationResponse;
 import ppl.momofin.momofinbackend.service.UserService;
@@ -34,19 +37,31 @@ public class MomofinAdminController {
     }
 
     @PostMapping("/organizations")
-    public ResponseEntity<OrganizationResponse> addOrganization(@RequestBody AddOrganizationRequest request) {
-        Organization newOrganization = organizationService.createOrganization(request.getName(), request.getDescription());
+    public ResponseEntity<?> addOrganization(@RequestBody AddOrganizationRequest request) {
+        try {
+            Organization newOrganization = createOrganization(request);
+            createOrganizationAdmin(newOrganization, request);
+            return ResponseEntity.ok(OrganizationResponse.fromOrganization(newOrganization));
+        } catch (InvalidOrganizationException | UserAlreadyExistsException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ErrorResponse("An unexpected error occurred"));
+        }
+    }
 
+    private Organization createOrganization(AddOrganizationRequest request) {
+        return organizationService.createOrganization(request.getName(), request.getDescription());
+    }
+
+    private void createOrganizationAdmin(Organization organization, AddOrganizationRequest request) {
         userService.registerOrganizationAdmin(
-                newOrganization,
+                organization,
                 request.getAdminUsername(),
-                request.getName() + " Admin", // Default name
-                null, // email is null
+                organization.getName() + " Admin",
+                null,
                 request.getAdminPassword(),
-                null // position is null
+                null
         );
-
-        return ResponseEntity.ok(OrganizationResponse.fromOrganization(newOrganization));
     }
 
 
