@@ -155,4 +155,22 @@ class OrganizationServiceTest {
         verify(organizationRepository).findById(nonExistentOrgId);
         verify(organizationRepository, never()).save(any(Organization.class));
     }
+
+    @Test
+    void getAllOrganizations_shouldReturnAllOrganizations() {
+        // Arrange
+        List<Organization> organizations = Arrays.asList(
+                new Organization("Org1", "Desc1"),
+                new Organization("Org2", "Desc2")
+        );
+        when(organizationRepository.findAll()).thenReturn(organizations);
+
+        // Act
+        List<Organization> result = organizationService.getAllOrganizations();
+
+        // Assert
+        assertEquals(2, result.size());
+        assertEquals("Org1", result.get(0).getName());
+        assertEquals("Org2", result.get(1).getName());
+    }
 }
