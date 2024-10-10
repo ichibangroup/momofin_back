@@ -83,13 +83,14 @@ class GoogleCloudStorageCDNServiceTest {
         assertEquals("test-file.pdf", savedDocument.getName());
         assertEquals("hashString", savedDocument.getHashString());
         assertEquals(user, savedDocument.getOwner());
-        verify(mockStorage).create(eq(expectedBlobInfo), eq(mockFile.getBytes()));
+        verify(mockStorage).create(expectedBlobInfo, mockFile.getBytes());
     }
 
     @Test
     void testConstructorWithInvalidCredentials() {
-        assertThrows(RuntimeException.class, () -> {
-            new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, System.getenv("PKEY_DIRECTORY")+"/wrongkey.pem", serviceName, clientId, documentRepository);
+        String wrongFilePath = System.getenv("PKEY_DIRECTORY")+"/wrongkey.pem";
+        assertThrows(IOException.class, () -> {
+            new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, wrongFilePath, serviceName, clientId, documentRepository);
         });
     }
 }

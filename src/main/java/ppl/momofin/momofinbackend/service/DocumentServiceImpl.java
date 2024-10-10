@@ -5,8 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -53,7 +52,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (documentFound.isEmpty()) {
             Optional<User> owner = userRepository.findByUsername(username);
 
-            if (owner.isEmpty()) throw new RuntimeException();
+            if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");;
 
             User user = owner.get();
             Document document = cdnService.uploadFile(file, user, hashString);

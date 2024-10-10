@@ -7,7 +7,6 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,7 +16,6 @@ import ppl.momofin.momofinbackend.repository.DocumentRepository;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -65,7 +63,7 @@ public class GoogleCloudStorageCDNService implements CDNService {
             // Create a Google Cloud Storage service instance
             this.storage = createStorage(credentials);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to initialize Google Cloud Storage credentials", e);
+            throw new IOException("Failed to initialize Google Cloud Storage credentials:", e);
         }
     }
 
