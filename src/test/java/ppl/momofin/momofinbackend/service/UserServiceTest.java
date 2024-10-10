@@ -408,10 +408,12 @@ class UserServiceTest {
         Organization org = new Organization("Org", "Desc");
         User newUser = new User(org, "admin", "Admin Name", null, "encodedPassword", null);
         newUser.setOrganizationAdmin(true);
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(newUser);
 
         // Act
-        User result = userService.registerOrganizationAdmin(org, "admin", "Admin Name", null, "password", null);
+        User result = userService.registerOrganizationAdmin(org, "admin", "Admin Name", null, "validPassword123", null);
 
         // Assert
         assertNotNull(result);
@@ -420,5 +422,6 @@ class UserServiceTest {
         assertNull(result.getEmail());
         assertNull(result.getPosition());
         assertTrue(result.isOrganizationAdmin());
+        verify(passwordEncoder).encode("validPassword123");
     }
 }
