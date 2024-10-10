@@ -8,7 +8,6 @@ import ppl.momofin.momofinbackend.service.OrganizationService;
 import ppl.momofin.momofinbackend.response.OrganizationResponse;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/momofin-admin")
@@ -26,7 +25,7 @@ public class MomofinAdminController {
         List<Organization> organizations = organizationService.getAllOrganizations();
         List<OrganizationResponse> responses = organizations.stream()
                 .map(OrganizationResponse::fromOrganization)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(responses);
     }
 }

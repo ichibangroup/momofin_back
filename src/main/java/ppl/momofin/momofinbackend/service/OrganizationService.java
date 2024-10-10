@@ -72,6 +72,7 @@ public class OrganizationService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+    @Transactional(readOnly = true)
     public List<Organization> getAllOrganizations() {
         return organizationRepository.findAll();
     }
