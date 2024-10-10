@@ -17,7 +17,7 @@ class LogTest {
         String logName = "/auth/login";
         String sourceUrl = "http://localhost:8080/auth/login";
 
-        Log log = new Log(timestamp, userId, level, message, logName, sourceUrl);
+        Log log = new Log(userId, timestamp, level, message, logName, sourceUrl);
 
         assertEquals(timestamp, log.getTimestamp(), "Timestamp should Match");
         assertEquals(userId, log.getUserId(), "User ID should Match");
