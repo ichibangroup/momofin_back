@@ -56,18 +56,10 @@ public class DocumentServiceImpl implements DocumentService {
             if (owner.isEmpty()) throw new RuntimeException();
 
             User user = owner.get();
-            String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-            String folderName = user.getOrganization().getName() +"/" + user.getName();
-            cdnService.uploadFile(file.getBytes(), folderName, fileName);
+            Document document = cdnService.uploadFile(file, user, hashString);
 
-            Document document = new Document();
-            document.setHashString(hashString);
-            document.setName(fileName);
-            document.setOwner(user);
-            documentRepository.save(document);
-
-            logger.info("New document saved: {}", fileName);
-            return "Your document " + fileName+" has been successfully stored";
+            logger.info("New document saved: {}", document.getName());
+            return "Your document " + document.getName()+" has been successfully stored";
         } else {
             logger.info("Document already exists: {}", documentFound.get().getName());
             return documentFound.get().getName() + " has already been stored before";

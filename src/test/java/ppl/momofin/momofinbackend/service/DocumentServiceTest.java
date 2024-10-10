@@ -57,14 +57,13 @@ class DocumentServiceTest {
     void submitDocumentNewDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         when(documentRepository.findByHashString(any())).thenReturn(Optional.empty());
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
-        when(documentRepository.save(any())).thenReturn(new Document());
+        when(cdnService.uploadFile(eq(mockFile), eq(mockUser), any())).thenReturn(new Document());
 
         String result = documentService.submitDocument(mockFile, mockUsername);
 
         assertNotNull(result);
         assertFalse(result.contains("this document has already been submitted before"));
         verify(userRepository).findByUsername(mockUsername);
-        verify(documentRepository).save(any(Document.class));
     }
 
     @Test

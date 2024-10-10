@@ -3,6 +3,7 @@ package ppl.momofin.momofinbackend.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -10,6 +11,13 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.Organization;
+import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.repository.DocumentRepository;
 
 import java.io.IOException;
 
@@ -21,6 +29,8 @@ class GoogleCloudStorageCDNServiceTest {
 
     @Mock
     private Storage mockStorage;
+    @Mock
+    private DocumentRepository documentRepository;
 
     private GoogleCloudStorageCDNService cdnService;
     private String bucketName;
@@ -29,6 +39,8 @@ class GoogleCloudStorageCDNServiceTest {
     private String privateKeyFilePath;
     private String serviceName;
     private String clientId;
+    private User user;
+    private MultipartFile mockFile;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -39,7 +51,12 @@ class GoogleCloudStorageCDNServiceTest {
         serviceName = System.getenv("GCP_SA_NAME");
         clientId =System.getenv("GCP_SA_CLIENT_ID");
 
-        cdnService = new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, privateKeyFilePath, serviceName, clientId) {
+        Organization organization = new Organization("Momofin");
+        user = new User(organization, "Executive John", "Marshall Jordan", "marshall@jordan.email.com", "1234567890999", "Executive");
+
+        mockFile = new MockMultipartFile("test file", "test-file.pdf", MediaType.APPLICATION_PDF_VALUE,"test file content".getBytes());
+
+        cdnService = new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, privateKeyFilePath, serviceName, clientId, documentRepository) {
             @Override
             protected Storage createStorage(GoogleCredentials credentials) {
                 return mockStorage;
@@ -49,24 +66,30 @@ class GoogleCloudStorageCDNServiceTest {
 
     @Test
     void testUploadFile() throws IOException {
-        byte[] fileBytes = "test file content".getBytes();
-        String folderName = "test-folder";
-        String fileName = "test-file.pdf";
+        ArgumentCaptor<Document> documentCaptor = ArgumentCaptor.forClass(Document.class);
 
-        cdnService.uploadFile(fileBytes, folderName, fileName);
+        cdnService.uploadFile(mockFile, user, "hashString");
 
-        BlobId expectedBlobId = BlobId.of(bucketName, folderName + "/" + fileName);
+        BlobId expectedBlobId = BlobId.of(bucketName, user.getOrganization().getName() + "/" + user.getName() + "/test-file.pdf");
         BlobInfo expectedBlobInfo = BlobInfo.newBuilder(expectedBlobId)
                 .setContentType("application/pdf")
                 .build();
 
-        verify(mockStorage).create(eq(expectedBlobInfo), eq(fileBytes));
+        verify(documentRepository).save(documentCaptor.capture());
+
+        Document savedDocument = documentCaptor.getValue();
+
+        assertNotNull(savedDocument);
+        assertEquals("test-file.pdf", savedDocument.getName());
+        assertEquals("hashString", savedDocument.getHashString());
+        assertEquals(user, savedDocument.getOwner());
+        verify(mockStorage).create(eq(expectedBlobInfo), eq(mockFile.getBytes()));
     }
 
     @Test
     void testConstructorWithInvalidCredentials() {
         assertThrows(RuntimeException.class, () -> {
-            new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, "D:/wrongkey.pem", serviceName, clientId);
+            new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, "D:/wrongkey.pem", serviceName, clientId, documentRepository);
         });
     }
 }

@@ -5,9 +5,15 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.repository.DocumentRepository;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -15,21 +21,27 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 @Service
 public class GoogleCloudStorageCDNService implements CDNService {
 
     private final Storage storage;
     private final String bucketName;
+    private final DocumentRepository documentRepository;
 
+    @Autowired
     public GoogleCloudStorageCDNService(@Value("${gcp.bucket.name}") String bucketName,
                                         @Value("${gcp.project-id}") String projectId,
                                         @Value("${gcp.sa.private-key-id}") String privateKeyId,
                                         @Value("${gcp.sa.private-key-file}") String privateKeyFilePath,
                                         @Value("${gcp.sa.name}") String serviceName,
-                                        @Value("${gcp.sa.client-id}") String clientId) throws IOException {
+                                        @Value("${gcp.sa.client-id}") String clientId,
+                                        DocumentRepository documentRepository) throws IOException {
         String privateKey = new String(Files.readAllBytes(Paths.get(privateKeyFilePath)));
         this.bucketName = bucketName;
+
+        this.documentRepository = documentRepository;
 
         String serviceAccountJson = String.format(
                 """
@@ -65,11 +77,19 @@ public class GoogleCloudStorageCDNService implements CDNService {
     }
 
     @Override
-    public void uploadFile(byte[] fileBytes, String folderName, String fileName) throws IOException {
+    public Document uploadFile(MultipartFile file, User user, String hashString) throws IOException {
+        String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+        String folderName = user.getOrganization().getName() +"/" + user.getName();
         BlobId blobId = BlobId.of(bucketName, folderName + "/" + fileName);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                 .setContentType("application/pdf")
                 .build();
-        storage.create(blobInfo, fileBytes);
+        storage.create(blobInfo, file.getBytes());
+
+        Document document = new Document();
+        document.setHashString(hashString);
+        document.setName(fileName);
+        document.setOwner(user);
+        return documentRepository.save(document);
     }
 }
