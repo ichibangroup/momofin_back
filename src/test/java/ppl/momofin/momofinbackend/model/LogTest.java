@@ -24,6 +24,6 @@ class LogTest {
         assertEquals(level, log.getLevel(), "Level should Match");
         assertEquals(message, log.getMessage(), "Message should Match");
         assertEquals(logName, log.getLogName(), "Log Name should Match");
-        assertEquals(sourceUrl, log.getSourceUrl(), "Source URL should Match");
+        assertEquals(sourceUrl, log.getSourceUrl(), "SourceURL should Match");
     }
 }
