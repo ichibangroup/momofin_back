@@ -5,11 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
 import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
 import ppl.momofin.momofinbackend.model.Organization;
+import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.request.AddOrganizationRequest;
 import ppl.momofin.momofinbackend.service.OrganizationService;
 import ppl.momofin.momofinbackend.response.OrganizationResponse;
@@ -19,12 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
-
-import ppl.momofin.momofinbackend.model.User;
-
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class MomofinAdminControllerTest {
 
@@ -55,7 +54,7 @@ class MomofinAdminControllerTest {
         ResponseEntity<List<OrganizationResponse>> response = momofinAdminController.getAllOrganizations();
 
         // Assert
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
         assertEquals(2, response.getBody().size());
         assertEquals("Org1", response.getBody().get(0).getName());
         assertEquals("Org2", response.getBody().get(1).getName());
@@ -81,11 +80,12 @@ class MomofinAdminControllerTest {
         ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
 
         // Assert
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
         assertEquals("New Org", response.getBody().getName());
         assertEquals("New Description", response.getBody().getDescription());
         verify(userService).registerOrganizationAdmin(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull());
     }
+
     @Test
     void updateOrganization_shouldUpdateExistingOrganization() {
         // Arrange
@@ -101,7 +101,7 @@ class MomofinAdminControllerTest {
         ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
 
         // Assert
-        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
         assertEquals("Updated Org", response.getBody().getName());
         assertEquals("Updated Description", response.getBody().getDescription());
     }
@@ -120,13 +120,14 @@ class MomofinAdminControllerTest {
         ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
 
         // Assert
-        assertEquals(400, response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertNull(response.getBody().getOrganizationId());
         assertEquals("Organization name cannot be empty", response.getBody().getErrorMessage());
         assertEquals("Description", response.getBody().getDescription());
         assertNull(response.getBody().getName());
     }
+
     @Test
     void addOrganization_shouldReturnErrorResponse_whenUserAlreadyExistsException() {
         // Arrange
@@ -145,7 +146,7 @@ class MomofinAdminControllerTest {
         ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
 
         // Assert
-        assertEquals(400, response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertEquals("Admin user already exists", response.getBody().getErrorMessage());
     }
@@ -164,7 +165,7 @@ class MomofinAdminControllerTest {
         ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
 
         // Assert
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertEquals("An unexpected error occurred", response.getBody().getErrorMessage());
     }
@@ -184,7 +185,7 @@ class MomofinAdminControllerTest {
         ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
 
         // Assert
-        assertEquals(404, response.getStatusCodeValue());
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatusCode().value());
     }
 
     @Test
@@ -202,7 +203,7 @@ class MomofinAdminControllerTest {
         ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
 
         // Assert
-        assertEquals(400, response.getStatusCodeValue());
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertEquals("Invalid organization name", response.getBody().getErrorMessage());
     }
@@ -222,7 +223,7 @@ class MomofinAdminControllerTest {
         ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
 
         // Assert
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertEquals("An unexpected error occurred", response.getBody().getErrorMessage());
     }

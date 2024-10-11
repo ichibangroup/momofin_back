@@ -214,11 +214,11 @@ class OrganizationServiceTest {
         when(organizationRepository.findAll()).thenReturn(Collections.emptyList());
 
         // Act
-        OrganizationService organizationService = new OrganizationService(organizationRepository, userRepository);
+        OrganizationService newOrganizationService = new OrganizationService(organizationRepository, userRepository);
 
         // Assert
-        assertNotNull(organizationService);
-        assertDoesNotThrow(() -> organizationService.getAllOrganizations());
+        assertNotNull(newOrganizationService);
+        assertDoesNotThrow(() -> newOrganizationService.getAllOrganizations());
         verify(organizationRepository).findAll();
     }
 
