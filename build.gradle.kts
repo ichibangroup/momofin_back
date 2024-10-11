@@ -49,6 +49,8 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt:$jsonWebTokenVersion")
     implementation("javax.xml.bind:jaxb-api:$javaxVersion")
     implementation("com.google.cloud:google-cloud-storage:$gcpVersion")
+    implementation("io.sentry:sentry:6.10.0")
+    implementation("io.sentry:sentry-spring-boot-starter:6.10.0")
 
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
