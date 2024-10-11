@@ -424,4 +424,18 @@ class UserServiceTest {
         assertTrue(result.isOrganizationAdmin());
         verify(passwordEncoder).encode("validPassword123");
     }
+    @Test
+    void registerOrganizationAdmin_shouldThrowException_whenAdminUsernameAlreadyExists() {
+        // Arrange
+        Organization org = new Organization("Org", "Desc");
+        String existingUsername = "existingAdmin";
+        when(userRepository.findByUsername(existingUsername)).thenReturn(Optional.of(new User()));
+
+        // Act & Assert
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class, () ->
+                userService.registerOrganizationAdmin(org, existingUsername, "Admin Name", null, "validPassword123", null)
+        );
+
+        assertEquals("An admin with this username already exists", exception.getMessage());
+    }
 }

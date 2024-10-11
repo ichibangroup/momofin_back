@@ -6,12 +6,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import ppl.momofin.momofinbackend.dto.UserDTO;
+import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
+import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -202,5 +205,57 @@ class OrganizationServiceTest {
         // Assert
         assertEquals("Updated Org", result.getName());
         assertEquals("Updated Desc", result.getDescription());
+    }
+
+    @Test
+    void constructor_shouldInitializeCorrectly() {
+        // Arrange
+        MockitoAnnotations.openMocks(this);
+        when(organizationRepository.findAll()).thenReturn(Collections.emptyList());
+
+        // Act
+        OrganizationService organizationService = new OrganizationService(organizationRepository, userRepository);
+
+        // Assert
+        assertNotNull(organizationService);
+        assertDoesNotThrow(() -> organizationService.getAllOrganizations());
+        verify(organizationRepository).findAll();
+    }
+
+    @Test
+    void updateOrganization_shouldThrowException_whenOrgIdIsNull() {
+        assertThrows(InvalidOrganizationException.class,
+                () -> organizationService.updateOrganization(null, "Name", "Description"));
+    }
+
+    @Test
+    void updateOrganization_shouldThrowException_whenNameIsEmpty() {
+        assertThrows(InvalidOrganizationException.class,
+                () -> organizationService.updateOrganization(1L, "", "Description"));
+    }
+
+    @Test
+    void updateOrganization_shouldThrowException_whenNameIsNull() {
+        assertThrows(InvalidOrganizationException.class,
+                () -> organizationService.updateOrganization(1L, null, "Description"));
+    }
+
+    @Test
+    void updateOrganization_shouldThrowException_whenOrganizationNotFound() {
+        when(organizationRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(OrganizationNotFoundException.class,
+                () -> organizationService.updateOrganization(1L, "Name", "Description"));
+    }
+
+    @Test
+    void createOrganization_shouldThrowException_whenNameIsEmpty() {
+        assertThrows(InvalidOrganizationException.class,
+                () -> organizationService.createOrganization("", "Description"));
+    }
+
+    @Test
+    void createOrganization_shouldThrowException_whenNameIsNull() {
+        assertThrows(InvalidOrganizationException.class,
+                () -> organizationService.createOrganization(null, "Description"));
     }
 }
