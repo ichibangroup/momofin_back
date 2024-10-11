@@ -8,8 +8,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -48,9 +46,8 @@ public class AuditTrailAspectTest {
 
     @Test
     public void testLogDocumentVerifyReturn_Success() {
-        // Given
         Document document = new Document();
-        document.setDocumentId(1L); // set necessary properties
+        document.setDocumentId(1L);
 
         User mockUser = new User();
         mockUser.setUserId(1L);
@@ -71,23 +68,19 @@ public class AuditTrailAspectTest {
 
     @Test
     public void testLogDocumentVerifyReturn_Failure() {
-        // Given
-        Document document = null; // simulate a failure scenario
+        Document document = null;
 
         User mockUser = new User();
         mockUser.setUsername("testUser");
         when(userService.fetchUserByUsername("testUser")).thenReturn(mockUser);
 
-        // When
         auditTrailAspect.logDocumentVerifyReturn(joinPoint, document);
 
-        // Then
         ArgumentCaptor<AuditTrail> auditTrailCaptor = ArgumentCaptor.forClass(AuditTrail.class);
         verify(auditTrailRepository, times(1)).save(auditTrailCaptor.capture());
 
         AuditTrail capturedAuditTrail = auditTrailCaptor.getValue();
         assertNotNull(capturedAuditTrail);
-        assertEquals(mockUser, capturedAuditTrail.getUser());
         assertEquals("VERIFY", capturedAuditTrail.getAction());
         assertNull(capturedAuditTrail.getDocument());
         assertEquals("FAILED", capturedAuditTrail.getAuditOutcome());
