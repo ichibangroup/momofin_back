@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.service;
 
+import io.sentry.Sentry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ppl.momofin.momofinbackend.model.Log;
@@ -21,5 +22,13 @@ public class LoggingServiceImpl implements LoggingService{
     public void log(Long userId,String level, String message, String logName, String sourceUrl) {
         Log logEntry = new Log(userId, LocalDateTime.now(), level, message, logName, sourceUrl);
         logRepository.save(logEntry);
+    }
+
+    @Override
+    public void logException(Long userId, Exception e, String logName, String sourceUrl) {
+        Log logEntry = new Log(userId, LocalDateTime.now(), "WARN", e.getMessage(), logName, sourceUrl);
+        logRepository.save(logEntry);
+
+        Sentry.captureException(e);
     }
 }
