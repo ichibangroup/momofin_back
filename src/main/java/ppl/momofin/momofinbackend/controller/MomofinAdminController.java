@@ -44,9 +44,9 @@ public class MomofinAdminController {
             createOrganizationAdmin(newOrganization, request);
             return ResponseEntity.ok(OrganizationResponse.fromOrganization(newOrganization));
         } catch (InvalidOrganizationException | UserAlreadyExistsException e) {
-            return ResponseEntity.badRequest().body(new OrganizationResponse(null, e.getMessage(), null));
+            return ResponseEntity.badRequest().body(new OrganizationResponse(null, e.getMessage(), request.getDescription()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new OrganizationResponse(null, "An unexpected error occurred", null));
+            return ResponseEntity.internalServerError().body(new OrganizationResponse(null, "An unexpected error occurred", request.getDescription()));
         }
     }
 

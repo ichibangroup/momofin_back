@@ -117,16 +117,15 @@ class MomofinAdminControllerTest {
                 .thenThrow(new InvalidOrganizationException("Organization name cannot be empty"));
 
         // Act
-        ResponseEntity<?> response = momofinAdminController.addOrganization(request);
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
 
         // Assert
         assertEquals(400, response.getStatusCodeValue());
-        assertTrue(response.getBody() instanceof OrganizationResponse);
-        OrganizationResponse errorResponse = (OrganizationResponse) response.getBody();
-        assertNull(errorResponse.getOrganizationId());
-        assertEquals("Organization name cannot be empty", errorResponse.getErrorMessage());
-        assertEquals("Description", errorResponse.getDescription());
-        assertNull(errorResponse.getName());
+        assertNotNull(response.getBody());
+        assertNull(response.getBody().getOrganizationId());
+        assertEquals("Organization name cannot be empty", response.getBody().getErrorMessage());
+        assertEquals("Description", response.getBody().getDescription());
+        assertNull(response.getBody().getName());
     }
     @Test
     void addOrganization_shouldReturnErrorResponse_whenUserAlreadyExistsException() {
