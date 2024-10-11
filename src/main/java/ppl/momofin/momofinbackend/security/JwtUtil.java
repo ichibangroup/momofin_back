@@ -24,6 +24,7 @@ public class JwtUtil {
         claims.put("roles", new ArrayList<>(user.getRoles()));  // Convert Set to List
         claims.put("organizationId", user.getOrganization().getOrganizationId());
         claims.put("isOrganizationAdmin", user.isOrganizationAdmin());
+        claims.put("isMomofinAdmin", user.isMomofinAdmin());
         return createToken(claims, user.getUsername());
     }
 

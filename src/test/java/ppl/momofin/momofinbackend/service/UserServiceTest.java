@@ -401,4 +401,41 @@ class UserServiceTest {
         assertNull(fetchedUser);
         verify(userRepository).findByUsername("invalid user");
     }
+
+    @Test
+    void registerOrganizationAdmin_shouldCreateAndReturnNewAdminUser() {
+        // Arrange
+        Organization org = new Organization("Org", "Desc");
+        User newUser = new User(org, "admin", "Admin Name", null, "encodedPassword", null);
+        newUser.setOrganizationAdmin(true);
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(newUser);
+
+        // Act
+        User result = userService.registerOrganizationAdmin(org, "admin", "Admin Name", null, "validPassword123", null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("admin", result.getUsername());
+        assertEquals("Admin Name", result.getName());
+        assertNull(result.getEmail());
+        assertNull(result.getPosition());
+        assertTrue(result.isOrganizationAdmin());
+        verify(passwordEncoder).encode("validPassword123");
+    }
+    @Test
+    void registerOrganizationAdmin_shouldThrowException_whenAdminUsernameAlreadyExists() {
+        // Arrange
+        Organization org = new Organization("Org", "Desc");
+        String existingUsername = "existingAdmin";
+        when(userRepository.findByUsername(existingUsername)).thenReturn(Optional.of(new User()));
+
+        // Act & Assert
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class, () ->
+                userService.registerOrganizationAdmin(org, existingUsername, "Admin Name", null, "validPassword123", null)
+        );
+
+        assertEquals("An admin with this username already exists", exception.getMessage());
+    }
 }
