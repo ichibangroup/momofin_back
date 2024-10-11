@@ -10,6 +10,15 @@ plugins {
     id("io.spring.dependency-management") version "1.1.6"
     id("jacoco")
     id("org.sonarqube") version "4.4.1.3373"
+    id("io.sentry.jvm.gradle") version "4.11.0"
+}
+
+sentry {
+    includeSourceContext = true
+
+    org = "muhamad-pascal-alfin-pahlevi"
+    projectName = "momofin-backend"
+    authToken = System.getenv("SENTRY_AUTH_TOKEN")
 }
 
 group = "ppl.momofin"
