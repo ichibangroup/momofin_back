@@ -3,6 +3,7 @@ val postgresVersion = "42.6.0"
 val jsonWebTokenVersion = "0.9.1"
 val javaxVersion = "2.3.1"
 val gcpVersion = "2.43.1"
+val sentryVersion = "6.10.0"
 
 plugins {
     java
@@ -41,8 +42,8 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt:$jsonWebTokenVersion")
     implementation("javax.xml.bind:jaxb-api:$javaxVersion")
     implementation("com.google.cloud:google-cloud-storage:$gcpVersion")
-    implementation("io.sentry:sentry:6.10.0")
-    implementation("io.sentry:sentry-spring-boot-starter:6.10.0")
+    implementation("io.sentry:sentry: $sentryVersion")
+    implementation("io.sentry:sentry-spring-boot-starter: $sentryVersion")
 
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
