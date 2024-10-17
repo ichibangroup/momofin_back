@@ -37,7 +37,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<Response> authenticateUser(@RequestBody AuthRequest authRequest, HttpServletRequest request) {
         String logName = "/auth/login";
-        String orgLog = " from organization";
         String sourceUrl = request.getRequestURL().toString() ;
 
         try {
@@ -50,10 +49,10 @@ public class AuthController {
 
             loggingService.log(authenticatedUser.getUserId(), "INFO",
                     "Successful login for user: " + authenticatedUser.getUsername() +
-                            orgLog + authRequest.getOrganizationName(),
+                            " from organization: " + authRequest.getOrganizationName(),
                     logName, sourceUrl);
 
-            Sentry.captureMessage("User logged in successfully: " + authenticatedUser.getUsername() + orgLog + authRequest.getOrganizationName());
+            Sentry.captureMessage("User logged in successfully: " + authenticatedUser.getUsername() + " from organization: " + authRequest.getOrganizationName());
 
             AuthResponseSuccess response = new AuthResponseSuccess(authenticatedUser, jwt);
 
@@ -62,7 +61,7 @@ public class AuthController {
             loggingService.log(
                     null,
                     "ERROR",
-                    "Failed login attempt for user: " + authRequest.getUsername() + orgLog + authRequest.getOrganizationName(),
+                    "Failed login attempt for user: " + authRequest.getUsername() + " from organization: " + authRequest.getOrganizationName(),
                     logName,
                     request.getRequestURL().toString()
             );
