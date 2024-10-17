@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.impl.DefaultClaims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.internal.matchers.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -130,6 +131,8 @@ class AuthControllerTest {
         verify(loggingService).log(eq(null), eq("ERROR"),
                 eq("Failed login attempt for user: Hobo Steve Invalid from organization: My Organization"),
                 eq("/auth/login"), anyString());
+
+        verify(loggingService).logException(eq(null), any(InvalidCredentialsException.class), eq("/auth/login"), anyString());
     }
 
     @Test
@@ -149,8 +152,10 @@ class AuthControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.errorMessage").value("The organization "+ invalidOrganizationName + " is not registered to our database"));
         verify(loggingService).log(eq(null), eq("ERROR"),
-                eq("Failed login attempt for user: test User from organization: Not Organization"),
+                eq("Failed login attempt for user: test User from organization: " + invalidOrganizationName ),
                 eq("/auth/login"), anyString());
+
+        verify(loggingService).logException(eq(null), any(OrganizationNotFoundException.class), eq("/auth/login"), anyString());
     }
 
 
