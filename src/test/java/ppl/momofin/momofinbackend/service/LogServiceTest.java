@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.service;
 
+import io.sentry.Sentry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -48,5 +49,32 @@ class LogServiceTest {
         assertNotNull(savedlog.getTimestamp(), "Timestamp Should Not Be Null");
         assertTrue(savedlog.getTimestamp().isBefore(LocalDateTime.now()) ||
                 savedlog.getTimestamp().isEqual(LocalDateTime.now()), "Timestamp Should be Current");
+    }
+
+    @Test
+    void testLogException() {
+        Long userId = 1L;
+        Exception exception = new RuntimeException("Test Exception");
+        String logName = "/test/log";
+        String sourceUrl = "http://localhost/test";
+
+        mockStatic(Sentry.class);
+
+        loggingService.logException(userId, exception, logName, sourceUrl);
+
+        ArgumentCaptor<Log> logEntryCaptor = ArgumentCaptor.forClass(Log.class);
+
+        verify(logRepository).save(logEntryCaptor.capture());
+
+        Log capturedLog = logEntryCaptor.getValue();
+        assertEquals(userId, capturedLog.getUserId());
+        assertEquals(LocalDateTime.now().getHour(), capturedLog.getTimestamp().getHour());
+        assertEquals("WARN", capturedLog.getLevel());
+        assertEquals("Test Exception", capturedLog.getMessage());
+        assertEquals(logName, capturedLog.getLogName());
+        assertEquals(sourceUrl, capturedLog.getSourceUrl());
+
+        verify(Sentry.class);
+        Sentry.captureException(exception);
     }
 }
