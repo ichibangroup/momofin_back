@@ -1,7 +1,6 @@
 package ppl.momofin.momofinbackend.controller;
 
 import io.sentry.Sentry;
-import io.sentry.SentryEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +58,15 @@ public class AuthController {
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            loggingService.logException(null, e, logName, sourceUrl);
+            loggingService.log(
+                    null,
+                    "ERROR",
+                    "Failed login attempt for user: " + authRequest.getUsername() + " from organization: " + authRequest.getOrganizationName(),
+                    "/auth/login",
+                    request.getRequestURL().toString()
+            );
+
+            loggingService.logException(null, e, "/auth/login", request.getRequestURL().toString());
 
             Sentry.captureException(e);
 
