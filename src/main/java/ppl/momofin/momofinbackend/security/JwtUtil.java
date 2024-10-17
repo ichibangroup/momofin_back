@@ -3,7 +3,6 @@ package ppl.momofin.momofinbackend.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ppl.momofin.momofinbackend.model.User;
 
@@ -24,6 +23,7 @@ public class JwtUtil {
         claims.put("roles", new ArrayList<>(user.getRoles()));  // Convert Set to List
         claims.put("organizationId", user.getOrganization().getOrganizationId());
         claims.put("isOrganizationAdmin", user.isOrganizationAdmin());
+        claims.put("isMomofinAdmin", user.isMomofinAdmin());
         return createToken(claims, user.getUsername());
     }
 

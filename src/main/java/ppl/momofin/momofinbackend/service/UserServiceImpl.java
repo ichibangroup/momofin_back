@@ -67,6 +67,8 @@ public class UserServiceImpl implements UserService{
         return userRepository.save(new User(organization, username, name, email, encodedPassword, position));
     }
 
+
+
     @Override
     public List<User> fetchUsersByOrganization(Organization organization) {
         return userRepository.findAllByOrganization(organization);
@@ -105,5 +107,14 @@ public class UserServiceImpl implements UserService{
     public User fetchUserByUsername(String username) {
         Optional<User> user = userRepository.findByUsername(username);
         return user.orElse(null);
+    }
+    @Override
+    public User registerOrganizationAdmin(Organization organization, String username, String name, String email, String password, String position) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new UserAlreadyExistsException("An admin with this username already exists");
+        }
+        User newUser = registerMember(organization, username, name, email, password, position);
+        newUser.setOrganizationAdmin(true);
+        return userRepository.save(newUser);
     }
 }
