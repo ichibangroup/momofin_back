@@ -51,6 +51,6 @@ jobs:
           GCP_SA_PRIVATE_KEY_ID: ${{ secrets.GCP_SA_PRIVATE_KEY_ID }}
           GCP_SA_NAME: ${{ secrets.GCP_SA_NAME }}
           GCP_SA_CLIENT_ID: ${{ secrets.GCP_SA_CLIENT_ID }}
-          SENTRY_AUTH_TOKEN : $ {{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN : ${{ secrets.SENTRY_AUTH_TOKEN }}
           PKEY_DIRECTORY: /home/runner/work
         run: ./gradlew build sonar --info
