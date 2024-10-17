@@ -14,4 +14,5 @@ public interface UserService {
     User getUserById(Long userId);
     User updateUser(Long userId, User updatedUser);
     User fetchUserByUsername(String username);
+    User registerOrganizationAdmin(Organization organization, String username, String name, String email, String password, String position);
 }

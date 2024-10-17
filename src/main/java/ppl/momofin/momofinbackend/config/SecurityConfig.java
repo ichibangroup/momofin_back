@@ -27,8 +27,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login").permitAll()
-                        .requestMatchers("/api/user/**").permitAll()
                         .requestMatchers("/api/organizations/**").hasRole("ORG_ADMIN")
+                        .requestMatchers("/api/momofin-admin/**").hasRole("MOMOFIN_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
