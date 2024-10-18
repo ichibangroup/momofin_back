@@ -3,10 +3,7 @@ package ppl.momofin.momofinbackend.service;
 import io.sentry.Sentry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import ppl.momofin.momofinbackend.model.Log;
 import ppl.momofin.momofinbackend.repository.LogRepository;
 
@@ -35,7 +32,7 @@ class LogServiceTest {
         String logName = "/auth/login";
         String sourceUrl = "http://localhost/auth/login";
 
-        loggingService.log(userID,level, message, logName, sourceUrl);
+        loggingService.log(userID, level, message, logName, sourceUrl);
 
         ArgumentCaptor<Log> logCaptor = ArgumentCaptor.forClass(Log.class);
         verify(logRepository).save(logCaptor.capture());
@@ -58,23 +55,23 @@ class LogServiceTest {
         String logName = "/test/log";
         String sourceUrl = "http://localhost/test";
 
-        mockStatic(Sentry.class);
+        try (MockedStatic<Sentry> mockedSentry = mockStatic(Sentry.class)) {
 
-        loggingService.logException(userId, exception, logName, sourceUrl);
+            loggingService.logException(userId, exception, logName, sourceUrl);
 
-        ArgumentCaptor<Log> logEntryCaptor = ArgumentCaptor.forClass(Log.class);
+            ArgumentCaptor<Log> logEntryCaptor = ArgumentCaptor.forClass(Log.class);
 
-        verify(logRepository).save(logEntryCaptor.capture());
+            verify(logRepository).save(logEntryCaptor.capture());
 
-        Log capturedLog = logEntryCaptor.getValue();
-        assertEquals(userId, capturedLog.getUserId());
-        assertEquals(LocalDateTime.now().getHour(), capturedLog.getTimestamp().getHour());
-        assertEquals("WARN", capturedLog.getLevel());
-        assertEquals("Test Exception", capturedLog.getMessage());
-        assertEquals(logName, capturedLog.getLogName());
-        assertEquals(sourceUrl, capturedLog.getSourceUrl());
+            Log capturedLog = logEntryCaptor.getValue();
+            assertEquals(userId, capturedLog.getUserId());
+            assertEquals(LocalDateTime.now().getHour(), capturedLog.getTimestamp().getHour());
+            assertEquals("WARN", capturedLog.getLevel());
+            assertEquals("Test Exception", capturedLog.getMessage());
+            assertEquals(logName, capturedLog.getLogName());
+            assertEquals(sourceUrl, capturedLog.getSourceUrl());
 
-        verify(Sentry.class);
-        Sentry.captureException(exception);
+           mockedSentry.verify(() -> Sentry.captureException(exception));
+        }
     }
 }
