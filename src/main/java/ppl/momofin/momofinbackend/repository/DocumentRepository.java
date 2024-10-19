@@ -11,5 +11,6 @@ import java.util.Optional;
 @Repository
 public interface DocumentRepository extends JpaRepository<Document, Long> {
     Optional<Document> findByHashString(String hashString);
+    Optional<Document> findByDocumentId(Long documentId);
     List<Document> findAllByOwner(User user);
 }

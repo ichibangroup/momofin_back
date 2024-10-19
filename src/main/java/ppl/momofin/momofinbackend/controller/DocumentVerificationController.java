@@ -11,6 +11,9 @@ import ppl.momofin.momofinbackend.service.DocumentService;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.service.UserService;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -23,6 +26,7 @@ public class DocumentVerificationController {
     private final JwtUtil jwtUtil;
     private final UserService userService;
 
+    private static final Logger logger = LoggerFactory.getLogger(DocumentVerificationController.class);
     @Autowired
     public DocumentVerificationController(DocumentService documentService, JwtUtil jwtUtil, UserService userService) {
         this.documentService = documentService;
@@ -58,6 +62,7 @@ public class DocumentVerificationController {
 
     @GetMapping("/view")
     public ResponseEntity<Response> getAllUsersDocument(@RequestHeader("Authorization") String token) {
+        logger.info("fine 1");
         String username = getUsername(token,jwtUtil);
 
         User user = userService.fetchUserByUsername(username);
@@ -68,8 +73,28 @@ public class DocumentVerificationController {
         return ResponseEntity.ok(userDocumentsResponse);
     }
 
+    @GetMapping("/view/{documentId}")
+    public ResponseEntity<Response> getViewableUrl(@PathVariable Long documentId, @RequestHeader("Authorization") String token) {
+        try {
+            String username = getUsername(token, jwtUtil);
+            String organizationName = getOrgName(token, jwtUtil);
+            String url = documentService.getViewableUrl(documentId, username, organizationName);
+            Response urlResponse = new DocumentViewUrlResponse(url);
+
+            return ResponseEntity.ok(urlResponse);
+        } catch (RuntimeException | IOException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Error retrieving document: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
     public static String getUsername(String token, JwtUtil jwtUtil) {
         String jwtToken = token.substring(7);
         return jwtUtil.extractUsername(jwtToken);
+    }
+
+    public static String getOrgName(String token, JwtUtil jwtUtil) {
+        String jwtToken = token.substring(7);
+        return jwtUtil.extractOrganizationName(jwtToken);
     }
 }
