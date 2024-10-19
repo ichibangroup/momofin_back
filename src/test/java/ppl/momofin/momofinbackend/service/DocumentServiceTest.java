@@ -182,7 +182,31 @@ class DocumentServiceTest {
     }
 
     @Test
-    void verifySpecificDocumentUnauthorizedUser() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    void verifySpecificDocumentAuthorizedUser() throws Exception {
+        Long documentId = 1L;
+        String expectedHash = "expectedHash";
+
+        Document mockDocument = new Document();
+        mockDocument.setHashString(expectedHash);
+        mockDocument.setOwner(mockUser);
+
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
+
+        DocumentServiceImpl documentServiceSpy = spy(documentService);
+        doReturn(expectedHash).when(documentServiceSpy).generateHash(any(MultipartFile.class));
+
+        MockMultipartFile testFile = new MockMultipartFile("file", "test.txt", "text/plain", "Test content".getBytes());
+
+        Document result = documentServiceSpy.verifySpecificDocument(testFile, documentId, mockUsername);
+
+        assertNotNull(result);
+        assertEquals(mockDocument.getHashString(), result.getHashString());
+    }
+
+
+    @Test
+    void verifySpecificDocumentUnauthorizedUser() throws Exception {
         Long documentId = 1L;
 
         MockMultipartFile testFile = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
