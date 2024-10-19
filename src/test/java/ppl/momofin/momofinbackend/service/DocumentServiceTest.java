@@ -207,7 +207,7 @@ class DocumentServiceTest {
 
 
     @Test
-    void verifySpecificDocumentUnauthorizedUser() throws Exception {
+    void verifySpecificDocumentUnauthorizedUser()  {
         Long documentId = 1L;
 
         MockMultipartFile testFile = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
@@ -237,6 +237,59 @@ class DocumentServiceTest {
         assertEquals(mockUsername, usernameCaptor.getValue());
         assertNotEquals(mockDocument.getOwner(), unauthorizedUser);
     }
+
+    @Test
+    void verifySpecificDocumentOwnerNotFound() {
+        Long documentId = 1L;
+
+        Document mockDocument = new Document();
+        mockDocument.setDocumentId(documentId);
+        mockDocument.setHashString("expectedHash");
+
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+        });
+
+        assertEquals("You are not authorized to verify this document.", exception.getMessage());
+
+        verify(documentRepository).findById(documentId);
+        verify(userRepository).findByUsername(mockUsername);
+    }
+
+
+
+    @Test
+    void verifySpecificDocumentOwnerMismatch() {
+        Long documentId = 1L;
+
+        Document mockDocument = new Document();
+        mockDocument.setDocumentId(documentId);
+        mockDocument.setHashString("expectedHash");
+
+        User differentOwner = new User();
+        differentOwner.setName("Different User");
+        Organization organization = new Organization("Different Organization");
+        differentOwner.setOrganization(organization);
+        mockDocument.setOwner(differentOwner);
+
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+        });
+
+        assertEquals("You are not authorized to verify this document.", exception.getMessage());
+
+        verify(documentRepository).findById(documentId);
+        verify(userRepository).findByUsername(mockUsername);
+    }
+
+
+
 
     @Test
     void verifySpecificDocumentHashMismatch() throws IOException, NoSuchAlgorithmException, InvalidKeyException {

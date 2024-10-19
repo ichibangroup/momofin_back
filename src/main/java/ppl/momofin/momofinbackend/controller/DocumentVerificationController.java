@@ -48,8 +48,8 @@ public class DocumentVerificationController {
     public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) {
         try {
             String username = getUsername(token, jwtUtil);
-            Document Document = documentService.verifyDocument(file, username);
-            DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(Document);
+            Document document = documentService.verifyDocument(file, username);
+            DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(document);
             return ResponseEntity.ok(successResponse);
         } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
             ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
