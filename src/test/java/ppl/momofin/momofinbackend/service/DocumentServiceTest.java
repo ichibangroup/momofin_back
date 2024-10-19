@@ -3,6 +3,7 @@ package ppl.momofin.momofinbackend.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -224,13 +225,18 @@ class DocumentServiceTest {
         when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(unauthorizedUser));
 
+        ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
+
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             documentService.verifySpecificDocument(testFile, documentId, mockUsername);
         });
 
         assertEquals("You are not authorized to verify this document.", exception.getMessage());
-    }
 
+        verify(userRepository).findByUsername(usernameCaptor.capture());
+        assertEquals(mockUsername, usernameCaptor.getValue());
+        assertNotEquals(mockDocument.getOwner(), unauthorizedUser);
+    }
 
     @Test
     void verifySpecificDocumentHashMismatch() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
