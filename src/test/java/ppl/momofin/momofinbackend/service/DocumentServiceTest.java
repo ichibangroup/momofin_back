@@ -128,27 +128,57 @@ class DocumentServiceTest {
     }
 
     @Test
-    void verifySpecificDocumentSuccess () throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-        Document mockDocument = new Document("testhash", "Existing Document");
+    void verifySpecificDocumentSuccess() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        // Arrange
         Long documentId = 1L;
+        String expectedHash = "testHash"; // This is the expected hash from the document
 
-        when(documentRepository.findByHashString("testhash")).thenReturn(Optional.of(mockDocument));
+        // Create a mock document with the expected hash
+        Document mockDocument = new Document();
+        mockDocument.setHashString(expectedHash); // Set the correct hash
+        mockDocument.setOwner(mockUser); // Ensure the document has an owner
+
+        // Mock the behavior for finding the document by ID and username
         when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
 
-        Document result = documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+        // Use a spy to partially mock DocumentServiceImpl
+        DocumentServiceImpl documentServiceSpy = spy(documentService);
+        doReturn(expectedHash).when(documentServiceSpy).generateHash(any(MultipartFile.class)); // Simulate correct hash
 
+        // Act
+        MockMultipartFile mockFile = new MockMultipartFile("file", "test.txt", "text/plain", "Test content".getBytes());
+        Document result = documentServiceSpy.verifySpecificDocument(mockFile, documentId, mockUsername);
+
+        // Assert
         assertNotNull(result);
-        assertEquals(mockDocument.getDocumentId(), result.getDocumentId());
+        assertEquals(mockDocument.getHashString(), result.getHashString());
+    }
+
+
+    @Test
+    void verifySpecificDocumentNullFile() {
+        Long documentId = 1L;
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            documentService.verifySpecificDocument(null, documentId, mockUsername);
+        });
     }
 
     @Test
-    void verifySpecificDocumentHashMismatch () throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-        Document existingDocument = new Document("existinghash", "Existing Document");
+    void verifySpecificDocumentEmptyFile() {
         Long documentId = 1L;
+        mockFile = new MockMultipartFile("file", "empty.txt", "text/plain", new byte[0]);
 
-        when(documentRepository.findByHashString("mismatchedhash")).thenReturn(Optional.of(existingDocument));
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(existingDocument));
+        assertThrows(IllegalArgumentException.class, () -> {
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+        });
+    }
+
+    @Test
+    void verifySpecificDocumentDocumentNotFound() {
+        Long documentId = 1L;
+        when(documentRepository.findById(documentId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class, () -> {
             documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
@@ -156,29 +186,52 @@ class DocumentServiceTest {
     }
 
     @Test
-    void verifySpecificDocumentUserNotFound() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    void verifySpecificDocumentUnauthorizedUser() {
         Long documentId = 1L;
+        Document mockDocument = new Document();
+        mockDocument.setHashString("expectedHash");
+        mockDocument.setOwner(mockUser);
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.empty());
-        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
+        User unauthorizedUser = new User();
+        unauthorizedUser.setName("Unauthorized User");
+        Organization organization = new Organization("Another Organization");
+        unauthorizedUser.setOrganization(organization);
 
-        assertThrows(RuntimeException.class, () -> {
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(unauthorizedUser)); // Simulate unauthorized access
+
+        assertThrows(IllegalStateException.class, () -> {
             documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
-        });
-    }
+        });    }
 
     @Test
-    void verifySpecificDocumentNonExistentDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-        // Arrange
+    void verifySpecificDocumentHashMismatch() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         Long documentId = 1L;
+        Document mockDocument = new Document();
+        String expectedHash = "testHash"; // This should match the mock document's hash
+        String wrongHash = "wrongHash"; // This will be used to simulate a hash mismatch
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.empty());
+        // Set up the mock user who is the owner
+        mockDocument.setOwner(mockUser); // Ensure that the document has an owner
+        mockDocument.setHashString(expectedHash); // Set the correct hash in the mock document
+
+        // Mock the behavior for finding the document by ID
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser)); // User is the owner
+
+        DocumentServiceImpl documentServiceSpy = spy(documentService);
+
+        // Mock the generateHash method
+        doReturn(wrongHash).when(documentServiceSpy).generateHash(any(MultipartFile.class));
 
         // Act & Assert
-        assertThrows(IllegalStateException.class, () -> {
-            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+        MockMultipartFile mockFile = new MockMultipartFile("file", "test.txt", "text/plain", "Test content".getBytes());
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            documentServiceSpy.verifySpecificDocument(mockFile, documentId, mockUsername);
         });
     }
+
 
     @Test
     void generateHashConsistentResults() {
