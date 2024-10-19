@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DocumentViewUrlResponseTest {
+class DocumentViewUrlResponseTest {
     @Test
     void testDocumentViewUrlResponseConstructorEmpty() {
         DocumentViewUrlResponse documentViewUrlResponse = new DocumentViewUrlResponse();

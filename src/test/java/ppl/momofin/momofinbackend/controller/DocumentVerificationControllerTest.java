@@ -19,7 +19,6 @@ import ppl.momofin.momofinbackend.service.DocumentService;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.service.UserService;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 

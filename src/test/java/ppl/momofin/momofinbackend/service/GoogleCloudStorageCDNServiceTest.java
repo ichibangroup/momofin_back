@@ -22,6 +22,7 @@ import ppl.momofin.momofinbackend.repository.DocumentRepository;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
@@ -111,7 +112,8 @@ class GoogleCloudStorageCDNServiceTest {
         BlobId blobId = BlobId.of(bucketName, folderPath);
 
         when(mockStorage.get(blobId)).thenReturn(blob);
-        URL signedUrl = new URL("https://signed-url.com");
+        URI signedUri = URI.create("https://signed-url.com");
+        URL signedUrl = signedUri.toURL();
         when(blob.signUrl(1, TimeUnit.HOURS)).thenReturn(signedUrl);
 
         // Act

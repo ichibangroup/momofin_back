@@ -7,7 +7,7 @@ import ppl.momofin.momofinbackend.model.User;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class FetchAllUserResponseTest {
+class FetchAllUserResponseTest {
     @Test
     void testFetchAllUserResponseConstructorEmpty() {
         FetchAllUserResponse userResponse = new FetchAllUserResponse();
