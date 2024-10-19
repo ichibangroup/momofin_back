@@ -1,6 +1,7 @@
 package ppl.momofin.momofinbackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,6 +52,23 @@ public class DocumentVerificationController {
             DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(document);
             return ResponseEntity.ok(successResponse);
         } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @PostMapping("/verify/{documentId}")
+    public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file, @PathVariable("documentId") Long documentId) {
+        try {
+            String username = getUsername(token, jwtUtil);
+
+            Document verifiedDocument = documentService.verifySpecificDocument(file, documentId, username);
+
+            DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(verifiedDocument);
+            return ResponseEntity.ok(successResponse);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(e.getMessage()));
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
             ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }

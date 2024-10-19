@@ -12,5 +12,6 @@ import java.util.List;
 public interface DocumentService {
     String submitDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException;
     Document verifyDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException;
+    Document verifySpecificDocument(MultipartFile file, Long documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException;
     List<Document> findAllDocumentsByOwner(User user);
 }
