@@ -76,7 +76,35 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseThrow(() -> new IllegalStateException("Document not found"));
     }
 
-    private String generateHash(MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    @Override
+    public Document verifySpecificDocument(MultipartFile file, Long documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File must not be null or empty");
+        }
+
+        Optional<Document> documentOptional = documentRepository.findById(documentId);
+
+        if (documentOptional.isEmpty()) {
+            throw new IllegalStateException("Document with ID " + documentId + " not found");
+        }
+
+        Document document = documentOptional.get();
+
+        Optional<User> ownerOptional = userRepository.findByUsername(username);
+        if (ownerOptional.isEmpty() || !document.getOwner().equals(ownerOptional.get())) {
+            throw new IllegalStateException("You are not authorized to verify this document.");
+        }
+
+        String hashString = generateHash(file);
+
+        if (!document.getHashString().equals(hashString)) {
+            throw  new IllegalArgumentException("Hash does not match the specified document.");
+        }
+
+        return document;
+    }
+
+     String generateHash(MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         try (InputStream fileStream = file.getInputStream()) {
             SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getBytes(), ALGORITHM);
             Mac mac = Mac.getInstance(ALGORITHM);

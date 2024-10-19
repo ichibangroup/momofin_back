@@ -3,6 +3,7 @@ val postgresVersion = "42.6.0"
 val jsonWebTokenVersion = "0.9.1"
 val javaxVersion = "2.3.1"
 val gcpVersion = "2.43.1"
+val sentryVersion = "6.10.0"
 
 plugins {
     java
@@ -10,6 +11,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.6"
     id("jacoco")
     id("org.sonarqube") version "4.4.1.3373"
+    id("io.sentry.jvm.gradle") version "4.12.0"
 }
 
 group = "ppl.momofin"
@@ -40,6 +42,8 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt:$jsonWebTokenVersion")
     implementation("javax.xml.bind:jaxb-api:$javaxVersion")
     implementation("com.google.cloud:google-cloud-storage:$gcpVersion")
+    implementation("io.sentry:sentry:$sentryVersion")
+    implementation("io.sentry:sentry-spring-boot-starter:$sentryVersion")
 
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
@@ -79,4 +83,12 @@ sonar {
         property("sonar.organization", "ichibangroup")
         property("sonar.host.url", "https://sonarcloud.io")
     }
+}
+
+sentry {
+    includeSourceContext = true
+
+    org= "muhamad-pascal-alfin-pahlevi"
+    projectName = "momofin-backend"
+    authToken = System.getenv("SENTRY_AUTH_TOKEN")
 }
