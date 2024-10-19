@@ -1,6 +1,7 @@
 package ppl.momofin.momofinbackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -65,7 +66,9 @@ public class DocumentVerificationController {
 
             DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(verifiedDocument);
             return ResponseEntity.ok(successResponse);
-        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(e.getMessage()));
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
             ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
