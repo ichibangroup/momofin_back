@@ -116,8 +116,8 @@ class UserTest {
         String username = "Position_Name or something";
         User user = new User();
 
-        user.setName(username);
-        assertEquals(username, user.getName());
+        user.setUsername(username);
+        assertEquals(username, user.getUsername());
     }
 
 

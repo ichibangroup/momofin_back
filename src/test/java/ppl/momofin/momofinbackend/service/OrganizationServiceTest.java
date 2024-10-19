@@ -258,4 +258,17 @@ class OrganizationServiceTest {
         assertThrows(InvalidOrganizationException.class,
                 () -> organizationService.createOrganization(null, "Description"));
     }
+
+    @Test
+    void findOrganization_success() {
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
+        Organization organization = organizationService.findOrganizationById(1L);
+        assertEquals(testOrg, organization);
+    }
+    @Test
+    void findOrganization_shouldThrowException_whenOrganizationNotFound() {
+        when(organizationRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(OrganizationNotFoundException.class,
+                () -> organizationService.findOrganizationById(1L));
+    }
 }
