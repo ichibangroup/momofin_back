@@ -43,6 +43,19 @@ public class DocumentVerificationController {
         }
     }
 
+    @PostMapping("/verify")
+    public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) {
+        try {
+            String username = getUsername(token, jwtUtil);
+            Document Document = documentService.verifyDocument(file, username);
+            DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(Document);
+            return ResponseEntity.ok(successResponse);
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
     @PostMapping("/verify/{documentId}")
     public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file, @PathVariable("documentId") Long documentId) {
         try {
