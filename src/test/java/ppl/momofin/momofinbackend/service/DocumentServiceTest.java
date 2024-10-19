@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
@@ -124,6 +125,59 @@ class DocumentServiceTest {
     void verifyDocumentEmptyFile() {
         MockMultipartFile emptyFile = new MockMultipartFile("file", "empty.txt", "text/plain", new byte[0]);
         assertThrows(IllegalArgumentException.class, () -> documentService.verifyDocument(emptyFile, mockUsername));
+    }
+
+    @Test
+    void verifySpecificDocumentSuccess () throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        Document mockDocument = new Document("testhash", "Existing Document");
+        Long documentId = 1L;
+
+        when(documentRepository.findByHashString("testhash")).thenReturn(Optional.of(mockDocument));
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
+
+        Document result = documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+
+        assertNotNull(result);
+        assertEquals(mockDocument.getDocumentId(), result.getDocumentId());
+    }
+
+    @Test
+    void verifySpecificDocumentHashMismatch () throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        Document existingDocument = new Document("existinghash", "Existing Document");
+        Long documentId = 1L;
+
+        when(documentRepository.findByHashString("mismatchedhash")).thenReturn(Optional.of(existingDocument));
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(existingDocument));
+
+        assertThrows(IllegalStateException.class, () -> {
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+        });
+    }
+
+    @Test
+    void verifySpecificDocumentUserNotFound() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        Long documentId = 1L;
+
+        when(documentRepository.findById(documentId)).thenReturn(Optional.empty());
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> {
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+        });
+    }
+
+    @Test
+    void verifySpecificDocumentNonExistentDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        // Arrange
+        Long documentId = 1L;
+
+        when(documentRepository.findById(documentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(IllegalStateException.class, () -> {
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+        });
     }
 
     @Test
