@@ -109,9 +109,9 @@ class DocumentVerificationControllerTest {
         document.setDocumentId(1L);
         document.setName("test.txt");
         document.setHashString("hash123");
-        when(documentService.verifyDocument(any(), eq(TEST_USERNAME))).thenReturn(document);
+        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenReturn(document);
 
-        mockMvc.perform(multipart("/doc/verify")
+        mockMvc.perform(multipart("/doc/verify/1")
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
@@ -119,21 +119,21 @@ class DocumentVerificationControllerTest {
                 .andExpect(jsonPath("$.document.hashString").value("hash123"))
                 .andExpect(jsonPath("$.document.name").value("test.txt"));
 
-        verify(documentService).verifyDocument(any(), eq(TEST_USERNAME));
+        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
     }
 
     @Test
     void verifyDocument_NotFound() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
-        when(documentService.verifyDocument(any(), eq(TEST_USERNAME))).thenThrow(new IllegalStateException("Document not found"));
+        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenThrow(new IllegalStateException("Document not found"));
 
-        mockMvc.perform(multipart("/doc/verify")
+        mockMvc.perform(multipart("/doc/verify/1")
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorMessage").value("Error verifying document: Document not found"));
 
-        verify(documentService).verifyDocument(any(), eq(TEST_USERNAME));
+        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
     }
 
     @Test
