@@ -159,4 +159,71 @@ class DocumentServiceTest {
     void findalldocumentsbyownerNull() {
         assertThrows(IllegalArgumentException.class, () -> documentService.findAllDocumentsByOwner(null));
     }
+
+    @Test
+    void getViewableUrl_DocumentExists_ReturnsViewableUrl() throws IOException {
+        // Arrange
+        Long documentId = 1L;
+        String username = "testuser";
+        String organizationName = "testorg";
+        String filename = "testfile.pdf";
+        String expectedUrl = "https://cdn.example.com/signed-url";
+
+        Document document = new Document();
+        document.setDocumentId(documentId);
+        document.setName(filename);
+
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(filename, username, organizationName)).thenReturn(expectedUrl);
+
+        // Act
+        String actualUrl = documentService.getViewableUrl(documentId, username, organizationName);
+
+        // Assert
+        assertEquals(expectedUrl, actualUrl);
+        verify(documentRepository, times(1)).findByDocumentId(documentId);
+        verify(cdnService, times(1)).getViewableUrl(filename, username, organizationName);
+    }
+
+    @Test
+    void getViewableUrl_DocumentDoesNotExist_ThrowsIllegalArgumentException() throws IOException {
+        // Arrange
+        Long documentId = 1L;
+        String username = "testuser";
+        String organizationName = "testorg";
+
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                documentService.getViewableUrl(documentId, username, organizationName));
+
+        assertEquals("Document with id " + documentId + " does not exist", exception.getMessage());
+        verify(documentRepository, times(1)).findByDocumentId(documentId);
+        verify(cdnService, never()).getViewableUrl(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void getViewableUrl_CdnServiceThrowsIOException_ThrowsIOException() throws IOException {
+        // Arrange
+        Long documentId = 1L;
+        String username = "testuser";
+        String organizationName = "testorg";
+        String filename = "testfile.pdf";
+
+        Document document = new Document();
+        document.setDocumentId(documentId);
+        document.setName(filename);
+
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(filename, username, organizationName)).thenThrow(new IOException("Failed to get URL"));
+
+        // Act & Assert
+        IOException exception = assertThrows(IOException.class, () ->
+                documentService.getViewableUrl(documentId, username, organizationName));
+
+        assertEquals("Failed to get URL", exception.getMessage());
+        verify(documentRepository, times(1)).findByDocumentId(documentId);
+        verify(cdnService, times(1)).getViewableUrl(filename, username, organizationName);
+    }
 }

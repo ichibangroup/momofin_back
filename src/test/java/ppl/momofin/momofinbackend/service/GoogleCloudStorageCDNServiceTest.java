@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.service;
 
+import com.google.cloud.storage.Blob;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +20,10 @@ import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URL;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -31,6 +35,9 @@ class GoogleCloudStorageCDNServiceTest {
     private Storage mockStorage;
     @Mock
     private DocumentRepository documentRepository;
+
+    @Mock
+    private Blob blob;
 
     private GoogleCloudStorageCDNService cdnService;
     private String bucketName;
@@ -70,7 +77,7 @@ class GoogleCloudStorageCDNServiceTest {
 
         cdnService.uploadFile(mockFile, user, "hashString");
 
-        BlobId expectedBlobId = BlobId.of(bucketName, user.getOrganization().getName() + "/" + user.getName() + "/test-file.pdf");
+        BlobId expectedBlobId = BlobId.of(bucketName, user.getOrganization().getName() + "/" + user.getUsername() + "/test-file.pdf");
         BlobInfo expectedBlobInfo = BlobInfo.newBuilder(expectedBlobId)
                 .setContentType("application/pdf")
                 .build();
@@ -92,5 +99,48 @@ class GoogleCloudStorageCDNServiceTest {
         assertThrows(IOException.class, () -> {
             new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, wrongFilePath, serviceName, clientId, documentRepository);
         });
+    }
+
+    @Test
+    void testGetViewableUrl_Success() throws IOException {
+        // Arrange
+        String fileName = "test.pdf";
+        String username = "user123";
+        String organizationName = "OrgXYZ";
+        String folderPath = organizationName + "/" + username + "/" + fileName;
+        BlobId blobId = BlobId.of(bucketName, folderPath);
+
+        when(mockStorage.get(blobId)).thenReturn(blob);
+        URL signedUrl = new URL("https://signed-url.com");
+        when(blob.signUrl(1, TimeUnit.HOURS)).thenReturn(signedUrl);
+
+        // Act
+        String viewableUrl = cdnService.getViewableUrl(fileName, username, organizationName);
+
+        // Assert
+        assertNotNull(viewableUrl);
+        assertEquals("https://signed-url.com", viewableUrl);
+        verify(mockStorage).get(blobId); // Ensure the correct blob was fetched
+        verify(blob).signUrl(1, TimeUnit.HOURS); // Ensure a signed URL was created
+    }
+
+    @Test
+    void testGetViewableUrl_FileNotFound() {
+        // Arrange
+        String fileName = "nonexistent.pdf";
+        String username = "user123";
+        String organizationName = "OrgXYZ";
+        String folderPath = organizationName + "/" + username + "/" + fileName;
+        BlobId blobId = BlobId.of(bucketName, folderPath);
+
+        when(mockStorage.get(blobId)).thenReturn(null);
+
+        // Act & Assert
+        FileNotFoundException exception = assertThrows(FileNotFoundException.class, () -> {
+            cdnService.getViewableUrl(fileName, username, organizationName);
+        });
+
+        assertEquals("File not found: " + fileName, exception.getMessage());
+        verify(mockStorage).get(blobId); // Ensure the correct blob was attempted to be fetched
     }
 }
