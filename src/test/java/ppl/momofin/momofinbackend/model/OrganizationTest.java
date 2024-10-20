@@ -49,4 +49,11 @@ class OrganizationTest {
         assertEquals("Test Org", org.getName());
         assertEquals("Custom Description", org.getDescription());
     }
+
+    @Test
+    void testOrganizationCreationWithEverything() {
+        Organization organization = new Organization("Test Org", "Test Description", "Test Industry", "Test Location");
+        assertEquals("Test Org", organization.getName());
+        assertEquals("Test Description", organization.getDescription());
+    }
 }

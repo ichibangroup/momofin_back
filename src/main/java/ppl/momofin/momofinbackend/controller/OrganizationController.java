@@ -28,7 +28,7 @@ public class OrganizationController {
 
     @PutMapping("/{orgId}")
     public ResponseEntity<Organization> updateOrganization(@PathVariable Long orgId, @RequestBody Organization organizationDetails) {
-        Organization updatedOrganization = organizationService.updateOrganization(orgId, organizationDetails.getName(), organizationDetails.getDescription());
+        Organization updatedOrganization = organizationService.updateOrganization(orgId, organizationDetails.getName(), organizationDetails.getDescription(), organizationDetails.getIndustry(), organizationDetails.getLocation());
         return ResponseEntity.ok(updatedOrganization);
     }
 

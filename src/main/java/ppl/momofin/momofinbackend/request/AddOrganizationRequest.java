@@ -8,6 +8,8 @@ import lombok.Setter;
 public class AddOrganizationRequest {
     private String name;
     private String description;
+    private String industry;
+    private String location;
     private String adminUsername;
     private String adminPassword;
 }

@@ -10,6 +10,8 @@ public class OrganizationResponse {
     private Long organizationId;
     private String name;
     private String description;
+    private String industry;
+    private String location;
     private String errorMessage;
 
     public static OrganizationResponse fromOrganization(Organization organization) {
@@ -17,6 +19,8 @@ public class OrganizationResponse {
                 organization.getOrganizationId(),
                 organization.getName(),
                 organization.getDescription(),
+                organization.getIndustry(),
+                organization.getLocation(),
                 null
         );
     }
