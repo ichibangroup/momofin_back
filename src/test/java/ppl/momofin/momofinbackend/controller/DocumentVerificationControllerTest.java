@@ -143,9 +143,9 @@ class DocumentVerificationControllerTest {
         when(jwtUtil.validateToken(strippedToken, TEST_USERNAME)).thenReturn(true);
         when(jwtUtil.extractUsername(strippedToken)).thenReturn(TEST_USERNAME);
 
-        when(userService.fetchUserByUsername(eq(TEST_USERNAME))).thenReturn(TEST_USER);
+        when(userService.fetchUserByUsername(TEST_USERNAME)).thenReturn(TEST_USER);
         TEST_USER.setName(TEST_USERNAME);
-        when(documentService.findAllDocumentsByOwner(eq(TEST_USER))).thenReturn(List.of(new Document()));
+        when(documentService.findAllDocumentsByOwner(TEST_USER)).thenReturn(List.of(new Document()));
 
         mockMvc.perform(get("/doc/view")
                         .header("Authorization", VALID_TOKEN))
@@ -155,7 +155,7 @@ class DocumentVerificationControllerTest {
 
         verify(jwtUtil, times(1)).validateToken(strippedToken, TEST_USERNAME);
         verify(jwtUtil, times(2)).extractUsername(strippedToken);  // Expecting 2 invocations (filter + controller)
-        verify(documentService, times(1)).findAllDocumentsByOwner(eq(TEST_USER));
+        verify(documentService, times(1)).findAllDocumentsByOwner(TEST_USER);
     }
 
     @Test
