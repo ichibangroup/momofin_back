@@ -22,6 +22,7 @@ import ppl.momofin.momofinbackend.service.UserService;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 
 import java.util.Collections;
@@ -189,7 +190,7 @@ class DocumentVerificationControllerTest {
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorMessage").value("Error verifying document: I/O error occurred"));
+                .andExpect(jsonPath("$.errorMessage").value("Verification failed: I/O error occurred"));
 
         verify(documentService).verifySpecificDocument(any(), eq(1L), any());
     }
@@ -204,7 +205,7 @@ class DocumentVerificationControllerTest {
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorMessage").value("Error verifying document: Algorithm not found"));
+                .andExpect(jsonPath("$.errorMessage").value("Verification failed: Algorithm not found"));
 
         verify(documentService).verifySpecificDocument(any(), eq(1L), any());
     }
@@ -219,7 +220,7 @@ class DocumentVerificationControllerTest {
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorMessage").value("Error verifying document: Invalid key error"));
+                .andExpect(jsonPath("$.errorMessage").value("Verification failed: Invalid key error"));
 
         verify(documentService).verifySpecificDocument(any(), eq(1L), any());
     }
@@ -296,5 +297,18 @@ class DocumentVerificationControllerTest {
         verify(jwtUtil, times(2)).extractUsername("validToken");
         verify(jwtUtil, times(1)).extractOrganizationName("validToken");
         verify(documentService, times(1)).getViewableUrl(documentId, TEST_USERNAME, organizationName);
+    }
+
+    @Test
+    void getDocumentToBeVerifiedTest() throws Exception {
+        Document document = new Document("hashString", "documentName");
+
+        when(documentService.fetchDocumentWithDocumentId(123L)).thenReturn(document);
+
+        mockMvc.perform(get("/doc/verify/123")
+                .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hashString").value("hashString"))
+                .andExpect(jsonPath("$.name").value("documentName"));
     }
 }

@@ -415,4 +415,21 @@ class DocumentServiceTest {
         verify(documentRepository, times(1)).findByDocumentId(documentId);
         verify(cdnService, times(1)).getViewableUrl(filename, username, organizationName);
     }
+
+    @Test
+    void fetchDocumentByIdSuccess() {
+        Document document = new Document();
+        when(documentRepository.findByDocumentId(123L)).thenReturn(Optional.of(document));
+
+        Document returnedDocument = documentService.fetchDocumentWithDocumentId(123L);
+
+        assertEquals(document, returnedDocument);
+    }
+
+    @Test
+    void fetchDocumentByIdFailed() {
+        when(documentRepository.findByDocumentId(123L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> documentService.fetchDocumentWithDocumentId(123L) );
+    }
 }
