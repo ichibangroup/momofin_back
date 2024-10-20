@@ -16,6 +16,7 @@ import ppl.momofin.momofinbackend.service.OrganizationService;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -81,5 +82,17 @@ class OrganizationControllerTest {
                         .content("{\"username\":\"updateduser\",\"name\":\"Updated User\",\"email\":\"updated@example.com\",\"position\":\"Senior Developer\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("testuser"));
+    }
+
+    @Test
+    void getOrganizationTest() throws Exception {
+        when(organizationService.findOrganizationById(1L)).thenReturn(testOrg);
+
+        mockMvc.perform(get("/api/organizations/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Test Org"))
+                .andExpect(jsonPath("$.description").value("Test Description"));
+
+        verify(organizationService).findOrganizationById(1L);
     }
 }

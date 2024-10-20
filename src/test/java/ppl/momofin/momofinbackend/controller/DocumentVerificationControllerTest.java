@@ -258,4 +258,43 @@ class DocumentVerificationControllerTest {
 
         verifyNoInteractions(documentService);
     }
+
+    @Test
+    void getViewableUrl_Success_ReturnsOkResponse() throws Exception {
+        // Arrange
+        Long documentId = 1L;
+        String organizationName = "testorg";
+        String viewableUrl = "https://cdn.example.com/document-url";
+
+        when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
+        when(documentService.getViewableUrl(documentId, TEST_USERNAME, organizationName)).thenReturn(viewableUrl);
+
+        mockMvc.perform(get("/doc/view/1")
+                .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value(viewableUrl));
+
+        verify(jwtUtil, times(2)).extractUsername("validToken");
+        verify(jwtUtil, times(1)).extractOrganizationName("validToken");
+        verify(documentService, times(1)).getViewableUrl(documentId, TEST_USERNAME, organizationName);
+    }
+
+    @Test
+    void getViewableUrl_DocumentServiceThrowsIOException_ReturnsBadRequest() throws Exception {
+        // Arrange
+        Long documentId = 1L;
+        String organizationName = "testorg";
+
+        when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
+        when(documentService.getViewableUrl(documentId, TEST_USERNAME, organizationName)).thenThrow(new IOException("File not found: test.txt"));
+
+        mockMvc.perform(get("/doc/view/1")
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Error retrieving document: File not found: test.txt"));
+
+        verify(jwtUtil, times(2)).extractUsername("validToken");
+        verify(jwtUtil, times(1)).extractOrganizationName("validToken");
+        verify(documentService, times(1)).getViewableUrl(documentId, TEST_USERNAME, organizationName);
+    }
 }

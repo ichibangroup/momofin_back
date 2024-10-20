@@ -73,9 +73,9 @@ public class OrganizationService {
         return UserDTO.fromUser(savedUser);
     }
 
-    private Organization findOrganizationById(Long orgId) {
+    public Organization findOrganizationById(Long orgId) {
         return organizationRepository.findById(orgId)
-                .orElseThrow(() -> new RuntimeException("Organization not found"));
+                .orElseThrow(OrganizationNotFoundException::new);
     }
 
     private User findUserById(Long userId) {

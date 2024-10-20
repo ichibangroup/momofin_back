@@ -13,12 +13,16 @@ import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.request.AddOrganizationRequest;
+import ppl.momofin.momofinbackend.response.FetchAllUserResponse;
 import ppl.momofin.momofinbackend.service.OrganizationService;
 import ppl.momofin.momofinbackend.response.OrganizationResponse;
 import ppl.momofin.momofinbackend.service.UserService;
+import ppl.momofin.momofinbackend.utility.Roles;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -226,5 +230,42 @@ class MomofinAdminControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode().value());
         assertNotNull(response.getBody());
         assertEquals("An unexpected error occurred", response.getBody().getErrorMessage());
+    }
+
+    @Test
+    void fetchAllUsersTest() {
+        List<User> users = getUsers();
+
+        when(userService.fetchAllUsers()).thenReturn(users);
+
+        ResponseEntity<List<FetchAllUserResponse>> response = momofinAdminController.getAllUsers();
+        assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
+        for (int i = 0; i<5; i++) {
+            assertEquals(users.get(i).getUserId(), Objects.requireNonNull(response.getBody()).get(i).getUserId());
+            assertEquals(users.get(i).getOrganization().getName(), Objects.requireNonNull(response.getBody()).get(i).getOrganization());
+            assertEquals(users.get(i).getUsername(), Objects.requireNonNull(response.getBody()).get(i).getUsername());
+            assertEquals(users.get(i).getName(), Objects.requireNonNull(response.getBody()).get(i).getName());
+            assertEquals(users.get(i).getEmail(), Objects.requireNonNull(response.getBody()).get(i).getEmail());
+        }
+    }
+
+    private static List<User> getUsers() {
+        Organization momofin = new Organization("Momofin");
+        User user1 = new User(momofin, "Momofin Financial Samuel","Samuel", "samuel@gmail.com", "encodedMy#Money9078", "Finance Manager");
+        User user2 = new User(momofin, "Momofin CEO Darrel", "Darrel Hoei", "darellhoei@gmail.com", "encodedHisPassword#6768", "Co-Founder", true);
+        User user3 = new User(momofin, "Momofin Admin Alex", "Alex", "alex@outlook.com", "encodedAlex&Password0959", "Admin", new Roles(true,true));
+
+        List<User> users = new ArrayList<User>();
+        users.add(user1);
+        users.add(user2);
+        users.add(user3);
+
+        Organization otherOrganization = new Organization("Dondozo");
+        User user4 = new User(otherOrganization, "Dondozo Intern Ron", "Ron", "temp-intern@yahoo.com", "encoded123456", "Intern");
+        User user5 = new User(otherOrganization, "Dondozo Commander Tatsugiri","Tatsugiri", "commander@email.com", "encodedToxic%Mouth", "Commander", true);
+
+        users.add(user4);
+        users.add(user5);
+        return users;
     }
 }

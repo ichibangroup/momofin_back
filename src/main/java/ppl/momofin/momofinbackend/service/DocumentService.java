@@ -14,4 +14,5 @@ public interface DocumentService {
     Document verifyDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException;
     Document verifySpecificDocument(MultipartFile file, Long documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException;
     List<Document> findAllDocumentsByOwner(User user);
+    String getViewableUrl(Long documentId, String username, String organizationName) throws IOException;
 }

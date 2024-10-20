@@ -136,4 +136,15 @@ public class DocumentServiceImpl implements DocumentService {
         }
         return documentRepository.findAllByOwner(user);
     }
+
+    @Override
+    public String getViewableUrl(Long documentId, String username, String organizationName) throws IOException {
+        Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
+
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + " does not exist");
+
+        Document document = optionalDocument.get();
+        String filename = document.getName();
+        return cdnService.getViewableUrl(filename, username, organizationName);
+    }
 }
