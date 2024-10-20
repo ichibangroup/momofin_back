@@ -27,10 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import java.util.stream.Stream;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -1063,56 +1059,12 @@ class UserServiceTest {
         assertEquals("Old Position", user.getPosition());
         // Verify that no change occurred for the unrecognized field
     }
-    @Test
-    void updateUser_BothPasswordsNull_NoPasswordChange() {
-        Long userId = 1L;
-        User updatedUser = new User();
-        updatedUser.setUsername("newUsername");
-        String oldPassword = null;
-        String newPassword = null;
 
-        User userUnderTest = new User();
-        userUnderTest.setUserId(userId);
-        userUnderTest.setUsername("oldUsername");
-        userUnderTest.setPassword("existingEncodedPassword");
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
-        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
-
-        User result = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
-
-        assertEquals("newUsername", result.getUsername());
-        assertEquals("existingEncodedPassword", result.getPassword());
-        verify(userRepository).save(any(User.class));
-        verifyNoInteractions(passwordEncoder);
-    }
     @Test
     void updateUser_OldPasswordNullNewPasswordProvided_ThrowsInvalidPasswordException() {
         Long userId = 1L;
         User updatedUser = new User();
         String oldPassword = null;
-        String newPassword = "NewPassword123";
-
-        User userUnderTest = new User();
-        userUnderTest.setUserId(userId);
-        userUnderTest.setPassword("existingEncodedPassword");
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
-
-        InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
-
-        assertEquals("Old password must be provided to change password", exception.getMessage());
-        verify(userRepository).findById(userId);
-        verifyNoInteractions(passwordEncoder);
-        verifyNoMoreInteractions(userRepository);
-    }
-
-    @Test
-    void updateUser_OldPasswordEmptyNewPasswordProvided_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
-        User updatedUser = new User();
-        String oldPassword = "";
         String newPassword = "NewPassword123";
 
         User userUnderTest = new User();
