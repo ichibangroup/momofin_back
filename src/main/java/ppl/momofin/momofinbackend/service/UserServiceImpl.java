@@ -56,22 +56,18 @@ public class UserServiceImpl implements UserService{
     public User registerMember(Organization organization, String username, String name, String email, String password, String position) {
         PasswordValidator.validatePassword(password);
 
-        List<User> fetchResults = userRepository.findUserByUsernameOrEmail(username, email);
+        Optional<User> fetchResults = userRepository.findByUsername(username);
 
-        if (!fetchResults.isEmpty()) {
-            User existingUser = fetchResults.getFirst();
-
-            if (email.equals(existingUser.getEmail())) {
-                throw new UserAlreadyExistsException("The email "+email+" is already in use");
-            } else {
-                throw new UserAlreadyExistsException("The username "+username+" is already in use");
-            }
+        if (fetchResults.isPresent()) {
+            throw new UserAlreadyExistsException("The username "+username+" is already in use");
         }
 
         String encodedPassword = passwordEncoder.encode(password);
 
         return userRepository.save(new User(organization, username, name, email, encodedPassword, position));
     }
+
+
 
     @Override
     public List<User> fetchUsersByOrganization(Organization organization) {
@@ -111,5 +107,14 @@ public class UserServiceImpl implements UserService{
     public User fetchUserByUsername(String username) {
         Optional<User> user = userRepository.findByUsername(username);
         return user.orElse(null);
+    }
+    @Override
+    public User registerOrganizationAdmin(Organization organization, String username, String name, String email, String password, String position) {
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new UserAlreadyExistsException("An admin with this username already exists");
+        }
+        User newUser = registerMember(organization, username, name, email, password, position);
+        newUser.setOrganizationAdmin(true);
+        return userRepository.save(newUser);
     }
 }

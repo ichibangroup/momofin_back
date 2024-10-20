@@ -188,7 +188,7 @@ class UserServiceTest {
         String password = "My#Money9078";
         String position = userToBeRegistered.getPosition();
 
-        when(userRepository.findUserByUsernameOrEmail(username, email)).thenReturn(new ArrayList<User>());
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(password)).thenReturn(encryptedPassword);
         when(userRepository.save(any(User.class))).thenReturn(userToBeRegistered);
 
@@ -196,7 +196,7 @@ class UserServiceTest {
 
         assertEquals(userToBeRegistered, registeredUser);
         assertNotEquals(password, registeredUser.getPassword());
-        verify(userRepository, times(1)).findUserByUsernameOrEmail(username, email);
+        verify(userRepository, times(1)).findByUsername(username);
         verify(passwordEncoder, times(1)).encode(password);
         verify(userRepository, times(1)).save(any(User.class));
     }
@@ -213,7 +213,7 @@ class UserServiceTest {
         InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
                 () -> userService.registerMember(momofin, username, name, email, password, position));
 
-        verify(userRepository, never()).findUserByUsernameOrEmail(anyString(), anyString());
+        verify(userRepository, never()).findByUsername(anyString());
         verify(passwordEncoder, never()).encode(anyString());
         verify(userRepository, never()).save(any(User.class));
 
@@ -232,44 +232,15 @@ class UserServiceTest {
         User existingUser = new User();
         existingUser.setUsername(username);
 
-        List<User> fetchResult = new ArrayList<>();
-        fetchResult.add(existingUser);
-
-        when(userRepository.findUserByUsernameOrEmail(username, email)).thenReturn(fetchResult);
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
 
         UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
                 () -> userService.registerMember(momofin, username, name, email, password, position));
 
-        verify(userRepository, times(1)).findUserByUsernameOrEmail(username, email);
+        verify(userRepository, times(1)).findByUsername(username);
         verify(passwordEncoder, never()).encode(anyString());
         verify(userRepository, never()).save(any(User.class));
         assertEquals("The username "+username+" is already in use", exception.getMessage());
-    }
-
-    @Test
-    void testRegisterMemberEmailInUse() {
-        User userToBeRegistered = momofinUsers.getFirst();
-        String username = userToBeRegistered.getUsername();
-        String name = userToBeRegistered.getName();
-        String email = userToBeRegistered.getEmail();
-        String password = userToBeRegistered.getPassword();
-        String position = userToBeRegistered.getPosition();
-
-        User existingUser = new User();
-        existingUser.setEmail(email);
-
-        List<User> fetchResult = new ArrayList<>();
-        fetchResult.add(existingUser);
-
-        when(userRepository.findUserByUsernameOrEmail(username, email)).thenReturn(fetchResult);
-
-        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
-                () -> userService.registerMember(momofin, username, name, email, password, position));
-
-        verify(userRepository, times(1)).findUserByUsernameOrEmail(username, email);
-        verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
-        assertEquals("The email "+email+" is already in use", exception.getMessage());
     }
 
     @Test
@@ -409,33 +380,6 @@ class UserServiceTest {
         verify(userRepository, never()).save(any(User.class));
         verify(passwordEncoder, never()).encode(anyString());
     }
-    @Test
-    void registerMember_ThrowsUserAlreadyExistsException_WhenUsernameAlreadyExists() {
-        Organization organization = new Organization("TestOrg");
-        String username = "existingUser";
-        String name = "Test User";
-        String email = "test@example.com";
-        String password = "validPassword123";
-        String position = "Tester";
-
-        User existingUser = new User();
-        existingUser.setUsername(username);
-        existingUser.setEmail("different@example.com"); // Different email to trigger the username check
-
-        List<User> fetchResults = new ArrayList<>();
-        fetchResults.add(existingUser);
-
-        when(userRepository.findUserByUsernameOrEmail(username, email)).thenReturn(fetchResults);
-
-        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
-                () -> userService.registerMember(organization, username, name, email, password, position));
-
-        assertEquals("The username " + username + " is already in use", exception.getMessage());
-
-        verify(userRepository).findUserByUsernameOrEmail(username, email);
-        verify(passwordEncoder, never()).encode(anyString());
-        verify(userRepository, never()).save(any(User.class));
-    }
 
     @Test
     void fetchUserSuccess() {
@@ -456,5 +400,42 @@ class UserServiceTest {
 
         assertNull(fetchedUser);
         verify(userRepository).findByUsername("invalid user");
+    }
+
+    @Test
+    void registerOrganizationAdmin_shouldCreateAndReturnNewAdminUser() {
+        // Arrange
+        Organization org = new Organization("Org", "Desc");
+        User newUser = new User(org, "admin", "Admin Name", null, "encodedPassword", null);
+        newUser.setOrganizationAdmin(true);
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(newUser);
+
+        // Act
+        User result = userService.registerOrganizationAdmin(org, "admin", "Admin Name", null, "validPassword123", null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("admin", result.getUsername());
+        assertEquals("Admin Name", result.getName());
+        assertNull(result.getEmail());
+        assertNull(result.getPosition());
+        assertTrue(result.isOrganizationAdmin());
+        verify(passwordEncoder).encode("validPassword123");
+    }
+    @Test
+    void registerOrganizationAdmin_shouldThrowException_whenAdminUsernameAlreadyExists() {
+        // Arrange
+        Organization org = new Organization("Org", "Desc");
+        String existingUsername = "existingAdmin";
+        when(userRepository.findByUsername(existingUsername)).thenReturn(Optional.of(new User()));
+
+        // Act & Assert
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class, () ->
+                userService.registerOrganizationAdmin(org, existingUsername, "Admin Name", null, "validPassword123", null)
+        );
+
+        assertEquals("An admin with this username already exists", exception.getMessage());
     }
 }

@@ -117,6 +117,12 @@ class JwtUtilTest {
     }
 
     @Test
+    void extractOrganizationName_WithValidToken_ShouldReturnUsername() {
+        String token = jwtUtil.generateToken(testUser);
+        assertEquals(testUser.getOrganization().getName(), jwtUtil.extractOrganizationName(token));
+    }
+
+    @Test
     void extractOrganizationId_WithValidToken_ShouldReturnOrganizationId() {
         String token = jwtUtil.generateToken(testUser);
         assertEquals(testUser.getOrganization().getOrganizationId(), jwtUtil.extractOrganizationId(token));
