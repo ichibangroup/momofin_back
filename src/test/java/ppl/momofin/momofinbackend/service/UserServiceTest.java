@@ -27,6 +27,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -978,29 +982,7 @@ class UserServiceTest {
         verify(passwordEncoder, times(1)).encode(anyString());
         verify(userRepository, times(3)).save(any(User.class));
     }
-    @Test
-    void updateUser_OldPasswordNullNewPasswordNull_NoPasswordChange() {
-        Long userId = 1L;
-        User updatedUser = new User();
-        updatedUser.setUsername("newUsername");
-        String oldPassword = null;
-        String newPassword = null;
 
-        User userUnderTest = new User();
-        userUnderTest.setUserId(userId);
-        userUnderTest.setUsername("oldUsername");
-        userUnderTest.setPassword("existingEncodedPassword");
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
-        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
-
-        User result = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
-
-        assertEquals("newUsername", result.getUsername());
-        assertEquals("existingEncodedPassword", result.getPassword());
-        verify(userRepository).save(any(User.class));
-        verifyNoInteractions(passwordEncoder);
-    }
     @Test
     void updateUser_UpdatedUserNull_NoChanges() {
         Long userId = 1L;
@@ -1103,27 +1085,6 @@ class UserServiceTest {
         assertEquals("existingEncodedPassword", result.getPassword());
         verify(userRepository).save(any(User.class));
         verifyNoInteractions(passwordEncoder);
-    }
-    @Test
-    void updateUser_OldPasswordNotNullButEmpty_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
-        User updatedUser = new User();
-        String oldPassword = ""; // Not null, but empty
-        String newPassword = "NewPassword123";
-
-        User userUnderTest = new User();
-        userUnderTest.setUserId(userId);
-        userUnderTest.setPassword("existingEncodedPassword");
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
-
-        InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
-
-        assertEquals("Old password must be provided to change password", exception.getMessage());
-        verify(userRepository).findById(userId);
-        verifyNoInteractions(passwordEncoder);
-        verifyNoMoreInteractions(userRepository);
     }
     @Test
     void updateUser_OldPasswordNullNewPasswordProvided_ThrowsInvalidPasswordException() {
@@ -1263,6 +1224,24 @@ class UserServiceTest {
         assertEquals("existingEncodedPassword", result.getPassword());
         verify(userRepository).save(any(User.class));
         verifyNoInteractions(passwordEncoder);
+    }
+    @Test
+    void updateUser_OldPasswordNotNullButEmpty_ThrowsInvalidPasswordException() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        String oldPassword =
+                ""; // Not null, but empty
+        String newPassword = "NewPassword123";
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPassword("existingEncodedPassword");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
+                () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
+        assertEquals("Old password must be provided to change password", exception.getMessage());
+        verify(userRepository).findById(userId);
+        verifyNoInteractions(passwordEncoder);
+        verifyNoMoreInteractions(userRepository);
     }
 
 }

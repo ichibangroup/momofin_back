@@ -39,13 +39,14 @@ public class UserProfileController {
     }
 
     @PutMapping("/profile/{userId}")
-    public ResponseEntity<?> updateUserProfile(
+    public ResponseEntity<Object> updateUserProfile(
             @PathVariable Long userId,
             @RequestBody User updatedUser,
             @RequestParam(required = false) String oldPassword,
             @RequestParam(required = false) String newPassword) {
+
         logger.info("Received update request for user ID: {}", userId);
-        logger.info("Received password update request for user ID: {}", userId);
+
         try {
             User user = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
             logger.info("User profile updated successfully for user ID: {}", userId);
@@ -54,11 +55,11 @@ public class UserProfileController {
             logger.warn("User not found: {}", userId);
             return ResponseEntity.notFound().build();
         } catch (InvalidPasswordException e) {
-            logger.warn("Invalid old password for user ID: {}", userId);
-            return ResponseEntity.badRequest().body("Invalid old password");
+            logger.warn("Invalid password for user ID: {}", userId);
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             logger.error("Error updating user: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body("An unexpected error occurred");
         }
     }
 }

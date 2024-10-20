@@ -127,6 +127,9 @@ public class UserServiceImpl implements UserService{
                 case "Position":
                     existingUser.setPosition(newValue);
                     break;
+                default:
+                    logger.warn("Unrecognized field: {}", fieldName);
+                    break;
             }
             logger.info("{} updated for user ID: {}", fieldName, existingUser.getUserId());
         }
