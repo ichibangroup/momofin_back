@@ -98,7 +98,7 @@ public class DocumentServiceImpl implements DocumentService {
         String hashString = generateHash(file);
 
         if (!document.getHashString().equals(hashString)) {
-            throw  new IllegalArgumentException("Hash does not match the specified document.");
+            throw  new IllegalArgumentException("File does not match the specified document.");
         }
 
         return document;
@@ -146,5 +146,11 @@ public class DocumentServiceImpl implements DocumentService {
         Document document = optionalDocument.get();
         String filename = document.getName();
         return cdnService.getViewableUrl(filename, username, organizationName);
+    }
+
+    @Override
+    public Document fetchDocumentWithDocumentId(Long documentId) {
+        return documentRepository.findByDocumentId(documentId)
+                .orElseThrow(() -> new IllegalStateException("Document not found"));
     }
 }

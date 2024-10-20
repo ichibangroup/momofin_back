@@ -72,10 +72,16 @@ public class DocumentVerificationController {
             return ResponseEntity.ok(successResponse);
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(e.getMessage()));
-        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalArgumentException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Verification failed: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
+    }
+
+
+    @GetMapping("/verify/{documentId}")
+    public ResponseEntity<Document> getDocumentToBeVerified(@PathVariable("documentId") Long documentId) {
+        return ResponseEntity.ok(documentService.fetchDocumentWithDocumentId(documentId));
     }
 
     @GetMapping("/view")
