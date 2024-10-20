@@ -24,12 +24,9 @@ class UserProfileControllerTest {
     @InjectMocks
     private UserProfileController userProfileController;
 
-    private MockMvc mockMvc;
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(userProfileController).build();
     }
 
     @Test

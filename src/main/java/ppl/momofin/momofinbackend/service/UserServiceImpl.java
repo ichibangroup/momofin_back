@@ -38,7 +38,7 @@ public class UserServiceImpl implements UserService{
                 .orElseThrow(() -> new OrganizationNotFoundException(organizationName));
 
         User user = userRepository.findUserByOrganizationAndUsername(organization, username)
-                .orElseThrow(() -> new InvalidCredentialsException());
+                .orElseThrow(InvalidCredentialsException::new);
 
         logger.info("User found, checking password");
         boolean passwordMatches = passwordEncoder.matches(password, user.getPassword());
@@ -77,57 +77,59 @@ public class UserServiceImpl implements UserService{
     public User updateUser(Long userId, User updatedUser, String oldPassword, String newPassword) {
         User existingUser = getUserById(userId);
         logger.info("Updating user with ID: {}", userId);
-        logger.info("Old password provided: {}, New password provided: {}",
-                oldPassword != null && !oldPassword.isEmpty(),
-                newPassword != null && !newPassword.isEmpty());
 
-        // Password update logic
-        if (oldPassword != null && !oldPassword.isEmpty()) {
-            if (!passwordEncoder.matches(oldPassword, existingUser.getPassword())) {
-                logger.warn("Invalid old password provided for user ID: {}", userId);
-                throw new InvalidPasswordException("Invalid old password");
-            }
-            logger.info("Old password verified for user ID: {}", userId);
+        updatePasswordIfRequired(existingUser, oldPassword, newPassword);
+        updateUserFields(existingUser, updatedUser);
 
-            if (newPassword != null && !newPassword.isEmpty()) {
-                String encodedNewPassword = passwordEncoder.encode(newPassword);
-                existingUser.setPassword(encodedNewPassword);
-                logger.info("New password encoded and set for user ID: {}", userId);
-            } else {
-                logger.warn("New password is null or empty, password not updated for user ID: {}", userId);
-                throw new InvalidPasswordException("New password cannot be empty when changing password");
-            }
-        } else if (newPassword != null && !newPassword.isEmpty()) {
-            logger.warn("New password provided without old password for user ID: {}", userId);
-            throw new InvalidPasswordException("Old password must be provided to change password");
-        }
-
-        // Update other fields if provided
-        if (updatedUser.getUsername() != null && !updatedUser.getUsername().isEmpty()) {
-            existingUser.setUsername(updatedUser.getUsername());
-            logger.info("Username updated for user ID: {}", userId);
-        }
-
-        if (updatedUser.getEmail() != null && !updatedUser.getEmail().isEmpty()) {
-            existingUser.setEmail(updatedUser.getEmail());
-            logger.info("Email updated for user ID: {}", userId);
-        }
-
-        if (updatedUser.getName() != null && !updatedUser.getName().isEmpty()) {
-            existingUser.setName(updatedUser.getName());
-            logger.info("Name updated for user ID: {}", userId);
-        }
-
-        if (updatedUser.getPosition() != null && !updatedUser.getPosition().isEmpty()) {
-            existingUser.setPosition(updatedUser.getPosition());
-            logger.info("Position updated for user ID: {}", userId);
-        }
-
-        // Save the updated user
         User savedUser = userRepository.save(existingUser);
         logger.info("User with ID: {} successfully updated and saved", userId);
 
         return savedUser;
+    }
+
+    private void updatePasswordIfRequired(User user, String oldPassword, String newPassword) {
+        if ((oldPassword == null || oldPassword.isEmpty()) && newPassword != null && !newPassword.isEmpty()) {
+            throw new InvalidPasswordException("Old password must be provided to change password");
+        }
+        if (oldPassword != null && !oldPassword.isEmpty()) {
+            if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+                throw new InvalidPasswordException("Invalid old password");
+            }
+            if (newPassword == null || newPassword.isEmpty()) {
+                throw new InvalidPasswordException("New password cannot be empty when changing password");
+            }
+            user.setPassword(passwordEncoder.encode(newPassword));
+            logger.info("Password updated for user ID: {}", user.getUserId());
+        }
+    }
+
+    private void updateUserFields(User existingUser, User updatedUser) {
+        if (updatedUser == null) return;
+
+        updateField(existingUser, updatedUser.getUsername(), "Username");
+        updateField(existingUser, updatedUser.getEmail(), "Email");
+        updateField(existingUser, updatedUser.getName(), "Name");
+        updateField(existingUser, updatedUser.getPosition(), "Position");
+    }
+
+    private void updateField(User existingUser, String newValue, String fieldName) {
+        if (newValue != null && !newValue.isEmpty()) {
+            switch (fieldName) {
+                case "Username":
+                    existingUser.setUsername(newValue);
+                    break;
+                case "Email":
+                    existingUser.setEmail(newValue);
+                    break;
+                case "Name":
+                    existingUser.setName(newValue);
+                    break;
+                case "Position":
+                    existingUser.setPosition(newValue);
+                    break;
+            }
+            logger.info("{} updated for user ID: {}", fieldName, existingUser.getUserId());
+        }
     }
 
     @Override
@@ -160,5 +162,8 @@ public class UserServiceImpl implements UserService{
         User newUser = registerMember(organization, username, name, email, password, position);
         newUser.setOrganizationAdmin(true);
         return userRepository.save(newUser);
+    }
+    protected void updateFieldForTesting(User user, String fieldName, String value) {
+        updateField(user, value, fieldName);
     }
 }

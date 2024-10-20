@@ -18,6 +18,7 @@ import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 import ppl.momofin.momofinbackend.utility.Roles;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +46,7 @@ class UserServiceTest {
     private Organization otherOrganization;
     private List<User> momofinUsers;
     private List<User> otherOrganizationUsers;
-    private User existingUser;
+    private User initialUser;
 
     @BeforeEach
     void setup() {
@@ -67,11 +68,11 @@ class UserServiceTest {
         otherOrganizationUsers.add(user4);
         otherOrganizationUsers.add(user5);
 
-        existingUser = new User();
-        existingUser.setUserId(1L);
-        existingUser.setEmail("old@example.com");
-        existingUser.setUsername("oldUsername");
-        existingUser.setPassword("encodedOldPassword");
+        initialUser = new User();
+        initialUser.setUserId(1L);
+        initialUser.setEmail("old@example.com");
+        initialUser.setUsername("oldUsername");
+        initialUser.setPassword("encodedOldPassword");
     }
 
     @Test
@@ -108,7 +109,6 @@ class UserServiceTest {
         verify(userRepository, times(1)).findUserByOrganizationAndUsername(otherOrganization, username);
         verify(passwordEncoder, times(1)).matches(password, encryptedPassword);
     }
-
     @Test
     void testAuthenticateInvalidOrganizationName() {
         String organizationName = "invalid";
@@ -213,10 +213,10 @@ class UserServiceTest {
         String password = userToBeRegistered.getPassword();
         String position = userToBeRegistered.getPosition();
 
-        User existingUser = new User();
-        existingUser.setUsername(username);
+        User userUnderTest = new User();
+        userUnderTest.setUsername(username);
 
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(userUnderTest));
 
         UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
                 () -> userService.registerMember(momofin, username, name, email, password, position));
@@ -273,34 +273,35 @@ class UserServiceTest {
         Long userId = 1L;
         String newUsername = "NewUsername";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-        User result = userService.updateUser(userId, new User(), null, null);
-        result.setUsername(newUsername);
+        User updatedUser = new User();
+        updatedUser.setUsername(newUsername);
+        User result = userService.updateUser(userId, updatedUser, null, null);
 
         assertEquals(newUsername, result.getUsername());
         verify(userRepository).save(any(User.class));
     }
-
     @Test
     void updateUser_UpdatesEmail() {
         Long userId = 1L;
         String newEmail = "new@example.com";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setEmail("oldEmail");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setEmail("oldEmail");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-        User result = userService.updateUser(userId, new User(), null, null);
-        result.setEmail(newEmail);
+        User updatedUser = new User();
+        updatedUser.setEmail(newEmail);
+        User result = userService.updateUser(userId, updatedUser, null, null);
 
         assertEquals(newEmail, result.getEmail());
         verify(userRepository).save(any(User.class));
@@ -311,15 +312,16 @@ class UserServiceTest {
         Long userId = 1L;
         String newName = "New Name";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setName("oldName");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setName("oldName");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-        User result = userService.updateUser(userId, new User(), null, null);
-        result.setName(newName);
+        User updatedUser = new User();
+        updatedUser.setName(newName);
+        User result = userService.updateUser(userId, updatedUser, null, null);
 
         assertEquals(newName, result.getName());
         verify(userRepository).save(any(User.class));
@@ -330,15 +332,16 @@ class UserServiceTest {
         Long userId = 1L;
         String newPosition = "New Position";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setPosition("oldPosition");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPosition("oldPosition");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
-        User result = userService.updateUser(userId, new User(), null, null);
-        result.setPosition(newPosition);
+        User updatedUser = new User();
+        updatedUser.setPosition(newPosition);
+        User result = userService.updateUser(userId, updatedUser, null, null);
 
         assertEquals(newPosition, result.getPosition());
         verify(userRepository).save(any(User.class));
@@ -350,12 +353,12 @@ class UserServiceTest {
         String oldPassword = "VeryPowrfulPassword.com";
         String newPassword = "NewStrongPassword123";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setPassword(passwordEncoder.encode(oldPassword));
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPassword(passwordEncoder.encode(oldPassword));
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(oldPassword, existingUser.getPassword())).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(passwordEncoder.matches(oldPassword, userUnderTest.getPassword())).thenReturn(true);
         when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArguments()[0]);
 
@@ -370,7 +373,7 @@ class UserServiceTest {
         Long userId = 1L;
         User updatedUser = new User();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(initialUser));
 
         assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(userId, updatedUser, "oldPassword", null));
@@ -378,11 +381,10 @@ class UserServiceTest {
         assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(userId, updatedUser, "oldPassword", ""));
     }
-
     @Test
     void updateUser_InvalidOldPassword_ThrowsInvalidPasswordException() {
         User updatedUser = new User();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(initialUser));
         when(passwordEncoder.matches("wrongPassword", "encodedOldPassword")).thenReturn(false);
 
         assertThrows(InvalidPasswordException.class,
@@ -392,7 +394,7 @@ class UserServiceTest {
     @Test
     void updateUser_NewPasswordWithoutOldPassword_ThrowsInvalidPasswordException() {
         User updatedUser = new User();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(initialUser));
 
         assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(1L, updatedUser, null, "newPassword"));
@@ -405,13 +407,13 @@ class UserServiceTest {
         updatedUser.setUsername("newUsername");
         updatedUser.setEmail("new@example.com");
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("oldEmail");
-        existingUser.setPassword("encodedOldPassword");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("oldEmail");
+        userUnderTest.setPassword("encodedOldPassword");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         User result = userService.updateUser(userId, updatedUser, null, null);
@@ -422,29 +424,6 @@ class UserServiceTest {
         assertEquals("encodedOldPassword", result.getPassword());
         verify(userRepository).save(any(User.class));
     }
-    @Test
-    void updateUser_OldPasswordNullNewPasswordProvided_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
-        User updatedUser = new User();
-        String newPassword = "NewPassword123";
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-
-        assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(userId, updatedUser, null, newPassword));
-    }
-
-    @Test
-    void updateUser_OldPasswordEmptyNewPasswordProvided_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
-        User updatedUser = new User();
-        String newPassword = "NewPassword123";
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-
-        assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(userId, updatedUser, "", newPassword));
-    }
 
     @Test
     void updateUser_OldPasswordProvidedNewPasswordNull_ThrowsInvalidPasswordException() {
@@ -452,24 +431,11 @@ class UserServiceTest {
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(oldPassword, existingUser.getPassword())).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(initialUser));
+        when(passwordEncoder.matches(oldPassword, initialUser.getPassword())).thenReturn(true);
 
         assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(userId, updatedUser, oldPassword, null));
-    }
-
-    @Test
-    void updateUser_OldPasswordProvidedNewPasswordEmpty_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
-        User updatedUser = new User();
-        String oldPassword = "OldPassword123";
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(oldPassword, existingUser.getPassword())).thenReturn(true);
-
-        assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(userId, updatedUser, oldPassword, ""));
     }
 
     @Test
@@ -481,16 +447,16 @@ class UserServiceTest {
         updatedUser.setName("New Name");
         updatedUser.setPosition("New Position");
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("old@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setPosition("Old Position");
-        existingUser.setPassword(passwordEncoder.encode("oldPassword"));
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@example.com");
+        userUnderTest.setName("Old Name");
+        userUnderTest.setPosition("Old Position");
+        userUnderTest.setPassword(passwordEncoder.encode("oldPassword"));
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches("oldPassword", existingUser.getPassword())).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(passwordEncoder.matches("oldPassword", userUnderTest.getPassword())).thenReturn(true);
         when(passwordEncoder.encode("newPassword")).thenReturn("encodedNewPassword");
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -553,7 +519,6 @@ class UserServiceTest {
         assertEquals(email, result.getEmail());
         assertEquals(position, result.getPosition());
     }
-
     @Test
     void registerOrganizationAdmin_UsernameAlreadyExists() {
         Organization organization = new Organization("TestOrg");
@@ -568,17 +533,6 @@ class UserServiceTest {
         assertThrows(UserAlreadyExistsException.class,
                 () -> userService.registerOrganizationAdmin(organization, username, name, email, password, position));
     }
-    @Test
-    void updateUser_OnlyNewPasswordProvided_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
-        User updatedUser = new User();
-        String newPassword = "NewPassword123";
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-
-        assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(userId, updatedUser, null, newPassword));
-    }
 
     @Test
     void updateUser_OnlyUsernameProvided() {
@@ -586,14 +540,14 @@ class UserServiceTest {
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("old@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setPosition("Old Position");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@example.com");
+        userUnderTest.setName("Old Name");
+        userUnderTest.setPosition("Old Position");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         User result = userService.updateUser(userId, updatedUser, null, null);
@@ -610,14 +564,14 @@ class UserServiceTest {
         User updatedUser = new User();
         updatedUser.setEmail("new@example.com");
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("old@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setPosition("Old Position");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@example.com");
+        userUnderTest.setName("Old Name");
+        userUnderTest.setPosition("Old Position");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         User result = userService.updateUser(userId, updatedUser, null, null);
@@ -634,14 +588,14 @@ class UserServiceTest {
         User updatedUser = new User();
         updatedUser.setName("New Name");
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("old@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setPosition("Old Position");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@example.com");
+        userUnderTest.setName("Old Name");
+        userUnderTest.setPosition("Old Position");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         User result = userService.updateUser(userId, updatedUser, null, null);
@@ -651,21 +605,20 @@ class UserServiceTest {
         assertEquals("New Name", result.getName());
         assertEquals("Old Position", result.getPosition());
     }
-
     @Test
     void updateUser_OnlyPositionProvided() {
         Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setPosition("New Position");
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("old@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setPosition("Old Position");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@example.com");
+        userUnderTest.setName("Old Name");
+        userUnderTest.setPosition("Old Position");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         User result = userService.updateUser(userId, updatedUser, null, null);
@@ -681,14 +634,14 @@ class UserServiceTest {
         Long userId = 1L;
         User updatedUser = new User();
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("old@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setPosition("Old Position");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@example.com");
+        userUnderTest.setName("Old Name");
+        userUnderTest.setPosition("Old Position");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         User result = userService.updateUser(userId, updatedUser, null, null);
@@ -706,12 +659,12 @@ class UserServiceTest {
         String oldPassword = "OldPassword123";
         String newPassword = "NewPassword123";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setPassword(passwordEncoder.encode(oldPassword));
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPassword(passwordEncoder.encode(oldPassword));
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(oldPassword, existingUser.getPassword())).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(passwordEncoder.matches(oldPassword, userUnderTest.getPassword())).thenReturn(true);
         when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -730,14 +683,14 @@ class UserServiceTest {
         updatedUser.setName(null);
         updatedUser.setPosition(null);
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("old@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setPosition("Old Position");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@example.com");
+        userUnderTest.setName("Old Name");
+        userUnderTest.setPosition("Old Position");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         User result = userService.updateUser(userId, updatedUser, null, null);
@@ -753,14 +706,14 @@ class UserServiceTest {
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("old@example.com");
-        existingUser.setPassword(passwordEncoder.encode(oldPassword));
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@example.com");
+        userUnderTest.setPassword(passwordEncoder.encode(oldPassword));
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(oldPassword, existingUser.getPassword())).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(passwordEncoder.matches(oldPassword, userUnderTest.getPassword())).thenReturn(true);
 
         InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(userId, updatedUser, oldPassword, null));
@@ -777,14 +730,14 @@ class UserServiceTest {
         updatedUser.setName("");
         updatedUser.setPosition("");
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("oldUsername");
-        existingUser.setEmail("old@example.com");
-        existingUser.setName("Old Name");
-        existingUser.setPosition("Old Position");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@example.com");
+        userUnderTest.setName("Old Name");
+        userUnderTest.setPosition("Old Position");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         User result = userService.updateUser(userId, updatedUser, null, null);
@@ -794,6 +747,7 @@ class UserServiceTest {
         assertEquals("Old Name", result.getName());
         assertEquals("Old Position", result.getPosition());
     }
+
     @Test
     void updateUser_NewPasswordProvidedWithEmptyOldPassword_ThrowsInvalidPasswordException() {
         Long userId = 1L;
@@ -801,12 +755,12 @@ class UserServiceTest {
         String oldPassword = ""; // Empty string instead of null
         String newPassword = "NewPassword123";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("existingUsername");
-        existingUser.setPassword("existingEncodedPassword");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("existingUsername");
+        userUnderTest.setPassword("existingEncodedPassword");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
 
         InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
@@ -824,16 +778,16 @@ class UserServiceTest {
         String oldPassword = "OldPassword123";
         String newPassword = "NewPassword123";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("existingUsername");
-        existingUser.setEmail("existing@example.com");
-        existingUser.setName("Existing Name");
-        existingUser.setPosition("Existing Position");
-        existingUser.setPassword(null); // Set to null to match the behavior we're seeing
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("existingUsername");
+        userUnderTest.setEmail("existing@example.com");
+        userUnderTest.setName("Existing Name");
+        userUnderTest.setPosition("Existing Position");
+        userUnderTest.setPassword("encodedOldPassword");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(passwordEncoder.matches(eq(oldPassword), isNull())).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(passwordEncoder.matches(oldPassword, "encodedOldPassword")).thenReturn(true);
         when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -847,11 +801,12 @@ class UserServiceTest {
         assertEquals("encodedNewPassword", result.getPassword());
 
         verify(userRepository).findById(userId);
-        verify(passwordEncoder).matches(eq(oldPassword), isNull());
+        verify(passwordEncoder).matches(oldPassword, "encodedOldPassword");
         verify(passwordEncoder).encode(newPassword);
         verify(userRepository).save(any(User.class));
         verifyNoMoreInteractions(passwordEncoder);
     }
+
     @Test
     void updateUser_NewPasswordWithEmptyOldPassword_ThrowsInvalidPasswordException() {
         Long userId = 1L;
@@ -859,15 +814,15 @@ class UserServiceTest {
         String newPassword = "NewPassword123";
         String oldPassword = ""; // Empty string instead of null
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("existingUsername");
-        existingUser.setEmail("existing@example.com");
-        existingUser.setName("Existing Name");
-        existingUser.setPosition("Existing Position");
-        existingUser.setPassword("existingEncodedPassword");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("existingUsername");
+        userUnderTest.setEmail("existing@example.com");
+        userUnderTest.setName("Existing Name");
+        userUnderTest.setPosition("Existing Position");
+        userUnderTest.setPassword("existingEncodedPassword");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
 
         InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
@@ -886,12 +841,12 @@ class UserServiceTest {
         String oldPassword = null;
         String newPassword = "NewPassword123";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("existingUsername");
-        existingUser.setPassword("existingEncodedPassword");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("existingUsername");
+        userUnderTest.setPassword("existingEncodedPassword");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
 
         InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
@@ -909,12 +864,12 @@ class UserServiceTest {
         String oldPassword = null; // Explicitly set to null
         String newPassword = "NewPassword123";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("existingUsername");
-        existingUser.setPassword("existingEncodedPassword");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("existingUsername");
+        userUnderTest.setPassword("existingEncodedPassword");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
 
         InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
@@ -925,6 +880,7 @@ class UserServiceTest {
         verifyNoInteractions(passwordEncoder);
         verifyNoMoreInteractions(userRepository);
     }
+
     @Test
     void updateUser_NewPasswordProvidedWithoutOldPasswordAllFieldsNull_ThrowsInvalidPasswordException() {
         Long userId = 1L;
@@ -936,15 +892,15 @@ class UserServiceTest {
         String oldPassword = null;
         String newPassword = "NewPassword123";
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("existingUsername");
-        existingUser.setEmail("existing@email.com");
-        existingUser.setName("Existing Name");
-        existingUser.setPosition("Existing Position");
-        existingUser.setPassword("existingEncodedPassword");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("existingUsername");
+        userUnderTest.setEmail("existing@email.com");
+        userUnderTest.setName("Existing Name");
+        userUnderTest.setPosition("Existing Position");
+        userUnderTest.setPassword("existingEncodedPassword");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
 
         InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
                 () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
@@ -955,6 +911,7 @@ class UserServiceTest {
         verifyNoInteractions(passwordEncoder);
         verifyNoMoreInteractions(userRepository);
     }
+
     @Test
     void updateUser_NoChanges_StillSavesUser() {
         Long userId = 1L;
@@ -962,16 +919,16 @@ class UserServiceTest {
         String oldPassword = null;
         String newPassword = null;
 
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setUsername("existingUsername");
-        existingUser.setEmail("existing@email.com");
-        existingUser.setName("Existing Name");
-        existingUser.setPosition("Existing Position");
-        existingUser.setPassword("existingEncodedPassword");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("existingUsername");
+        userUnderTest.setEmail("existing@email.com");
+        userUnderTest.setName("Existing Name");
+        userUnderTest.setPosition("Existing Position");
+        userUnderTest.setPassword("existingEncodedPassword");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class))).thenReturn(existingUser);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(userRepository.save(any(User.class))).thenReturn(userUnderTest);
 
         User result = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
 
@@ -983,18 +940,19 @@ class UserServiceTest {
         assertEquals("existingEncodedPassword", result.getPassword());
 
         verify(userRepository).findById(userId);
-        verify(userRepository).save(existingUser);
+        verify(userRepository).save(userUnderTest);
         verifyNoInteractions(passwordEncoder);
     }
+
     @Test
     void updateUser_NewPasswordEdgeCases() {
         Long userId = 1L;
         User updatedUser = new User();
-        User existingUser = new User();
-        existingUser.setUserId(userId);
-        existingUser.setPassword("existingEncodedPassword");
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPassword("existingEncodedPassword");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
         when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
 
         // Case 1: newPassword is null
@@ -1020,4 +978,291 @@ class UserServiceTest {
         verify(passwordEncoder, times(1)).encode(anyString());
         verify(userRepository, times(3)).save(any(User.class));
     }
+    @Test
+    void updateUser_OldPasswordNullNewPasswordNull_NoPasswordChange() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        updatedUser.setUsername("newUsername");
+        String oldPassword = null;
+        String newPassword = null;
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setPassword("existingEncodedPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
+
+        assertEquals("newUsername", result.getUsername());
+        assertEquals("existingEncodedPassword", result.getPassword());
+        verify(userRepository).save(any(User.class));
+        verifyNoInteractions(passwordEncoder);
+    }
+    @Test
+    void updateUser_UpdatedUserNull_NoChanges() {
+        Long userId = 1L;
+        User updatedUser = null;
+        String oldPassword = null;
+        String newPassword = null;
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("existingUsername");
+        userUnderTest.setPassword("existingEncodedPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
+
+        assertEquals("existingUsername", result.getUsername());
+        assertEquals("existingEncodedPassword", result.getPassword());
+        verify(userRepository).save(any(User.class));
+        verifyNoInteractions(passwordEncoder);
+    }
+    @Test
+    void updateUser_UnrecognizedField_NoChange() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        updatedUser.setUsername("newUsername");
+        updatedUser.setEmail("new@email.com");
+        updatedUser.setName("New Name");
+        updatedUser.setPosition("New Position");
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setEmail("old@email.com");
+        userUnderTest.setName("Old Name");
+        userUnderTest.setPosition("Old Position");
+
+        // Add a method to set an unrecognized field
+        setUnrecognizedField(updatedUser, "unrecognizedField", "someValue");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser, null, null);
+
+        assertEquals("newUsername", result.getUsername());
+        assertEquals("new@email.com", result.getEmail());
+        assertEquals("New Name", result.getName());
+        assertEquals("New Position", result.getPosition());
+        // Verify that the unrecognized field didn't cause any issues
+        verify(userRepository).save(any(User.class));
+    }
+
+    // Helper method to set an unrecognized field using reflection
+    private void setUnrecognizedField(User user, String fieldName, String value) {
+        try {
+            Field field = User.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(user, value);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            // Handle exception or ignore for test purposes
+        }
+    }
+    @Test
+    void updateField_UnrecognizedField_NoChange() {
+        User user = new User();
+        user.setUsername("oldUsername");
+        user.setEmail("old@email.com");
+        user.setName("Old Name");
+        user.setPosition("Old Position");
+
+        userService.updateFieldForTesting(user, "unrecognizedField", "someValue");
+
+        assertEquals("oldUsername", user.getUsername());
+        assertEquals("old@email.com", user.getEmail());
+        assertEquals("Old Name", user.getName());
+        assertEquals("Old Position", user.getPosition());
+        // Verify that no change occurred for the unrecognized field
+    }
+    @Test
+    void updateUser_BothPasswordsNull_NoPasswordChange() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        updatedUser.setUsername("newUsername");
+        String oldPassword = null;
+        String newPassword = null;
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setPassword("existingEncodedPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
+
+        assertEquals("newUsername", result.getUsername());
+        assertEquals("existingEncodedPassword", result.getPassword());
+        verify(userRepository).save(any(User.class));
+        verifyNoInteractions(passwordEncoder);
+    }
+    @Test
+    void updateUser_OldPasswordNotNullButEmpty_ThrowsInvalidPasswordException() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        String oldPassword = ""; // Not null, but empty
+        String newPassword = "NewPassword123";
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPassword("existingEncodedPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+
+        InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
+                () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
+
+        assertEquals("Old password must be provided to change password", exception.getMessage());
+        verify(userRepository).findById(userId);
+        verifyNoInteractions(passwordEncoder);
+        verifyNoMoreInteractions(userRepository);
+    }
+    @Test
+    void updateUser_OldPasswordNullNewPasswordProvided_ThrowsInvalidPasswordException() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        String oldPassword = null;
+        String newPassword = "NewPassword123";
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPassword("existingEncodedPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+
+        InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
+                () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
+
+        assertEquals("Old password must be provided to change password", exception.getMessage());
+        verify(userRepository).findById(userId);
+        verifyNoInteractions(passwordEncoder);
+        verifyNoMoreInteractions(userRepository);
+    }
+
+    @Test
+    void updateUser_OldPasswordEmptyNewPasswordProvided_ThrowsInvalidPasswordException() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        String oldPassword = "";
+        String newPassword = "NewPassword123";
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPassword("existingEncodedPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+
+        InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
+                () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
+
+        assertEquals("Old password must be provided to change password", exception.getMessage());
+        verify(userRepository).findById(userId);
+        verifyNoInteractions(passwordEncoder);
+        verifyNoMoreInteractions(userRepository);
+    }
+
+    @Test
+    void updateUser_OldPasswordProvidedNewPasswordProvided_SuccessfulPasswordChange() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        String oldPassword = "OldPassword123";
+        String newPassword = "NewPassword123";
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPassword("encodedOldPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(passwordEncoder.matches(oldPassword, "encodedOldPassword")).thenReturn(true);
+        when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
+
+        assertEquals("encodedNewPassword", result.getPassword());
+        verify(userRepository).findById(userId);
+        verify(passwordEncoder).matches(oldPassword, "encodedOldPassword");
+        verify(passwordEncoder).encode(newPassword);
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_OldPasswordProvidedNewPasswordEmpty_ThrowsInvalidPasswordException() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        String oldPassword = "OldPassword123";
+        String newPassword = "";
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setPassword("encodedOldPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(passwordEncoder.matches(oldPassword, "encodedOldPassword")).thenReturn(true);
+
+        InvalidPasswordException exception = assertThrows(InvalidPasswordException.class,
+                () -> userService.updateUser(userId, updatedUser, oldPassword, newPassword));
+
+        assertEquals("New password cannot be empty when changing password", exception.getMessage());
+        verify(userRepository).findById(userId);
+        verify(passwordEncoder).matches(oldPassword, "encodedOldPassword");
+        verifyNoMoreInteractions(passwordEncoder);
+        verifyNoMoreInteractions(userRepository);
+    }
+
+    @Test
+    void updateUser_BothPasswordsNullOrEmpty_NoPasswordChange() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        updatedUser.setUsername("newUsername");
+        String oldPassword = null;
+        String newPassword = null;
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setPassword("existingEncodedPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
+
+        assertEquals("newUsername", result.getUsername());
+        assertEquals("existingEncodedPassword", result.getPassword());
+        verify(userRepository).save(any(User.class));
+        verifyNoInteractions(passwordEncoder);
+    }
+    @Test
+    void updateUser_OldPasswordNotNullButEmpty_NoPasswordChange() {
+        Long userId = 1L;
+        User updatedUser = new User();
+        updatedUser.setUsername("newUsername");
+        String oldPassword = ""; // Not null, but empty
+        String newPassword = null;
+
+        User userUnderTest = new User();
+        userUnderTest.setUserId(userId);
+        userUnderTest.setUsername("oldUsername");
+        userUnderTest.setPassword("existingEncodedPassword");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userUnderTest));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        User result = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
+
+        assertEquals("newUsername", result.getUsername());
+        assertEquals("existingEncodedPassword", result.getPassword());
+        verify(userRepository).save(any(User.class));
+        verifyNoInteractions(passwordEncoder);
+    }
+
 }

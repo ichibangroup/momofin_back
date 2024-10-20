@@ -45,7 +45,7 @@ public class UserProfileController {
             @RequestParam(required = false) String oldPassword,
             @RequestParam(required = false) String newPassword) {
         logger.info("Received update request for user ID: {}", userId);
-        logger.info("Old password: '{}', New password: '{}'", oldPassword, newPassword);
+        logger.info("Received password update request for user ID: {}", userId);
         try {
             User user = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
             logger.info("User profile updated successfully for user ID: {}", userId);
