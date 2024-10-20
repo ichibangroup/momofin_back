@@ -48,11 +48,11 @@ class OrganizationControllerTest {
 
     @Test
     void updateOrganization_ShouldReturnUpdatedOrganization() throws Exception {
-        when(organizationService.updateOrganization(eq(1L), anyString(), anyString())).thenReturn(testOrg);
+        when(organizationService.updateOrganization(eq(1L), anyString(), anyString(), anyString(), anyString())).thenReturn(testOrg);
 
         mockMvc.perform(put("/api/organizations/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Updated Org\",\"description\":\"Updated Description\"}"))
+                        .content("{\"name\":\"Updated Org\",\"description\":\"Updated Description\",\"industry\":\"Updated Industry\",\"location\":\"Updated Location\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Test Org"))
                 .andExpect(jsonPath("$.description").value("Test Description"));

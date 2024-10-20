@@ -70,11 +70,13 @@ class MomofinAdminControllerTest {
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("New Org");
         request.setDescription("New Description");
+        request.setIndustry("New Industry");
+        request.setLocation("New Location");
         request.setAdminUsername("admin");
         request.setAdminPassword("password");
 
-        Organization newOrg = new Organization("New Org", "New Description");
-        when(organizationService.createOrganization("New Org", "New Description")).thenReturn(newOrg);
+        Organization newOrg = new Organization("New Org", "New Description", "New Industry", "New Location");
+        when(organizationService.createOrganization("New Org", "New Description", "New Industry", "New Location")).thenReturn(newOrg);
 
         User adminUser = new User();
         when(userService.registerOrganizationAdmin(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull()))
@@ -87,6 +89,8 @@ class MomofinAdminControllerTest {
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
         assertEquals("New Org", response.getBody().getName());
         assertEquals("New Description", response.getBody().getDescription());
+        assertEquals("New Industry", response.getBody().getIndustry());
+        assertEquals("New Location", response.getBody().getLocation());
         verify(userService).registerOrganizationAdmin(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull());
     }
 
@@ -97,9 +101,11 @@ class MomofinAdminControllerTest {
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("Updated Org");
         request.setDescription("Updated Description");
+        request.setIndustry("Updated Industry");
+        request.setLocation("Updated Location");
 
-        Organization updatedOrg = new Organization("Updated Org", "Updated Description");
-        when(organizationService.updateOrganization(orgId, "Updated Org", "Updated Description")).thenReturn(updatedOrg);
+        Organization updatedOrg = new Organization("Updated Org", "Updated Description", "Updated Industry", "Updated Location");
+        when(organizationService.updateOrganization(orgId, "Updated Org", "Updated Description", "Updated Industry", "Updated Location")).thenReturn(updatedOrg);
 
         // Act
         ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
@@ -108,6 +114,8 @@ class MomofinAdminControllerTest {
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
         assertEquals("Updated Org", response.getBody().getName());
         assertEquals("Updated Description", response.getBody().getDescription());
+        assertEquals("Updated Industry", response.getBody().getIndustry());
+        assertEquals("Updated Location", response.getBody().getLocation());
     }
 
     @Test
@@ -116,8 +124,10 @@ class MomofinAdminControllerTest {
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("");  // Invalid name
         request.setDescription("Description");
+        request.setIndustry("Industry");
+        request.setLocation("Location");
 
-        when(organizationService.createOrganization(anyString(), anyString()))
+        when(organizationService.createOrganization(anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new InvalidOrganizationException("Organization name cannot be empty"));
 
         // Act
@@ -138,10 +148,12 @@ class MomofinAdminControllerTest {
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("New Org");
         request.setDescription("Description");
+        request.setIndustry("Industry");
+        request.setLocation("Location");
         request.setAdminUsername("existingAdmin");
         request.setAdminPassword("password");
 
-        when(organizationService.createOrganization(anyString(), anyString()))
+        when(organizationService.createOrganization(anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(new Organization("New Org", "Description"));
         when(userService.registerOrganizationAdmin(any(), anyString(), anyString(), any(), anyString(), any()))
                 .thenThrow(new UserAlreadyExistsException("Admin user already exists"));
@@ -161,8 +173,10 @@ class MomofinAdminControllerTest {
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("New Org");
         request.setDescription("Description");
+        request.setIndustry("Industry");
+        request.setLocation("Location");
 
-        when(organizationService.createOrganization(anyString(), anyString()))
+        when(organizationService.createOrganization(anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("Unexpected error"));
 
         // Act
@@ -181,8 +195,10 @@ class MomofinAdminControllerTest {
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("Updated Org");
         request.setDescription("Updated Description");
+        request.setLocation("Updated Location");
+        request.setIndustry("Updated Industry");
 
-        when(organizationService.updateOrganization(eq(orgId), anyString(), anyString()))
+        when(organizationService.updateOrganization(eq(orgId), anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new OrganizationNotFoundException("Organization not found"));
 
         // Act
@@ -199,8 +215,10 @@ class MomofinAdminControllerTest {
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("");
         request.setDescription("Updated Description");
+        request.setIndustry("Updated Industry");
+        request.setLocation("Updated Location");
 
-        when(organizationService.updateOrganization(eq(orgId), anyString(), anyString()))
+        when(organizationService.updateOrganization(eq(orgId), anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new InvalidOrganizationException("Invalid organization name"));
 
         // Act
@@ -219,8 +237,10 @@ class MomofinAdminControllerTest {
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("Updated Org");
         request.setDescription("Updated Description");
+        request.setIndustry("Updated Industry");
+        request.setLocation("Updated Location");
 
-        when(organizationService.updateOrganization(eq(orgId), anyString(), anyString()))
+        when(organizationService.updateOrganization(eq(orgId), anyString(), anyString(), anyString(), anyString()))
                 .thenThrow(new RuntimeException("Unexpected error"));
 
         // Act

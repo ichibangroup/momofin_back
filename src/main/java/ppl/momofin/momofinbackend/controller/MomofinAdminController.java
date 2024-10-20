@@ -61,7 +61,7 @@ public class MomofinAdminController {
     }
 
     private Organization createOrganization(AddOrganizationRequest request) {
-        return organizationService.createOrganization(request.getName(), request.getDescription());
+        return organizationService.createOrganization(request.getName(), request.getDescription(), request.getIndustry(), request.getLocation());
     }
 
     private void createOrganizationAdmin(Organization organization, AddOrganizationRequest request) {
@@ -77,7 +77,7 @@ public class MomofinAdminController {
     @PutMapping("/organizations/{orgId}")
     public ResponseEntity<OrganizationResponse> updateOrganization(@PathVariable Long orgId, @RequestBody AddOrganizationRequest request) {
         try {
-            Organization updatedOrganization = organizationService.updateOrganization(orgId, request.getName(), request.getDescription());
+            Organization updatedOrganization = organizationService.updateOrganization(orgId, request.getName(), request.getDescription(), request.getIndustry(), request.getLocation());
             return ResponseEntity.ok(OrganizationResponse.fromOrganization(updatedOrganization));
         } catch (OrganizationNotFoundException e) {
             return ResponseEntity.notFound().build();
