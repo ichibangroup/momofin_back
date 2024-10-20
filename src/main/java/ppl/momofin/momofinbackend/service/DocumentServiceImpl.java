@@ -26,6 +26,8 @@ public class DocumentServiceImpl implements DocumentService {
     private static final Logger logger = LoggerFactory.getLogger(DocumentServiceImpl.class);
     private static final String ALGORITHM = "HmacSHA256";
 
+    private static final String FILE_EMPTY_ERROR_MESSAGE = "File must not be null or empty";
+
     @Value("${hmac.secret.key}")
     private String secretKey;
 
@@ -43,7 +45,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public String submitDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File must not be null or empty");
+            throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
         }
 
         String hashString = generateHash(file);
@@ -68,7 +70,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public Document verifyDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File must not be null or empty");
+            throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
         }
 
         String hashString = generateHash(file);
@@ -79,7 +81,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public Document verifySpecificDocument(MultipartFile file, Long documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File must not be null or empty");
+            throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
         }
 
         Optional<Document> documentOptional = documentRepository.findById(documentId);
