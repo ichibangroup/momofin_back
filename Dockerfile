@@ -1,3 +1,10 @@
+# Build stage
+FROM docker.io/library/eclipse-temurin:21-jdk-alpine AS builder
+
+WORKDIR /src/momofin
+COPY . .
+RUN ./gradlew clean bootJar
+
 # Run stage
 FROM docker.io/library/eclipse-temurin:21-jre-alpine AS runner
 
@@ -15,9 +22,10 @@ RUN addgroup -g ${USER_GID} ${USER_NAME} \
 COPY --chown=${USER_NAME}:${USER_NAME} .gcp/gcp_sa_private_key.pem /home/runner/work/
 COPY --chown=${USER_NAME}:${USER_NAME} .gcp/wrongkey.pem /home/runner/work/
 
-# Set the working directory and copy the application
 USER ${USER_NAME}
 WORKDIR /opt/momofin
+
+# Fixed the --from reference to match the build stage name
 COPY --from=builder --chown=${USER_UID}:${USER_GID} /src/momofin/build/libs/*.jar app.jar
 
 # Set the PKEY_DIRECTORY environment variable
