@@ -2,10 +2,7 @@ package ppl.momofin.momofinbackend.service;
 
 
 import org.springframework.security.crypto.password.PasswordEncoder;
-import ppl.momofin.momofinbackend.error.InvalidCredentialsException;
-import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
-import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
-import ppl.momofin.momofinbackend.error.UserNotFoundException;
+import ppl.momofin.momofinbackend.error.*;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +10,8 @@ import org.springframework.stereotype.Service;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 import ppl.momofin.momofinbackend.utility.PasswordValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +22,7 @@ public class UserServiceImpl implements UserService{
     private final OrganizationRepository organizationRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
     @Autowired
     public UserServiceImpl(UserRepository userRepository, OrganizationRepository organizationRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -32,19 +32,25 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public User authenticate(String organizationName, String username, String password) {
-        Optional<Organization> organization = organizationRepository.findOrganizationByName(organizationName);
+        logger.info("Authenticating user: {} for organization: {}", username, organizationName);
 
-        if(organization.isEmpty()) {
-            throw new OrganizationNotFoundException(organizationName);
-        }
+        Organization organization = organizationRepository.findOrganizationByName(organizationName)
+                .orElseThrow(() -> new OrganizationNotFoundException(organizationName));
 
-        Optional<User> user = userRepository.findUserByOrganizationAndUsername(organization.get(), username);
+        User user = userRepository.findUserByOrganizationAndUsername(organization, username)
+                .orElseThrow(() -> new InvalidCredentialsException());
 
-        if(user.isEmpty()|| !passwordEncoder.matches(password, user.get().getPassword())) {
+        logger.info("User found, checking password");
+        boolean passwordMatches = passwordEncoder.matches(password, user.getPassword());
+        logger.info("Password match result: {}", passwordMatches);
+
+        if (!passwordMatches) {
+            logger.warn("Authentication failed for user: {}", username);
             throw new InvalidCredentialsException();
         }
 
-        return user.get();
+        logger.info("Authentication successful for user: {}", username);
+        return user;
     }
 
     @Override
@@ -67,7 +73,62 @@ public class UserServiceImpl implements UserService{
         return userRepository.save(new User(organization, username, name, email, encodedPassword, position));
     }
 
+    @Override
+    public User updateUser(Long userId, User updatedUser, String oldPassword, String newPassword) {
+        User existingUser = getUserById(userId);
+        logger.info("Updating user with ID: {}", userId);
+        logger.info("Old password provided: {}, New password provided: {}",
+                oldPassword != null && !oldPassword.isEmpty(),
+                newPassword != null && !newPassword.isEmpty());
 
+        // Password update logic
+        if (oldPassword != null && !oldPassword.isEmpty()) {
+            if (!passwordEncoder.matches(oldPassword, existingUser.getPassword())) {
+                logger.warn("Invalid old password provided for user ID: {}", userId);
+                throw new InvalidPasswordException("Invalid old password");
+            }
+            logger.info("Old password verified for user ID: {}", userId);
+
+            if (newPassword != null && !newPassword.isEmpty()) {
+                String encodedNewPassword = passwordEncoder.encode(newPassword);
+                existingUser.setPassword(encodedNewPassword);
+                logger.info("New password encoded and set for user ID: {}", userId);
+            } else {
+                logger.warn("New password is null or empty, password not updated for user ID: {}", userId);
+                throw new InvalidPasswordException("New password cannot be empty when changing password");
+            }
+        } else if (newPassword != null && !newPassword.isEmpty()) {
+            logger.warn("New password provided without old password for user ID: {}", userId);
+            throw new InvalidPasswordException("Old password must be provided to change password");
+        }
+
+        // Update other fields if provided
+        if (updatedUser.getUsername() != null && !updatedUser.getUsername().isEmpty()) {
+            existingUser.setUsername(updatedUser.getUsername());
+            logger.info("Username updated for user ID: {}", userId);
+        }
+
+        if (updatedUser.getEmail() != null && !updatedUser.getEmail().isEmpty()) {
+            existingUser.setEmail(updatedUser.getEmail());
+            logger.info("Email updated for user ID: {}", userId);
+        }
+
+        if (updatedUser.getName() != null && !updatedUser.getName().isEmpty()) {
+            existingUser.setName(updatedUser.getName());
+            logger.info("Name updated for user ID: {}", userId);
+        }
+
+        if (updatedUser.getPosition() != null && !updatedUser.getPosition().isEmpty()) {
+            existingUser.setPosition(updatedUser.getPosition());
+            logger.info("Position updated for user ID: {}", userId);
+        }
+
+        // Save the updated user
+        User savedUser = userRepository.save(existingUser);
+        logger.info("User with ID: {} successfully updated and saved", userId);
+
+        return savedUser;
+    }
 
     @Override
     public List<User> fetchUsersByOrganization(Organization organization) {
@@ -84,24 +145,7 @@ public class UserServiceImpl implements UserService{
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
     }
 
-    @Override
-    public User updateUser(Long userId, User updatedUser) {
-        User existingUser = getUserById(userId);
 
-        if (updatedUser.getEmail() != null) {
-            existingUser.setEmail(updatedUser.getEmail());
-        }
-        if (updatedUser.getUsername() != null) {
-            existingUser.setUsername(updatedUser.getUsername());
-        }
-        if (updatedUser.getPassword() != null) {
-            PasswordValidator.validatePassword(updatedUser.getPassword());
-            String encodedPassword = passwordEncoder.encode(updatedUser.getPassword());
-            existingUser.setPassword(encodedPassword);
-        }
-
-        return userRepository.save(existingUser);
-    }
 
     @Override
     public User fetchUserByUsername(String username) {
