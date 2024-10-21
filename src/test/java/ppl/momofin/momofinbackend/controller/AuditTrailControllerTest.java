@@ -8,6 +8,9 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ppl.momofin.momofinbackend.model.AuditTrail;
+import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.response.AuditTrailResponse;
 import ppl.momofin.momofinbackend.service.AuditTrailService;
 
 import java.util.Arrays;
@@ -25,72 +28,88 @@ public class AuditTrailControllerTest {
 
     @BeforeEach
     public void setUp() {
-        MockitoAnnotations.openMocks(this); // Initializes @Mock and @InjectMocks annotations
+        MockitoAnnotations.openMocks(this);
     }
 
-    // Test for getAllAuditTrails()
     @Test
-    public void testGetAllAuditTrails() {
-        // Arrange
-        AuditTrail auditTrail1 = new AuditTrail();
-        auditTrail1.setId(1L);
+    public void testGetAllAudits_Success() {
+        List<AuditTrail> mockAuditTrails = getAuditTrails();
 
-        AuditTrail auditTrail2 = new AuditTrail();
-        auditTrail2.setId(2L);
+        List<AuditTrailResponse> expectedResponses = mockAuditTrails.stream()
+                .map(AuditTrailResponse::fromAuditTrail)
+                .toList();
 
-        List<AuditTrail> mockAuditTrails = Arrays.asList(auditTrail1, auditTrail2);
         when(auditTrailService.getAllAuditTrails()).thenReturn(mockAuditTrails);
 
-        // Act
-        ResponseEntity<List<AuditTrail>> response = auditTrailController.getAllAuditTrails();
+        ResponseEntity<List<AuditTrailResponse>> response = auditTrailController.getAllAudits();
 
-        // Assert
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(mockAuditTrails, response.getBody());
-        verify(auditTrailService, times(1)).getAllAuditTrails();
+        List<AuditTrailResponse> actualResponses = response.getBody();
+
+        for (int i = 0; i < expectedResponses.size(); i++) {
+            AuditTrailResponse expected = expectedResponses.get(i);
+            AuditTrailResponse actual = actualResponses.get(i);
+            assertEquals(expected.getId(), actual.getId());
+            assertEquals(expected.getUsername(), actual.getUsername());
+            assertEquals(expected.getDocument(), actual.getDocument());
+            assertEquals(expected.getAction(), actual.getAction());
+            assertEquals(expected.getOutcome(), actual.getOutcome());
+        }
     }
 
-    // Test for getAuditTrailById()
+    private static List<AuditTrail> getAuditTrails() {
+        User testuser = new User();
+        testuser.setUserId(1L);
+        testuser.setUsername("tester");
+
+        Document testdoc = new Document();
+        testdoc.setDocumentId(1L);
+        testdoc.setName("testdoc");
+
+        AuditTrail audit1 = new AuditTrail();
+        audit1.setId(1L);
+        audit1.setUser(testuser);
+        audit1.setDocument(testdoc);
+
+        AuditTrail audit2 = new AuditTrail();
+        audit2.setId(2L);
+        audit2.setUser(testuser);
+        audit2.setDocument(testdoc);
+
+        List<AuditTrail> mockAuditTrails = Arrays.asList(audit1, audit2);
+        return mockAuditTrails;
+    }
+
+
     @Test
     public void testGetAuditTrailById() {
-        // Arrange
         AuditTrail mockAuditTrail = new AuditTrail();
         mockAuditTrail.setId(1L);
         when(auditTrailService.getAuditTrailById(1L)).thenReturn(mockAuditTrail);
 
-        // Act
         ResponseEntity<AuditTrail> response = auditTrailController.getAuditTrailById(1L);
 
-        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(mockAuditTrail, response.getBody());
         verify(auditTrailService, times(1)).getAuditTrailById(1L);
     }
 
-    // Test for createAuditTrail()
     @Test
     public void testCreateAuditTrail() {
-        // Arrange
         AuditTrail mockAuditTrail = new AuditTrail();
         mockAuditTrail.setId(1L);
         when(auditTrailService.createAuditTrail(any(AuditTrail.class))).thenReturn(mockAuditTrail);
 
-        // Act
         ResponseEntity<AuditTrail> response = auditTrailController.createAuditTrail(mockAuditTrail);
 
-        // Assert
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(mockAuditTrail, response.getBody());
         verify(auditTrailService, times(1)).createAuditTrail(mockAuditTrail);
     }
 
-    // Test for deleteAuditTrail()
     @Test
     public void testDeleteAuditTrail() {
-        // Act
         ResponseEntity<Void> response = auditTrailController.deleteAuditTrail(1L);
 
-        // Assert
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(auditTrailService, times(1)).deleteAuditTrail(1L);
     }
