@@ -19,8 +19,7 @@ import ppl.momofin.momofinbackend.service.UserService;
 public class AuditTrailAspect {
     private final UserService userService;
 
-    @Autowired
-    private AuditTrailRepository auditTrailRepository;
+    private final AuditTrailRepository auditTrailRepository;
 
     @Autowired
     public AuditTrailAspect(UserService userService, AuditTrailRepository auditTrailRepository) {
@@ -50,10 +49,10 @@ public class AuditTrailAspect {
         AuditTrail auditTrail = new AuditTrail();
         auditTrail.setAction(action);
         auditTrail.setAuditOutcome("SUCCESS");
+        String failed = "FAILED";
 
         if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
-            auditTrail.setAuditOutcome("FAILED");
-            System.out.println("User is not authenticated, audit trail marked as failed.");
+            auditTrail.setAuditOutcome(failed);
             auditTrailRepository.save(auditTrail);
             return;
         }
@@ -61,15 +60,13 @@ public class AuditTrailAspect {
         String username = authentication.getName();
         User user = userService.fetchUserByUsername(username);
         if (user == null) {
-            auditTrail.setAuditOutcome("FAILED");
-            System.out.println("User not found, audit trail marked as failed.");
+            auditTrail.setAuditOutcome(failed);
             auditTrailRepository.save(auditTrail);
             return;
         }
 
         if (document == null) {
-            auditTrail.setAuditOutcome("FAILED");
-            System.out.println("Document not found, audit trail marked as failed.");
+            auditTrail.setAuditOutcome(failed);
             auditTrailRepository.save(auditTrail);
             return;
         }

@@ -3,7 +3,6 @@ package ppl.momofin.momofinbackend.aspect;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,7 +39,7 @@ class AuditTrailAspectTest {
     }
 
     @Test
-    public void testCaptureDocumentAfterSubmit_SuccessfulAudit() {
+    void testCaptureDocumentAfterSubmit_SuccessfulAudit() {
         // Mocking an authenticated user and a valid document
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
@@ -58,7 +57,7 @@ class AuditTrailAspectTest {
     }
 
     @Test
-    public void testCaptureDocumentAfterSubmit_AuthenticationFailed() {
+    void testCaptureDocumentAfterSubmit_AuthenticationFailed() {
         // Mocking an unauthenticated scenario
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(false);
@@ -74,7 +73,7 @@ class AuditTrailAspectTest {
     }
 
     @Test
-    public void testCaptureDocumentAfterVerify_UserNotFound() {
+    void testCaptureDocumentAfterVerify_UserNotFound() {
         // Mocking an authenticated user with no corresponding user in the system
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
@@ -92,7 +91,7 @@ class AuditTrailAspectTest {
     }
 
     @Test
-    public void testCaptureDocumentAfterVerify_DocumentNull() {
+    void testCaptureDocumentAfterVerify_DocumentNull() {
         // Mocking an authenticated user but with no document passed
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);

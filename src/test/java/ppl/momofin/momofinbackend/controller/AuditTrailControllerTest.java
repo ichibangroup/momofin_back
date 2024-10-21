@@ -32,7 +32,7 @@ public class AuditTrailControllerTest {
     }
 
     @Test
-    public void testGetAllAudits_Success() {
+    void testGetAllAudits_Success() {
         List<AuditTrail> mockAuditTrails = getAuditTrails();
 
         List<AuditTrailResponse> expectedResponses = mockAuditTrails.stream()
@@ -75,13 +75,12 @@ public class AuditTrailControllerTest {
         audit2.setUser(testuser);
         audit2.setDocument(testdoc);
 
-        List<AuditTrail> mockAuditTrails = Arrays.asList(audit1, audit2);
-        return mockAuditTrails;
+        return Arrays.asList(audit1, audit2);
     }
 
 
     @Test
-    public void testGetAuditTrailById() {
+    void testGetAuditTrailById() {
         AuditTrail mockAuditTrail = new AuditTrail();
         mockAuditTrail.setId(1L);
         when(auditTrailService.getAuditTrailById(1L)).thenReturn(mockAuditTrail);
@@ -94,7 +93,7 @@ public class AuditTrailControllerTest {
     }
 
     @Test
-    public void testCreateAuditTrail() {
+    void testCreateAuditTrail() {
         AuditTrail mockAuditTrail = new AuditTrail();
         mockAuditTrail.setId(1L);
         when(auditTrailService.createAuditTrail(any(AuditTrail.class))).thenReturn(mockAuditTrail);
@@ -107,7 +106,7 @@ public class AuditTrailControllerTest {
     }
 
     @Test
-    public void testDeleteAuditTrail() {
+    void testDeleteAuditTrail() {
         ResponseEntity<Void> response = auditTrailController.deleteAuditTrail(1L);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
