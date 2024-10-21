@@ -59,16 +59,16 @@ jobs:
           region: ${{ secrets.GCP_REGION }}
           image: asia-southeast2-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_REPOSITORY }}/${{ secrets.IMAGE_NAME }}:${{ github.sha }}
           env_vars: |
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-            DB_URL: ${{ secrets.DB_URL }}
-            DB_USER: ${{ secrets.DB_USER }}
-            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-            SECRET_KEY: ${{ secrets.SECRET_KEY }}
-            GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
-            GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
-            GCP_SA_PRIVATE_KEY_ID: ${{ secrets.GCP_SA_PRIVATE_KEY_ID }}
-            GCP_SA_NAME: ${{ secrets.GCP_SA_NAME }}
-            GCP_SA_CLIENT_ID: ${{ secrets.GCP_SA_CLIENT_ID }}
-            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-            PKEY_DIRECTORY: /home/runner/work
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            SONAR_TOKEN=${{ secrets.SONAR_TOKEN }}
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }}
+            GCP_PROJECT=${{ secrets.GCP_PROJECT }}
+            GCP_SA_PRIVATE_KEY_ID=${{ secrets.GCP_SA_PRIVATE_KEY_ID }}
+            GCP_SA_NAME=${{ secrets.GCP_SA_NAME }}
+            GCP_SA_CLIENT_ID=${{ secrets.GCP_SA_CLIENT_ID }}
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+            PKEY_DIRECTORY=/home/runner/work
