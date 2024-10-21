@@ -4,12 +4,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ppl.momofin.momofinbackend.model.AuditTrail;
+import ppl.momofin.momofinbackend.response.AuditTrailResponse;
 import ppl.momofin.momofinbackend.service.AuditTrailService;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/audit-trails")
+@RequestMapping("/audit")
 public class AuditTrailController {
 
     private final AuditTrailService auditTrailService;
@@ -19,10 +20,13 @@ public class AuditTrailController {
         this.auditTrailService = auditTrailService;
     }
 
-    @GetMapping
-    public ResponseEntity<List<AuditTrail>> getAllAuditTrails() {
-        List<AuditTrail> auditTrails = auditTrailService.getAllAuditTrails();
-        return ResponseEntity.ok(auditTrails);
+    @GetMapping("/audits")
+    public ResponseEntity<List<AuditTrailResponse>> getAllAudits() {
+        List<AuditTrail> audits = auditTrailService.getAllAuditTrails();
+        List<AuditTrailResponse> responses = audits.stream()
+                .map(AuditTrailResponse::fromAuditTrail)
+                .toList();
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{id}")
