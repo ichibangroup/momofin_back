@@ -39,7 +39,7 @@ class OrganizationServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        testOrg = new Organization("Test Org", "Test Description");
+        testOrg = new Organization("Test Org", "Test Description", "Test Industry", "Test Location");
         testOrg.setOrganizationId(1L);
         testUser = new User(testOrg, "testuser", "Test User", "test@example.com", "password", "Developer", false);
         testUserDTO = UserDTO.fromUser(testUser);
@@ -125,22 +125,24 @@ class OrganizationServiceTest {
         Long orgId = 1L;
         String newName = "Updated Org Name";
         String newDescription = "Updated Org Description";
+        String newIndustry = "Updated Org Industry";
+        String newLocation = "Updated Org Location";
 
-        Organization existingOrg = new Organization("Old Org Name", "Old Org Description");
-        existingOrg.setOrganizationId(orgId);
-
-        Organization updatedOrg = new Organization(newName, newDescription);
+        Organization updatedOrg = new Organization(newName, newDescription, newIndustry, newLocation);
+        testOrg.setOrganizationId(orgId);
         updatedOrg.setOrganizationId(orgId);
 
-        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(existingOrg));
+        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(testOrg));
         when(organizationRepository.save(any(Organization.class))).thenReturn(updatedOrg);
 
-        Organization result = organizationService.updateOrganization(orgId, newName, newDescription);
+        Organization result = organizationService.updateOrganization(orgId, newName, newDescription, newIndustry, newLocation);
 
         assertNotNull(result);
         assertEquals(orgId, result.getOrganizationId());
         assertEquals(newName, result.getName());
         assertEquals(newDescription, result.getDescription());
+        assertEquals(newIndustry, result.getIndustry());
+        assertEquals(newLocation, result.getLocation());
 
         verify(organizationRepository).findById(orgId);
         verify(organizationRepository).save(any(Organization.class));
@@ -152,7 +154,7 @@ class OrganizationServiceTest {
         when(organizationRepository.findById(nonExistentOrgId)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () ->
-                organizationService.updateOrganization(nonExistentOrgId, "New Name", "New Description")
+                organizationService.updateOrganization(nonExistentOrgId, "New Name", "New Description", "New Industry", "New Location")
         );
 
         verify(organizationRepository).findById(nonExistentOrgId);
@@ -180,31 +182,15 @@ class OrganizationServiceTest {
     @Test
     void createOrganization_shouldCreateAndReturnNewOrganization() {
         // Arrange
-        Organization newOrg = new Organization("New Org", "New Desc");
+        Organization newOrg = new Organization("New Org", "New Desc", "New Industry", "New Location");
         when(organizationRepository.save(any(Organization.class))).thenReturn(newOrg);
 
         // Act
-        Organization result = organizationService.createOrganization("New Org", "New Desc");
+        Organization result = organizationService.createOrganization("New Org", "New Desc", "New Industry", "New Location");
 
         // Assert
         assertEquals("New Org", result.getName());
         assertEquals("New Desc", result.getDescription());
-    }
-    @Test
-    void updateOrganization_shouldUpdateAndReturnOrganization() {
-        // Arrange
-        Long orgId = 1L;
-        Organization existingOrg = new Organization("Old Org", "Old Desc");
-        existingOrg.setOrganizationId(orgId);
-        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(existingOrg));
-        when(organizationRepository.save(any(Organization.class))).thenAnswer(i -> i.getArguments()[0]);
-
-        // Act
-        Organization result = organizationService.updateOrganization(orgId, "Updated Org", "Updated Desc");
-
-        // Assert
-        assertEquals("Updated Org", result.getName());
-        assertEquals("Updated Desc", result.getDescription());
     }
 
     @Test
@@ -218,44 +204,57 @@ class OrganizationServiceTest {
 
         // Assert
         assertNotNull(newOrganizationService);
-        assertDoesNotThrow(() -> newOrganizationService.getAllOrganizations());
+        assertDoesNotThrow(newOrganizationService::getAllOrganizations);
         verify(organizationRepository).findAll();
     }
 
     @Test
     void updateOrganization_shouldThrowException_whenOrgIdIsNull() {
         assertThrows(InvalidOrganizationException.class,
-                () -> organizationService.updateOrganization(null, "Name", "Description"));
+                () -> organizationService.updateOrganization(null, "Name", "Description", "Industry", "Location"));
     }
 
     @Test
     void updateOrganization_shouldThrowException_whenNameIsEmpty() {
         assertThrows(InvalidOrganizationException.class,
-                () -> organizationService.updateOrganization(1L, "", "Description"));
+                () -> organizationService.updateOrganization(1L, "", "Description", "Industry", "Location"));
     }
 
     @Test
     void updateOrganization_shouldThrowException_whenNameIsNull() {
         assertThrows(InvalidOrganizationException.class,
-                () -> organizationService.updateOrganization(1L, null, "Description"));
+                () -> organizationService.updateOrganization(1L, null, "Description", "Industry", "Location"));
     }
 
     @Test
     void updateOrganization_shouldThrowException_whenOrganizationNotFound() {
         when(organizationRepository.findById(1L)).thenReturn(Optional.empty());
         assertThrows(OrganizationNotFoundException.class,
-                () -> organizationService.updateOrganization(1L, "Name", "Description"));
+                () -> organizationService.updateOrganization(1L, "Name", "Description", "Industry", "Location"));
     }
 
     @Test
     void createOrganization_shouldThrowException_whenNameIsEmpty() {
         assertThrows(InvalidOrganizationException.class,
-                () -> organizationService.createOrganization("", "Description"));
+                () -> organizationService.createOrganization("", "Description", "Industry", "Location"));
     }
 
     @Test
     void createOrganization_shouldThrowException_whenNameIsNull() {
         assertThrows(InvalidOrganizationException.class,
-                () -> organizationService.createOrganization(null, "Description"));
+                () -> organizationService.createOrganization(null, "Description", "Industry", "Location"));
+    }
+
+    @Test
+    void findOrganization_success() {
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
+        Organization organization = organizationService.findOrganizationById(1L);
+        assertEquals(testOrg, organization);
+    }
+    @Test
+    void findOrganization_shouldThrowException_whenOrganizationNotFound() {
+        when(organizationRepository.findById(1L)).thenReturn(Optional.empty());
+        assertThrows(OrganizationNotFoundException.class,
+                () -> organizationService.findOrganizationById(1L));
     }
 }

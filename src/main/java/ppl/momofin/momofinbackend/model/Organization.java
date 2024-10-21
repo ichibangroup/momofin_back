@@ -19,6 +19,14 @@ public class Organization {
     @ColumnDefault("'Default organization description'")
     private String description;
 
+    @Column(name = "industry", nullable = false)
+    @ColumnDefault("'Security'")
+    private String industry;
+
+    @Column(name = "location", nullable = false)
+    @ColumnDefault("'Location'")
+    private String location;
+
     public Organization() {}
 
     public Organization(String name) {
@@ -29,5 +37,12 @@ public class Organization {
     public Organization(String name, String description) {
         this.name = name;
         this.description = description;
+    }
+
+    public Organization(String name, String description, String industry, String location) {
+        this.name = name;
+        this.description = description;
+        this.industry = industry;
+        this.location = location;
     }
 }

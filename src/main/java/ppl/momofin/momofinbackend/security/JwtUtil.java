@@ -22,6 +22,8 @@ public class JwtUtil {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", new ArrayList<>(user.getRoles()));  // Convert Set to List
         claims.put("organizationId", user.getOrganization().getOrganizationId());
+        claims.put("organizationName", user.getOrganization().getName());
+        claims.put("userId", user.getUserId());
         claims.put("isOrganizationAdmin", user.isOrganizationAdmin());
         claims.put("isMomofinAdmin", user.isMomofinAdmin());
         return createToken(claims, user.getUsername());
@@ -53,13 +55,17 @@ public class JwtUtil {
         return extractClaim(token, claims -> claims.get("organizationId", Long.class));
     }
 
+    public String extractOrganizationName(String token) {
+        return extractClaim(token, claims -> claims.get("organizationName", String.class));
+    }
+
     public Boolean extractIsOrganizationAdmin(String token) {
         return extractClaim(token, claims -> claims.get("isOrganizationAdmin", Boolean.class));
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME * 1000))
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY).compact();
     }
 

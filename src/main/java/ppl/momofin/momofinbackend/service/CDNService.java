@@ -8,4 +8,5 @@ import java.io.IOException;
 
 public interface CDNService {
     Document uploadFile(MultipartFile file, User user, String hashString) throws IOException;
+    String getViewableUrl(String fileName, String username, String organizationName) throws IOException;
 }

@@ -7,6 +7,8 @@ import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
 import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
 import ppl.momofin.momofinbackend.model.Organization;
+import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.response.FetchAllUserResponse;
 import ppl.momofin.momofinbackend.service.OrganizationService;
 import ppl.momofin.momofinbackend.response.OrganizationResponse;
 import ppl.momofin.momofinbackend.service.UserService;
@@ -36,6 +38,15 @@ public class MomofinAdminController {
         return ResponseEntity.ok(responses);
     }
 
+    @GetMapping("/users")
+    public ResponseEntity<List<FetchAllUserResponse>> getAllUsers() {
+        List<User> users = userService.fetchAllUsers();
+        List<FetchAllUserResponse> responses = users.stream()
+                .map(FetchAllUserResponse::fromUser)
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
     @PostMapping("/organizations")
     public ResponseEntity<OrganizationResponse> addOrganization(@RequestBody AddOrganizationRequest request) {
         try {
@@ -50,7 +61,7 @@ public class MomofinAdminController {
     }
 
     private Organization createOrganization(AddOrganizationRequest request) {
-        return organizationService.createOrganization(request.getName(), request.getDescription());
+        return organizationService.createOrganization(request.getName(), request.getDescription(), request.getIndustry(), request.getLocation());
     }
 
     private void createOrganizationAdmin(Organization organization, AddOrganizationRequest request) {
@@ -66,7 +77,7 @@ public class MomofinAdminController {
     @PutMapping("/organizations/{orgId}")
     public ResponseEntity<OrganizationResponse> updateOrganization(@PathVariable Long orgId, @RequestBody AddOrganizationRequest request) {
         try {
-            Organization updatedOrganization = organizationService.updateOrganization(orgId, request.getName(), request.getDescription());
+            Organization updatedOrganization = organizationService.updateOrganization(orgId, request.getName(), request.getDescription(), request.getIndustry(), request.getLocation());
             return ResponseEntity.ok(OrganizationResponse.fromOrganization(updatedOrganization));
         } catch (OrganizationNotFoundException e) {
             return ResponseEntity.notFound().build();

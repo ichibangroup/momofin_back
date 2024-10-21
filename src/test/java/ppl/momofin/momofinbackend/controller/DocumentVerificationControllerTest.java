@@ -18,6 +18,10 @@ import ppl.momofin.momofinbackend.security.JwtUtil;
 import ppl.momofin.momofinbackend.service.DocumentService;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.service.UserService;
+
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import java.util.Collections;
@@ -137,6 +141,92 @@ class DocumentVerificationControllerTest {
     }
 
     @Test
+    void verifySpecifiedDocument_Success() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+
+        Document document = new Document();
+        document.setDocumentId(1L);
+        document.setName("test.txt");
+        document.setHashString("expectedHash");
+
+        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenReturn(document);
+
+        mockMvc.perform(multipart("/doc/verify/1")
+                        .file(file)
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.document.documentId").value(document.getDocumentId()))
+                .andExpect(jsonPath("$.document.name").value(document.getName()))
+                .andExpect(jsonPath("$.document.hashString").value(document.getHashString()));
+
+        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+    }
+
+
+
+    @Test
+    void verifySpecifiedDocument_NotFound() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+
+        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenThrow(new IllegalStateException("Document with ID 1 not found"));
+
+        mockMvc.perform(multipart("/doc/verify/1")
+                        .file(file)
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.errorMessage").value("Document with ID 1 not found"));
+
+        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+    }
+
+    @Test
+    void verifySpecifiedDocument_IOException() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+
+        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenThrow(new IOException("I/O error occurred"));
+
+        mockMvc.perform(multipart("/doc/verify/1")
+                        .file(file)
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Verification failed: I/O error occurred"));
+
+        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+    }
+
+    @Test
+    void verifySpecifiedDocument_NoSuchAlgorithmException() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+
+        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenThrow(new NoSuchAlgorithmException("Algorithm not found"));
+
+        mockMvc.perform(multipart("/doc/verify/1")
+                        .file(file)
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Verification failed: Algorithm not found"));
+
+        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+    }
+
+    @Test
+    void verifySpecifiedDocument_InvalidKeyException() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+
+        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenThrow(new InvalidKeyException("Invalid key error"));
+
+        mockMvc.perform(multipart("/doc/verify/1")
+                        .file(file)
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Verification failed: Invalid key error"));
+
+        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+    }
+
+
+
+    @Test
     void findAllDocumentsByOwner_Success() throws Exception {
         String strippedToken = "validToken";
 
@@ -167,5 +257,57 @@ class DocumentVerificationControllerTest {
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(documentService);
+    }
+
+    @Test
+    void getViewableUrl_Success_ReturnsOkResponse() throws Exception {
+        // Arrange
+        Long documentId = 1L;
+        String organizationName = "testorg";
+        String viewableUrl = "https://cdn.example.com/document-url";
+
+        when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
+        when(documentService.getViewableUrl(documentId, TEST_USERNAME, organizationName)).thenReturn(viewableUrl);
+
+        mockMvc.perform(get("/doc/view/1")
+                .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value(viewableUrl));
+
+        verify(jwtUtil, times(2)).extractUsername("validToken");
+        verify(jwtUtil, times(1)).extractOrganizationName("validToken");
+        verify(documentService, times(1)).getViewableUrl(documentId, TEST_USERNAME, organizationName);
+    }
+
+    @Test
+    void getViewableUrl_DocumentServiceThrowsIOException_ReturnsBadRequest() throws Exception {
+        // Arrange
+        Long documentId = 1L;
+        String organizationName = "testorg";
+
+        when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
+        when(documentService.getViewableUrl(documentId, TEST_USERNAME, organizationName)).thenThrow(new IOException("File not found: test.txt"));
+
+        mockMvc.perform(get("/doc/view/1")
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Error retrieving document: File not found: test.txt"));
+
+        verify(jwtUtil, times(2)).extractUsername("validToken");
+        verify(jwtUtil, times(1)).extractOrganizationName("validToken");
+        verify(documentService, times(1)).getViewableUrl(documentId, TEST_USERNAME, organizationName);
+    }
+
+    @Test
+    void getDocumentToBeVerifiedTest() throws Exception {
+        Document document = new Document("hashString", "documentName");
+
+        when(documentService.fetchDocumentWithDocumentId(123L)).thenReturn(document);
+
+        mockMvc.perform(get("/doc/verify/123")
+                .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hashString").value("hashString"))
+                .andExpect(jsonPath("$.name").value("documentName"));
     }
 }

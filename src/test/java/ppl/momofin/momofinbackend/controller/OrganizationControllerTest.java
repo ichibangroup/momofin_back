@@ -16,6 +16,7 @@ import ppl.momofin.momofinbackend.service.OrganizationService;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -47,11 +48,11 @@ class OrganizationControllerTest {
 
     @Test
     void updateOrganization_ShouldReturnUpdatedOrganization() throws Exception {
-        when(organizationService.updateOrganization(eq(1L), anyString(), anyString())).thenReturn(testOrg);
+        when(organizationService.updateOrganization(eq(1L), anyString(), anyString(), anyString(), anyString())).thenReturn(testOrg);
 
         mockMvc.perform(put("/api/organizations/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Updated Org\",\"description\":\"Updated Description\"}"))
+                        .content("{\"name\":\"Updated Org\",\"description\":\"Updated Description\",\"industry\":\"Updated Industry\",\"location\":\"Updated Location\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Test Org"))
                 .andExpect(jsonPath("$.description").value("Test Description"));
@@ -81,5 +82,17 @@ class OrganizationControllerTest {
                         .content("{\"username\":\"updateduser\",\"name\":\"Updated User\",\"email\":\"updated@example.com\",\"position\":\"Senior Developer\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("testuser"));
+    }
+
+    @Test
+    void getOrganizationTest() throws Exception {
+        when(organizationService.findOrganizationById(1L)).thenReturn(testOrg);
+
+        mockMvc.perform(get("/api/organizations/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Test Org"))
+                .andExpect(jsonPath("$.description").value("Test Description"));
+
+        verify(organizationService).findOrganizationById(1L);
     }
 }

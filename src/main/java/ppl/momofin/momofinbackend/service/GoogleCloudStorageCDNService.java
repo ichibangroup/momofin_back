@@ -1,10 +1,7 @@
 package ppl.momofin.momofinbackend.service;
 
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
+import com.google.cloud.storage.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,11 +12,14 @@ import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class GoogleCloudStorageCDNService implements CDNService {
@@ -77,7 +77,7 @@ public class GoogleCloudStorageCDNService implements CDNService {
     @Override
     public Document uploadFile(MultipartFile file, User user, String hashString) throws IOException {
         String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        String folderName = user.getOrganization().getName() +"/" + user.getName();
+        String folderName = user.getOrganization().getName() +"/" + user.getUsername();
         BlobId blobId = BlobId.of(bucketName, folderName + "/" + fileName);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                 .setContentType("application/pdf")
@@ -89,5 +89,20 @@ public class GoogleCloudStorageCDNService implements CDNService {
         document.setName(fileName);
         document.setOwner(user);
         return documentRepository.save(document);
+    }
+
+    @Override
+    public String getViewableUrl(String fileName, String username, String organizationName) throws IOException {
+        String folderName = organizationName + "/" + username;
+        BlobId blobId = BlobId.of(bucketName, folderName + "/" + fileName);
+        Blob blob = storage.get(blobId);
+
+        if (blob == null) {
+            throw new FileNotFoundException("File not found: " + fileName);
+        }
+
+        // Generate a signed URL that expires in 1 hour
+        URL signedUrl = blob.signUrl(1, TimeUnit.HOURS);
+        return signedUrl.toString();
     }
 }
