@@ -34,36 +34,48 @@ public class AuditTrailAspect {
     @Pointcut("execution(* ppl.momofin.momofinbackend.service.DocumentService.verifyDocument(..))")
     public void documentVerifyPointcut() {}
 
-    @Pointcut("documentSubmitPointcut() || documentVerifyPointcut()")
-    public void documentUploadPointcut() {}
+    @AfterReturning(pointcut = "documentSubmitPointcut()", returning = "document")
+    public void captureDocumentAfterSubmit(Document document) {
+        captureAuditTrail(document, "SUBMIT");
+    }
 
-    @AfterReturning(pointcut = "documentUploadPointcut()", returning = "document")
-    public void captureDocumentAfterUpload(Document document) {
+    @AfterReturning(pointcut = "documentVerifyPointcut()", returning = "document")
+    public void captureDocumentAfterVerify(Document document) {
+        captureAuditTrail(document, "VERIFY");
+    }
+
+    private void captureAuditTrail(Document document, String action) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+        AuditTrail auditTrail = new AuditTrail();
+        auditTrail.setAction(action);
+        auditTrail.setAuditOutcome("SUCCESS");
+
         if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
-            System.out.println("User is not authenticated, audit trail not saved.");
+            auditTrail.setAuditOutcome("FAILED");
+            System.out.println("User is not authenticated, audit trail marked as failed.");
+            auditTrailRepository.save(auditTrail);
             return;
         }
 
         String username = authentication.getName();
         User user = userService.fetchUserByUsername(username);
+        if (user == null) {
+            auditTrail.setAuditOutcome("FAILED");
+            System.out.println("User not found, audit trail marked as failed.");
+            auditTrailRepository.save(auditTrail);
+            return;
+        }
 
         if (document == null) {
-            System.out.println("Document not found, audit trail not saved.");
+            auditTrail.setAuditOutcome("FAILED");
+            System.out.println("Document not found, audit trail marked as failed.");
+            auditTrailRepository.save(auditTrail);
             return;
         }
 
-        if (user == null) {
-            System.out.println("User not found, audit trail not saved.");
-            return;
-        }
-
-        AuditTrail auditTrail = new AuditTrail();
         auditTrail.setUser(user);
-        auditTrail.setAction("pending");
         auditTrail.setDocument(document);
-        auditTrail.setAuditOutcome("SUCCESS");
 
         auditTrailRepository.save(auditTrail);
     }
