@@ -8,6 +8,7 @@ import ppl.momofin.momofinbackend.model.Log;
 import ppl.momofin.momofinbackend.repository.LogRepository;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -26,19 +27,19 @@ class LogServiceTest {
 
     @Test
     void testLogMethod() {
-        Long userID = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String level = "ERROR";
         String message = "Failed Login Attempt";
         String logName = "/auth/login";
         String sourceUrl = "http://localhost/auth/login";
 
-        loggingService.log(userID, level, message, logName, sourceUrl);
+        loggingService.log(userId, level, message, logName, sourceUrl);
 
         ArgumentCaptor<Log> logCaptor = ArgumentCaptor.forClass(Log.class);
         verify(logRepository).save(logCaptor.capture());
 
         Log savedlog = logCaptor.getValue();
-        assertEquals(userID, savedlog.getUserId(), "User ID Should Match");
+        assertEquals(userId, savedlog.getUserId(), "User ID Should Match");
         assertEquals(level, savedlog.getLevel(), "Log Level Should Match");
         assertEquals(message, savedlog.getMessage(), "Log Message Should Match");
         assertEquals(logName, savedlog.getLogName(), "Log Name Should Match");
@@ -50,7 +51,7 @@ class LogServiceTest {
 
     @Test
     void testLogException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         Exception exception = new RuntimeException("Test Exception");
         String logName = "/test/log";
         String sourceUrl = "http://localhost/test";
