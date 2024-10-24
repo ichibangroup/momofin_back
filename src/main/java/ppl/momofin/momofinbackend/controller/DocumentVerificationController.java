@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/doc")
@@ -62,11 +63,11 @@ public class DocumentVerificationController {
     }
 
     @PostMapping("/verify/{documentId}")
-    public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file, @PathVariable("documentId") Long documentId) {
+    public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file, @PathVariable("documentId") String documentId) {
         try {
             String username = getUsername(token, jwtUtil);
 
-            Document verifiedDocument = documentService.verifySpecificDocument(file, documentId, username);
+            Document verifiedDocument = documentService.verifySpecificDocument(file, UUID.fromString(documentId), username);
 
             DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(verifiedDocument);
             return ResponseEntity.ok(successResponse);
@@ -80,7 +81,7 @@ public class DocumentVerificationController {
 
 
     @GetMapping("/verify/{documentId}")
-    public ResponseEntity<Document> getDocumentToBeVerified(@PathVariable("documentId") Long documentId) {
+    public ResponseEntity<Document> getDocumentToBeVerified(@PathVariable("documentId") UUID documentId) {
         return ResponseEntity.ok(documentService.fetchDocumentWithDocumentId(documentId));
     }
 
@@ -98,11 +99,11 @@ public class DocumentVerificationController {
     }
 
     @GetMapping("/view/{documentId}")
-    public ResponseEntity<Response> getViewableUrl(@PathVariable Long documentId, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<Response> getViewableUrl(@PathVariable String documentId, @RequestHeader("Authorization") String token) {
         try {
             String username = getUsername(token, jwtUtil);
             String organizationName = getOrgName(token, jwtUtil);
-            String url = documentService.getViewableUrl(documentId, username, organizationName);
+            String url = documentService.getViewableUrl(UUID.fromString(documentId), username, organizationName);
             Response urlResponse = new DocumentViewUrlResponse(url);
 
             return ResponseEntity.ok(urlResponse);
