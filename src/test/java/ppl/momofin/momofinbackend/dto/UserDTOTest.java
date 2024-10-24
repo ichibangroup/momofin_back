@@ -3,6 +3,8 @@ package ppl.momofin.momofinbackend.dto;
 import org.junit.jupiter.api.Test;
 import ppl.momofin.momofinbackend.model.User;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class UserDTOTest {
@@ -10,11 +12,12 @@ class UserDTOTest {
     @Test
     void fromUser_ShouldCreateUserDTOCorrectly() {
         User user = new User(null, "testuser", "Test User", "test@example.com", "password", "Developer", false);
-        user.setUserId(1L);
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        user.setUserId(userId);
 
         UserDTO userDTO = UserDTO.fromUser(user);
 
-        assertEquals(1L, userDTO.getUserId());
+        assertEquals(userId, userDTO.getUserId());
         assertEquals("testuser", userDTO.getUsername());
         assertEquals("Test User", userDTO.getName());
         assertEquals("test@example.com", userDTO.getEmail());
@@ -24,11 +27,12 @@ class UserDTOTest {
 
     @Test
     void toUser_ShouldCreateUserCorrectly() {
-        UserDTO userDTO = new UserDTO(1L, "testuser", "Test User", "test@example.com", "Developer", false);
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        UserDTO userDTO = new UserDTO(userId, "testuser", "Test User", "test@example.com", "Developer", false);
 
         User user = userDTO.toUser();
 
-        assertEquals(1L, user.getUserId());
+        assertEquals(userId, user.getUserId());
         assertEquals("testuser", user.getUsername());
         assertEquals("Test User", user.getName());
         assertEquals("test@example.com", user.getEmail());

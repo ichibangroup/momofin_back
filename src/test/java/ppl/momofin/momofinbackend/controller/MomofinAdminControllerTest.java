@@ -19,10 +19,7 @@ import ppl.momofin.momofinbackend.response.OrganizationResponse;
 import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.utility.Roles;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -97,7 +94,8 @@ class MomofinAdminControllerTest {
     @Test
     void updateOrganization_shouldUpdateExistingOrganization() {
         // Arrange
-        Long orgId = 1L;
+        UUID orgId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("Updated Org");
         request.setDescription("Updated Description");
@@ -108,7 +106,7 @@ class MomofinAdminControllerTest {
         when(organizationService.updateOrganization(orgId, "Updated Org", "Updated Description", "Updated Industry", "Updated Location")).thenReturn(updatedOrg);
 
         // Act
-        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId.toString(), request);
 
         // Assert
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
@@ -191,7 +189,7 @@ class MomofinAdminControllerTest {
     @Test
     void updateOrganization_shouldReturnNotFound_whenOrganizationNotFoundException() {
         // Arrange
-        Long orgId = 1L;
+        UUID orgId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("Updated Org");
         request.setDescription("Updated Description");
@@ -202,7 +200,7 @@ class MomofinAdminControllerTest {
                 .thenThrow(new OrganizationNotFoundException("Organization not found"));
 
         // Act
-        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId.toString(), request);
 
         // Assert
         assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatusCode().value());
@@ -211,7 +209,7 @@ class MomofinAdminControllerTest {
     @Test
     void updateOrganization_shouldReturnBadRequest_whenInvalidOrganizationException() {
         // Arrange
-        Long orgId = 1L;
+        UUID orgId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("");
         request.setDescription("Updated Description");
@@ -222,7 +220,7 @@ class MomofinAdminControllerTest {
                 .thenThrow(new InvalidOrganizationException("Invalid organization name"));
 
         // Act
-        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId.toString(), request);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
@@ -233,7 +231,7 @@ class MomofinAdminControllerTest {
     @Test
     void updateOrganization_shouldReturnErrorResponse_whenUnexpectedException() {
         // Arrange
-        Long orgId = 1L;
+        UUID orgId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("Updated Org");
         request.setDescription("Updated Description");
@@ -244,7 +242,7 @@ class MomofinAdminControllerTest {
                 .thenThrow(new RuntimeException("Unexpected error"));
 
         // Act
-        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId.toString(), request);
 
         // Assert
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode().value());

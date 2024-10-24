@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -22,7 +24,7 @@ class FetchAllUserResponseTest {
 
     @Test
     void testFetchAllUserResponseConstructor() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String organization = "testOrganization";
         String username = "Manager_Test";
         String name = "testname";
@@ -40,7 +42,7 @@ class FetchAllUserResponseTest {
 
     @Test
     void testGetSetUserId() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         FetchAllUserResponse userResponse = new FetchAllUserResponse();
 
         userResponse.setUserId(userId);

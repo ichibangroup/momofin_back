@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import ppl.momofin.momofinbackend.utility.Roles;
 
 import java.util.Set;
+import java.util.UUID;
 
 
 class UserTest {
@@ -96,7 +97,7 @@ class UserTest {
 
     @Test
     void testGetSetUserId() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User user = new User();
 
         user.setUserId(userId);
