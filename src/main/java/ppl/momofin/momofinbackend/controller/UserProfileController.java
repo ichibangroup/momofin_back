@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserProfileController {
 
 
-    private static final Logger logger = LoggerFactory.getLogger(UserProfileController.class);
+    private static final Logger  logger = LoggerFactory.getLogger(UserProfileController.class);
 
     private final UserService userService;
 
