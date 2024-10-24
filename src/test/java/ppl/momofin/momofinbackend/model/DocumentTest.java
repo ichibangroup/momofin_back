@@ -2,6 +2,8 @@ package ppl.momofin.momofinbackend.model;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -28,7 +30,7 @@ class DocumentTest {
 
     @Test
     void testGetSetDocumentId() {
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         Document document= new Document();
         document.setDocumentId(documentId);
         assertEquals(documentId, document.getDocumentId());
