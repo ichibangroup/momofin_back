@@ -6,12 +6,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ppl.momofin.momofinbackend.model.User;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class FetchAllUserResponse {
-    private Long userId;
+    private UUID userId;
     private String username;
     private String name;
     private String email;

@@ -5,12 +5,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.util.UUID;
+
 @Getter @Setter @Entity
 @Table(name = "organization")
 public class Organization {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long organizationId;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID organizationId;
 
     @Column(name = "name", nullable = false)
     private String name;

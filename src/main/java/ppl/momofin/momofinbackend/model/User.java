@@ -8,12 +8,13 @@ import ppl.momofin.momofinbackend.utility.Roles;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity @Getter @Setter
 @Table(name = "users")
 public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID userId;
 
     @Column(name = "name", nullable = false)
     private String name;

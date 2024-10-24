@@ -12,6 +12,7 @@ import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class OrganizationService {
@@ -26,7 +27,7 @@ public class OrganizationService {
         this.userRepository = userRepository;
     }
 
-    public Organization updateOrganization(Long orgId, String name, String description, String industry, String location) {
+    public Organization updateOrganization(UUID orgId, String name, String description, String industry, String location) {
         if (orgId == null) {
             throw new InvalidOrganizationException("Organization ID cannot be null");
         }
@@ -44,14 +45,14 @@ public class OrganizationService {
         return organizationRepository.save(org);
     }
 
-    public List<UserDTO> getUsersInOrganization(Long orgId) {
+    public List<UserDTO> getUsersInOrganization(UUID orgId) {
         Organization org = findOrganizationById(orgId);
         return userRepository.findByOrganization(org).stream()
                 .map(UserDTO::fromUser)
                 .toList();
     }
 
-    public void removeUserFromOrganization(Long orgId, Long userId) {
+    public void removeUserFromOrganization(UUID orgId, UUID userId) {
         Organization org = findOrganizationById(orgId);
         User user = findUserById(userId);
         if (!user.getOrganization().equals(org)) {
@@ -60,7 +61,7 @@ public class OrganizationService {
         userRepository.delete(user);
     }
 
-    public UserDTO updateUserInOrganization(Long orgId, Long userId, UserDTO updatedUserDTO) {
+    public UserDTO updateUserInOrganization(UUID orgId, UUID userId, UserDTO updatedUserDTO) {
         Organization org = findOrganizationById(orgId);
         User user = findUserById(userId);
         if (!user.getOrganization().equals(org)) {
@@ -75,12 +76,12 @@ public class OrganizationService {
         return UserDTO.fromUser(savedUser);
     }
 
-    public Organization findOrganizationById(Long orgId) {
+    public Organization findOrganizationById(UUID orgId) {
         return organizationRepository.findById(orgId)
                 .orElseThrow(OrganizationNotFoundException::new);
     }
 
-    private User findUserById(Long userId) {
+    private User findUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }

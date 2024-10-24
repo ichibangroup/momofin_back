@@ -5,9 +5,11 @@ import lombok.Getter;
 import lombok.Setter;
 import ppl.momofin.momofinbackend.model.Organization;
 
+import java.util.UUID;
+
 @Getter @Setter @AllArgsConstructor
 public class OrganizationResponse {
-    private Long organizationId;
+    private UUID organizationId;
     private String name;
     private String description;
     private String industry;
@@ -25,7 +27,7 @@ public class OrganizationResponse {
         );
     }
 
-    public OrganizationResponse(Long organizationId, String errorMessage, String description) {
+    public OrganizationResponse(UUID organizationId, String errorMessage, String description) {
         this.organizationId = organizationId;
         this.errorMessage = errorMessage;
         this.description = description;

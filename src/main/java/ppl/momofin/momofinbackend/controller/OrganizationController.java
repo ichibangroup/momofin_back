@@ -8,6 +8,7 @@ import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.service.OrganizationService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/organizations")
@@ -21,32 +22,32 @@ public class OrganizationController {
     }
 
     @GetMapping("/{orgId}")
-    public ResponseEntity<Organization> getOrganization(@PathVariable Long orgId) {
-        Organization organization = organizationService.findOrganizationById(orgId);
+    public ResponseEntity<Organization> getOrganization(@PathVariable String orgId) {
+        Organization organization = organizationService.findOrganizationById(UUID.fromString(orgId));
         return ResponseEntity.ok(organization);
     }
 
     @PutMapping("/{orgId}")
-    public ResponseEntity<Organization> updateOrganization(@PathVariable Long orgId, @RequestBody Organization organizationDetails) {
-        Organization updatedOrganization = organizationService.updateOrganization(orgId, organizationDetails.getName(), organizationDetails.getDescription(), organizationDetails.getIndustry(), organizationDetails.getLocation());
+    public ResponseEntity<Organization> updateOrganization(@PathVariable String orgId, @RequestBody Organization organizationDetails) {
+        Organization updatedOrganization = organizationService.updateOrganization(UUID.fromString(orgId), organizationDetails.getName(), organizationDetails.getDescription(), organizationDetails.getIndustry(), organizationDetails.getLocation());
         return ResponseEntity.ok(updatedOrganization);
     }
 
     @GetMapping("/{orgId}/users")
-    public ResponseEntity<List<UserDTO>> getUsersInOrganization(@PathVariable Long orgId) {
-        List<UserDTO> users = organizationService.getUsersInOrganization(orgId);
+    public ResponseEntity<List<UserDTO>> getUsersInOrganization(@PathVariable String orgId) {
+        List<UserDTO> users = organizationService.getUsersInOrganization(UUID.fromString(orgId));
         return ResponseEntity.ok(users);
     }
 
     @DeleteMapping("/{orgId}/users/{userId}")
-    public ResponseEntity<Void> removeUserFromOrganization(@PathVariable Long orgId, @PathVariable Long userId) {
-        organizationService.removeUserFromOrganization(orgId, userId);
+    public ResponseEntity<Void> removeUserFromOrganization(@PathVariable String orgId, @PathVariable String userId) {
+        organizationService.removeUserFromOrganization(UUID.fromString(orgId), UUID.fromString(userId));
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{orgId}/users/{userId}")
-    public ResponseEntity<UserDTO> updateUserInOrganization(@PathVariable Long orgId, @PathVariable Long userId, @RequestBody UserDTO userDTO) {
-        UserDTO updatedUser = organizationService.updateUserInOrganization(orgId, userId, userDTO);
+    public ResponseEntity<UserDTO> updateUserInOrganization(@PathVariable String orgId, @PathVariable String userId, @RequestBody UserDTO userDTO) {
+        UserDTO updatedUser = organizationService.updateUserInOrganization(UUID.fromString(orgId), UUID.fromString(userId), userDTO);
         return ResponseEntity.ok(updatedUser);
     }
 }

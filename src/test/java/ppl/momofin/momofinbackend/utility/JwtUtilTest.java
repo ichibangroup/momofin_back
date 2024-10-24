@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 class JwtUtilTest {
@@ -24,9 +25,10 @@ class JwtUtilTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        UUID orgId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
         jwtUtil = new JwtUtil();
         Organization org = new Organization("Test Org");
-        org.setOrganizationId(1L);
+        org.setOrganizationId(orgId);
         testUser = new User(org, "testuser", "Test User", "test@example.com", "password", "Developer", true);
 
         // Use reflection to get the SECRET_KEY

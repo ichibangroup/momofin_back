@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -132,7 +133,7 @@ class DocumentServiceTest {
     @Test
     void verifySpecificDocumentSuccess() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String expectedHash = "testHash";
 
         Document mockDocument = new Document();
@@ -155,7 +156,7 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentNullFile() {
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
 
         assertThrows(IllegalArgumentException.class, () -> {
             documentService.verifySpecificDocument(null, documentId, mockUsername);
@@ -164,7 +165,7 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentEmptyFile() {
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         mockFile = new MockMultipartFile("file", "empty.txt", "text/plain", new byte[0]);
 
         assertThrows(IllegalArgumentException.class, () -> {
@@ -174,7 +175,7 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentDocumentNotFound() {
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         when(documentRepository.findById(documentId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class, () -> {
@@ -184,7 +185,7 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentAuthorizedUser() throws Exception {
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String expectedHash = "expectedHash";
 
         Document mockDocument = new Document();
@@ -208,7 +209,7 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentUnauthorizedUser()  {
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
 
         MockMultipartFile testFile = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
 
@@ -240,7 +241,7 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentOwnerNotFound() {
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
 
         Document mockDocument = new Document();
         mockDocument.setDocumentId(documentId);
@@ -263,7 +264,7 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentOwnerMismatch() {
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
 
         Document mockDocument = new Document();
         mockDocument.setDocumentId(documentId);
@@ -293,7 +294,7 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentHashMismatch() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         Document mockDocument = new Document();
         String expectedHash = "testHash";
         String wrongHash = "wrongHash";
@@ -352,7 +353,7 @@ class DocumentServiceTest {
     @Test
     void getViewableUrl_DocumentExists_ReturnsViewableUrl() throws IOException {
         // Arrange
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String username = "testuser";
         String organizationName = "testorg";
         String filename = "testfile.pdf";
@@ -377,7 +378,7 @@ class DocumentServiceTest {
     @Test
     void getViewableUrl_DocumentDoesNotExist_ThrowsIllegalArgumentException() throws IOException {
         // Arrange
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String username = "testuser";
         String organizationName = "testorg";
 
@@ -395,7 +396,7 @@ class DocumentServiceTest {
     @Test
     void getViewableUrl_CdnServiceThrowsIOException_ThrowsIOException() throws IOException {
         // Arrange
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String username = "testuser";
         String organizationName = "testorg";
         String filename = "testfile.pdf";
@@ -419,17 +420,19 @@ class DocumentServiceTest {
     @Test
     void fetchDocumentByIdSuccess() {
         Document document = new Document();
-        when(documentRepository.findByDocumentId(123L)).thenReturn(Optional.of(document));
+        when(documentRepository.findByDocumentId(UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b"))).thenReturn(Optional.of(document));
 
-        Document returnedDocument = documentService.fetchDocumentWithDocumentId(123L);
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        Document returnedDocument = documentService.fetchDocumentWithDocumentId(documentId);
 
         assertEquals(document, returnedDocument);
     }
 
     @Test
     void fetchDocumentByIdFailed() {
-        when(documentRepository.findByDocumentId(123L)).thenReturn(Optional.empty());
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> documentService.fetchDocumentWithDocumentId(123L) );
+        assertThrows(IllegalStateException.class, () -> documentService.fetchDocumentWithDocumentId(documentId) );
     }
 }

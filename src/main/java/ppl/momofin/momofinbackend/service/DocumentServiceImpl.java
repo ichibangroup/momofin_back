@@ -20,6 +20,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DocumentServiceImpl implements DocumentService {
@@ -79,7 +80,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Document verifySpecificDocument(MultipartFile file, Long documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    public Document verifySpecificDocument(MultipartFile file, UUID documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
         }
@@ -140,7 +141,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public String getViewableUrl(Long documentId, String username, String organizationName) throws IOException {
+    public String getViewableUrl(UUID documentId, String username, String organizationName) throws IOException {
         Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
 
         if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + " does not exist");
@@ -151,7 +152,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Document fetchDocumentWithDocumentId(Long documentId) {
+    public Document fetchDocumentWithDocumentId(UUID documentId) {
         return documentRepository.findByDocumentId(documentId)
                 .orElseThrow(() -> new IllegalStateException("Document not found"));
     }

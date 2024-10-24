@@ -6,10 +6,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
 import ppl.momofin.momofinbackend.model.User;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 @Component
@@ -51,8 +48,9 @@ public class JwtUtil {
         return extractClaim(token, Claims::getSubject);
     }
 
-    public Long extractOrganizationId(String token) {
-        return extractClaim(token, claims -> claims.get("organizationId", Long.class));
+    public UUID extractOrganizationId(String token) {
+        String orgIdAsString = extractClaim(token, claims -> claims.get("organizationId", String.class));
+        return UUID.fromString(orgIdAsString);
     }
 
     public String extractOrganizationName(String token) {

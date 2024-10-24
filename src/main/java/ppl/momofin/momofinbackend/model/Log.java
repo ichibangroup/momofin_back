@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -21,10 +22,10 @@ public class Log {
     private String message;
     private String logName;
 
-    private Long userId;
+    private UUID userId;
     private String sourceUrl;
 
-    public Log(Long userId, LocalDateTime timestamp, String level, String message, String logName, String sourceUrl) {
+    public Log(UUID userId, LocalDateTime timestamp, String level, String message, String logName, String sourceUrl) {
         this.userId = userId;
         this.timestamp = timestamp;
         this.level = level;

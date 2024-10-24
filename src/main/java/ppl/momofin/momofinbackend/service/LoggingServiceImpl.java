@@ -7,6 +7,7 @@ import ppl.momofin.momofinbackend.model.Log;
 import ppl.momofin.momofinbackend.repository.LogRepository;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class LoggingServiceImpl implements LoggingService{
@@ -19,13 +20,13 @@ public class LoggingServiceImpl implements LoggingService{
     }
 
     @Override
-    public void log(Long userId,String level, String message, String logName, String sourceUrl) {
+    public void log(UUID userId, String level, String message, String logName, String sourceUrl) {
         Log logEntry = new Log(userId, LocalDateTime.now(), level, message, logName, sourceUrl);
         logRepository.save(logEntry);
     }
 
     @Override
-    public void logException(Long userId, Exception e, String logName, String sourceUrl) {
+    public void logException(UUID userId, Exception e, String logName, String sourceUrl) {
         Log logEntry = new Log(userId, LocalDateTime.now(), "WARN", e.getMessage(), logName, sourceUrl);
         logRepository.save(logEntry);
 

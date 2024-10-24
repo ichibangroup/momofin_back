@@ -7,6 +7,7 @@ import ppl.momofin.momofinbackend.model.User;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,15 +19,18 @@ class UserDocumentsResponseTest {
     @BeforeEach
     void setUp() {
         user = new User();
-        user.setUserId(1L);
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        user.setUserId(userId);
         user.setUsername("testuser");
 
         Document document1 = new Document();
-        document1.setDocumentId(1L);
+        UUID documentId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        document1.setDocumentId(documentId);
         document1.setName("Document1");
 
         Document document2 = new Document();
-        document2.setDocumentId(2L);
+        documentId = UUID.fromString("ff60092f-2882-4bed-9503-52eed38cc14c");
+        document1.setDocumentId(documentId);
         document2.setName("Document2");
 
         documents = Arrays.asList(document1, document2);

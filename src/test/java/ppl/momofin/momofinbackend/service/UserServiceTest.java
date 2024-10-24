@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -69,7 +70,8 @@ class UserServiceTest {
         otherOrganizationUsers.add(user5);
 
         initialUser = new User();
-        initialUser.setUserId(1L);
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        initialUser.setUserId(userId);
         initialUser.setEmail("old@example.com");
         initialUser.setUsername("oldUsername");
         initialUser.setPassword("encodedOldPassword");
@@ -250,7 +252,7 @@ class UserServiceTest {
 
     @Test
     void getUserById_ReturnsUser_WhenUserExists() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User mockUser = new User();
         mockUser.setUserId(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
@@ -262,7 +264,7 @@ class UserServiceTest {
 
     @Test
     void getUserById_ThrowsException_WhenUserDoesNotExist() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> userService.getUserById(userId));
@@ -270,7 +272,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatesUsername() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String newUsername = "NewUsername";
 
         User userUnderTest = new User();
@@ -289,7 +291,7 @@ class UserServiceTest {
     }
     @Test
     void updateUser_UpdatesEmail() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String newEmail = "new@example.com";
 
         User userUnderTest = new User();
@@ -309,7 +311,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatesName() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String newName = "New Name";
 
         User userUnderTest = new User();
@@ -329,7 +331,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatesPosition() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String newPosition = "New Position";
 
         User userUnderTest = new User();
@@ -349,7 +351,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_SuccessfulPasswordUpdate() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String oldPassword = "VeryPowrfulPassword.com";
         String newPassword = "NewStrongPassword123";
 
@@ -370,7 +372,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordIsNullOrEmpty_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(initialUser));
@@ -384,25 +386,27 @@ class UserServiceTest {
     @Test
     void updateUser_InvalidOldPassword_ThrowsInvalidPasswordException() {
         User updatedUser = new User();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(initialUser));
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(initialUser));
         when(passwordEncoder.matches("wrongPassword", "encodedOldPassword")).thenReturn(false);
 
         assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(1L, updatedUser, "wrongPassword", "newPassword"));
+                () -> userService.updateUser(userId, updatedUser, "wrongPassword", "newPassword"));
     }
 
     @Test
     void updateUser_NewPasswordWithoutOldPassword_ThrowsInvalidPasswordException() {
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(initialUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(initialUser));
 
         assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(1L, updatedUser, null, "newPassword"));
+                () -> userService.updateUser(userId, updatedUser, null, "newPassword"));
     }
 
     @Test
     void updateUser_NoPasswordChange_UpdatesOtherFields() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         updatedUser.setEmail("new@example.com");
@@ -427,7 +431,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_OldPasswordProvidedNewPasswordNull_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
 
@@ -440,7 +444,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatesAllFields() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         updatedUser.setEmail("new@example.com");
@@ -536,7 +540,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_OnlyUsernameProvided() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
 
@@ -560,7 +564,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_OnlyEmailProvided() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setEmail("new@example.com");
 
@@ -584,7 +588,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_OnlyNameProvided() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setName("New Name");
 
@@ -607,7 +611,7 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OnlyPositionProvided() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setPosition("New Position");
 
@@ -631,7 +635,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_NoFieldsProvided_NoChanges() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
 
         User userUnderTest = new User();
@@ -654,7 +658,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_PasswordChangeWithoutOtherFields() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
         String newPassword = "NewPassword123";
@@ -676,7 +680,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_NullFields() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setUsername(null);
         updatedUser.setEmail(null);
@@ -702,7 +706,7 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OnlyOldPasswordProvided_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
 
@@ -723,7 +727,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_EmptyFieldsProvided() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setUsername("");
         updatedUser.setEmail("");
@@ -750,7 +754,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordProvidedWithEmptyOldPassword_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User(); // Empty user object
         String oldPassword = ""; // Empty string instead of null
         String newPassword = "NewPassword123";
@@ -773,7 +777,7 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OnlyPasswordUpdate_SuccessfulUpdate() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User(); // No fields set
         String oldPassword = "OldPassword123";
         String newPassword = "NewPassword123";
@@ -809,7 +813,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordWithEmptyOldPassword_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User(); // No fields set
         String newPassword = "NewPassword123";
         String oldPassword = ""; // Empty string instead of null
@@ -836,7 +840,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordProvidedOldPasswordNullUpdatedUserNull_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = null; // Set updatedUser to null
         String oldPassword = null;
         String newPassword = "NewPassword123";
@@ -859,7 +863,7 @@ class UserServiceTest {
     }
     @Test
     void updateUser_NewPasswordProvidedWithoutOldPassword_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User(); // Empty user object
         String oldPassword = null; // Explicitly set to null
         String newPassword = "NewPassword123";
@@ -883,7 +887,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordProvidedWithoutOldPasswordAllFieldsNull_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setUsername(null);
         updatedUser.setEmail(null);
@@ -914,7 +918,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_NoChanges_StillSavesUser() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User(); // Empty user object
         String oldPassword = null;
         String newPassword = null;
@@ -946,7 +950,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordEdgeCases() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         User userUnderTest = new User();
         userUnderTest.setUserId(userId);
@@ -981,7 +985,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatedUserNull_NoChanges() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = null;
         String oldPassword = null;
         String newPassword = null;
@@ -1003,7 +1007,7 @@ class UserServiceTest {
     }
     @Test
     void updateUser_UnrecognizedField_NoChange() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         updatedUser.setEmail("new@email.com");
@@ -1062,7 +1066,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_OldPasswordNullNewPasswordProvided_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         String oldPassword = null;
         String newPassword = "NewPassword123";
@@ -1084,7 +1088,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_OldPasswordProvidedNewPasswordProvided_SuccessfulPasswordChange() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
         String newPassword = "NewPassword123";
@@ -1109,7 +1113,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_OldPasswordProvidedNewPasswordEmpty_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
         String newPassword = "";
@@ -1133,7 +1137,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_BothPasswordsNullOrEmpty_NoPasswordChange() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         String oldPassword = null;
@@ -1156,7 +1160,7 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OldPasswordNotNullButEmpty_NoPasswordChange() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         String oldPassword = ""; // Not null, but empty
@@ -1179,7 +1183,7 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OldPasswordNotNullButEmpty_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         User updatedUser = new User();
         String oldPassword =
                 ""; // Not null, but empty

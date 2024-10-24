@@ -13,10 +13,7 @@ import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -40,17 +37,19 @@ class OrganizationServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         testOrg = new Organization("Test Org", "Test Description", "Test Industry", "Test Location");
-        testOrg.setOrganizationId(1L);
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+        testOrg.setOrganizationId(organizationId);
         testUser = new User(testOrg, "testuser", "Test User", "test@example.com", "password", "Developer", false);
         testUserDTO = UserDTO.fromUser(testUser);
     }
 
     @Test
     void getUsersInOrganization_ShouldReturnListOfUserDTOs() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(testOrg));
         when(userRepository.findByOrganization(testOrg)).thenReturn(Arrays.asList(testUser));
 
-        List<UserDTO> result = organizationService.getUsersInOrganization(1L);
+        List<UserDTO> result = organizationService.getUsersInOrganization(organizationId);
 
         assertEquals(1, result.size());
         assertEquals(testUserDTO.getUsername(), result.get(0).getUsername());
@@ -58,10 +57,12 @@ class OrganizationServiceTest {
 
     @Test
     void removeUserFromOrganization_ShouldRemoveUserSuccessfully() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(testOrg));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
 
-        organizationService.removeUserFromOrganization(1L, 1L);
+        organizationService.removeUserFromOrganization(organizationId, userId);
 
         verify(userRepository).delete(testUser);
     }
@@ -69,23 +70,27 @@ class OrganizationServiceTest {
     @Test
     void removeUserFromOrganization_ShouldThrowException_WhenUserNotInOrganization() {
         Organization anotherOrg = new Organization("Another Org", "Another Description");
-        anotherOrg.setOrganizationId(2L);
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+        anotherOrg.setOrganizationId(organizationId);
         User userInAnotherOrg = new User(anotherOrg, "anotheruser", "Another User", "another@example.com", "password", "Developer", false);
 
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(userInAnotherOrg));
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(testOrg));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userInAnotherOrg));
 
-        assertThrows(IllegalArgumentException.class, () -> organizationService.removeUserFromOrganization(1L, 2L));
+        assertThrows(IllegalArgumentException.class, () -> organizationService.removeUserFromOrganization(organizationId, userId));
     }
 
     @Test
     void updateUserInOrganization_ShouldUpdateUserSuccessfully() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(testOrg));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
         UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User", "updated@example.com", "Senior Developer", false);
-        UserDTO result = organizationService.updateUserInOrganization(1L, 1L, updatedUserDTO);
+        UserDTO result = organizationService.updateUserInOrganization(organizationId, userId, updatedUserDTO);
 
         assertEquals(updatedUserDTO.getUsername(), result.getUsername());
         assertEquals(updatedUserDTO.getName(), result.getName());
@@ -95,34 +100,41 @@ class OrganizationServiceTest {
 
     @Test
     void updateUserInOrganization_ShouldThrowException_WhenUserNotInOrganization() {
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         Organization anotherOrg = new Organization("Another Org", "Another Description");
-        anotherOrg.setOrganizationId(2L);
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+        anotherOrg.setOrganizationId(organizationId);
         User userInAnotherOrg = new User(anotherOrg, "anotheruser", "Another User", "another@example.com", "password", "Developer", false);
 
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(userInAnotherOrg));
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(testOrg));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userInAnotherOrg));
 
         UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User", "updated@example.com", "Senior Developer", false);
-        assertThrows(IllegalArgumentException.class, () -> organizationService.updateUserInOrganization(1L, 2L, updatedUserDTO));
+        assertThrows(IllegalArgumentException.class, () -> organizationService.updateUserInOrganization(organizationId, userId, updatedUserDTO));
     }
 
     @Test
     void findOrganizationById_ShouldThrowException_WhenOrganizationNotFound() {
-        when(organizationRepository.findById(999L)).thenReturn(Optional.empty());
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
 
-        assertThrows(RuntimeException.class, () -> organizationService.getUsersInOrganization(999L));
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> organizationService.getUsersInOrganization(organizationId));
     }
 
     @Test
     void findUserById_ShouldThrowException_WhenUserNotFound() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+        UUID userId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
 
-        assertThrows(RuntimeException.class, () -> organizationService.removeUserFromOrganization(1L, 999L));
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(testOrg));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> organizationService.removeUserFromOrganization(organizationId, userId));
     }
     @Test
     void updateOrganization_ShouldUpdateAndReturnOrganization() {
-        Long orgId = 1L;
+        UUID orgId = UUID.fromString("ff354956-c4c4-4697-9814-e34cd5ef5d4b");
         String newName = "Updated Org Name";
         String newDescription = "Updated Org Description";
         String newIndustry = "Updated Org Industry";
@@ -150,7 +162,8 @@ class OrganizationServiceTest {
 
     @Test
     void updateOrganization_ShouldThrowException_WhenOrganizationNotFound() {
-        Long nonExistentOrgId = 999L;
+        UUID nonExistentOrgId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+
         when(organizationRepository.findById(nonExistentOrgId)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () ->
@@ -216,21 +229,27 @@ class OrganizationServiceTest {
 
     @Test
     void updateOrganization_shouldThrowException_whenNameIsEmpty() {
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+
         assertThrows(InvalidOrganizationException.class,
-                () -> organizationService.updateOrganization(1L, "", "Description", "Industry", "Location"));
+                () -> organizationService.updateOrganization(organizationId, "", "Description", "Industry", "Location"));
     }
 
     @Test
     void updateOrganization_shouldThrowException_whenNameIsNull() {
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+
         assertThrows(InvalidOrganizationException.class,
-                () -> organizationService.updateOrganization(1L, null, "Description", "Industry", "Location"));
+                () -> organizationService.updateOrganization(organizationId, null, "Description", "Industry", "Location"));
     }
 
     @Test
     void updateOrganization_shouldThrowException_whenOrganizationNotFound() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.empty());
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.empty());
         assertThrows(OrganizationNotFoundException.class,
-                () -> organizationService.updateOrganization(1L, "Name", "Description", "Industry", "Location"));
+                () -> organizationService.updateOrganization(organizationId, "Name", "Description", "Industry", "Location"));
     }
 
     @Test
@@ -247,14 +266,18 @@ class OrganizationServiceTest {
 
     @Test
     void findOrganization_success() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        Organization organization = organizationService.findOrganizationById(1L);
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(testOrg));
+        Organization organization = organizationService.findOrganizationById(organizationId);
         assertEquals(testOrg, organization);
     }
     @Test
     void findOrganization_shouldThrowException_whenOrganizationNotFound() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.empty());
+        UUID organizationId = UUID.fromString("ebe4972e-892b-4b3d-a107-ac739aaa6434");
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.empty());
         assertThrows(OrganizationNotFoundException.class,
-                () -> organizationService.findOrganizationById(1L));
+                () -> organizationService.findOrganizationById(organizationId));
     }
 }
