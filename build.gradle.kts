@@ -56,9 +56,11 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql:$postgresVersion")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("com.h2database:h2")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
 
 tasks.withType<Test> {
     useJUnitPlatform()
