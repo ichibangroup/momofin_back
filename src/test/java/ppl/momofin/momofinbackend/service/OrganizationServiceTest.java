@@ -382,6 +382,31 @@ class OrganizationServiceTest {
                 organizationService.deleteUser(1L, 23L, adminUser)
         );
     }
+    @Test
+    void deleteUser_ThrowsException_WhenAdminFromDifferentOrganization() {
+        // Setup
+        Organization org1 = new Organization("Org 1", "Desc 1");
+        org1.setOrganizationId(1L);
+
+        Organization adminOrg = new Organization("Admin Org", "Admin Desc");
+        adminOrg.setOrganizationId(2L);
+
+        User adminUser = new User();
+        adminUser.setOrganization(adminOrg);  // Admin is from a different org
+        adminUser.setOrganizationAdmin(true);
+
+        User userToDelete = new User();
+        userToDelete.setUserId(23L);
+        userToDelete.setOrganization(org1);
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(org1));
+        when(userRepository.findById(23L)).thenReturn(Optional.of(userToDelete));
+
+        // Execute & Verify
+        assertThrows(UserDeletionException.class, () ->
+                organizationService.deleteUser(1L, 23L, adminUser)
+        );
+    }
 
 
 }
