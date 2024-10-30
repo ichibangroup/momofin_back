@@ -89,11 +89,8 @@ public class OrganizationService {
     }
     @Transactional
     public void deleteUser(Long orgId, Long userId, User requestingUser) {
-        System.out.println("Starting delete user process...");
         Organization org = findOrganizationById(orgId);
-        System.out.println("Found organization: " + org.getName());
         User userToDelete = findUserById(userId);
-        System.out.println("Found user to delete: " + userToDelete.getUsername());
         // Don't allow deletion of the system deleted user
         if (userId == -1) {
             throw new UserDeletionException("Cannot delete system user");
