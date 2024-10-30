@@ -59,5 +59,32 @@ public class OrganizationController {
         UserDTO updatedUser = organizationService.updateUserInOrganization(orgId, userId, userDTO);
         return ResponseEntity.ok(updatedUser);
     }
+    @DeleteMapping("/{orgId}/users/{userId}")
+    public ResponseEntity<Response> deleteUser(
+            @PathVariable Long orgId,
+            @PathVariable Long userId,
+            @RequestHeader("Authorization") String token) {
+        try {
+            String username = getUsername(token);
+            User requestingUser = userService.fetchUserByUsername(username);
+
+            organizationService.deleteUser(orgId, userId, requestingUser);
+            return ResponseEntity.noContent().build();
+        } catch (UserDeletionException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ErrorResponse(e.getMessage()));
+        } catch (OrganizationNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    private String getUsername(String token) {
+        // Remove "Bearer " prefix and then use correct method name
+        token = token.substring(7);
+        return jwtUtil.extractUsername(token);
+    }
 
 }

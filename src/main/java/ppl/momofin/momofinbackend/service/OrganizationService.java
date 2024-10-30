@@ -87,5 +87,36 @@ public class OrganizationService {
         Organization newOrganization = new Organization(name, description, industry, location);
         return organizationRepository.save(newOrganization);
     }
+    @Transactional
+    public void deleteUser(Long orgId, Long userId, User requestingUser) {
+        System.out.println("Starting delete user process...");
+        Organization org = findOrganizationById(orgId);
+        System.out.println("Found organization: " + org.getName());
+        User userToDelete = findUserById(userId);
+        System.out.println("Found user to delete: " + userToDelete.getUsername());
+        // Don't allow deletion of the system deleted user
+        if (userId == -1) {
+            throw new UserDeletionException("Cannot delete system user");
+        }
 
+        // Permission checks
+        if (!requestingUser.isOrganizationAdmin()) {
+            throw new UserDeletionException("Only organization admins can delete users");
+        }
+
+        if (!requestingUser.getOrganization().equals(org)) {
+            throw new UserDeletionException("You can only delete users from your own organization");
+        }
+
+        if (!userToDelete.getOrganization().equals(org)) {
+            throw new UserDeletionException("User does not belong to your organization");
+        }
+
+        if (userToDelete.isOrganizationAdmin()) {
+            throw new UserDeletionException("Organization admins cannot be deleted");
+        }
+
+        // Delete the user - triggers will handle reference updates
+        userRepository.delete(userToDelete);
+    }
 }
