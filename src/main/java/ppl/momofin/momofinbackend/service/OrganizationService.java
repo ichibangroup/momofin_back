@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ppl.momofin.momofinbackend.dto.UserDTO;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
+import ppl.momofin.momofinbackend.error.UserDeletionException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
@@ -51,15 +52,6 @@ public class OrganizationService {
                 .toList();
     }
 
-    public void removeUserFromOrganization(Long orgId, Long userId) {
-        Organization org = findOrganizationById(orgId);
-        User user = findUserById(userId);
-        if (!user.getOrganization().equals(org)) {
-            throw new IllegalArgumentException("User does not belong to this organization");
-        }
-        userRepository.delete(user);
-    }
-
     public UserDTO updateUserInOrganization(Long orgId, Long userId, UserDTO updatedUserDTO) {
         Organization org = findOrganizationById(orgId);
         User user = findUserById(userId);
@@ -95,4 +87,5 @@ public class OrganizationService {
         Organization newOrganization = new Organization(name, description, industry, location);
         return organizationRepository.save(newOrganization);
     }
+
 }

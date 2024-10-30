@@ -24,7 +24,7 @@ class UserDTOTest {
 
     @Test
     void toUser_ShouldCreateUserCorrectly() {
-        UserDTO userDTO = new UserDTO(1L, "testuser", "Test User", "test@example.com", "Developer", false);
+        UserDTO userDTO = new UserDTO(1L, "testuser", "Test User", "test@example.com", "Developer", false, false);
 
         User user = userDTO.toUser();
 
