@@ -14,8 +14,10 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.DocumentVersion;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
@@ -24,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -76,9 +79,9 @@ class GoogleCloudStorageCDNServiceTest {
     void testUploadFile() throws IOException {
         ArgumentCaptor<Document> documentCaptor = ArgumentCaptor.forClass(Document.class);
 
-        cdnService.uploadFile(mockFile, user, "hashString");
+        cdnService.submitDocument(mockFile, user, "hashString");
 
-        BlobId expectedBlobId = BlobId.of(bucketName, user.getOrganization().getName() + "/" + user.getUsername() + "/test-file.pdf");
+        BlobId expectedBlobId = BlobId.of(bucketName, user.getOrganization().getName() + "/" + user.getUsername() + "/test-file/version_1_test-file.pdf");
         BlobInfo expectedBlobInfo = BlobInfo.newBuilder(expectedBlobId)
                 .setContentType("application/pdf")
                 .build();
@@ -144,5 +147,62 @@ class GoogleCloudStorageCDNServiceTest {
 
         assertEquals("File not found: " + fileName, exception.getMessage());
         verify(mockStorage).get(blobId); // Ensure the correct blob was attempted to be fetched
+    }
+
+    @Test
+    public void testEditDocument_NewVersionUploaded() throws IOException {
+        String fileName = StringUtils.cleanPath(Objects.requireNonNull(mockFile.getOriginalFilename()));
+        String cleanedFileName =  fileName.replaceFirst("[.][^.]+$", "");
+
+
+        // Expected values
+        String folderName = user.getOrganization().getName() + "/" + user.getUsername();
+        Document document = new Document();
+        document.setOwner(user);
+        document.setName("test-file");
+        int nextVersion = document.getVersions().size() + 1;
+        String expectedVersionedFileName = String.format("%s/%s/version_%d_%s", folderName, cleanedFileName, nextVersion, fileName);
+
+        BlobId expectedBlobId = BlobId.of(bucketName, expectedVersionedFileName);
+        BlobInfo expectedBlobInfo = BlobInfo.newBuilder(expectedBlobId).setContentType("application/pdf").build();
+
+        // Mock storage interactions
+        when(documentRepository.save(any(Document.class))).thenReturn(document);
+
+        // Execute the method
+        Document updatedDocument = cdnService.editDocument(mockFile, document, "newHash");
+
+        // Verify interactions and results
+        verify(mockStorage).create(expectedBlobInfo, mockFile.getBytes());
+        verify(documentRepository).save(document);
+
+        assertEquals("newHash", updatedDocument.getHashString());
+        assertEquals(nextVersion, updatedDocument.getVersions().size());
+        assertEquals(nextVersion, updatedDocument.getCurrentVersion().getVersion());
+        assertEquals(cleanedFileName, updatedDocument.getCurrentVersion().getFileName());
+    }
+
+    @Test
+    public void testEditDocument_UpdatesDocumentAndVersionList() throws IOException {
+        ArgumentCaptor<Document> documentCaptor = ArgumentCaptor.forClass(Document.class);
+        DocumentVersion existingVersion = new DocumentVersion();
+        existingVersion.setVersion(1);
+        Document document = new Document();
+        document.setOwner(user);
+        document.setName("test-file");
+        document.getVersions().add(existingVersion);
+
+        // Execute the method
+        cdnService.editDocument(mockFile, document, "updatedHash");
+
+        verify(documentRepository).save(documentCaptor.capture());
+
+        Document updatedDocument = documentCaptor.getValue();
+
+        // Check that the new version is added and that the hash is updated
+        assertEquals("updatedHash", updatedDocument.getHashString());
+        assertEquals(2, updatedDocument.getVersions().size());
+        assertEquals(2, updatedDocument.getCurrentVersion().getVersion());
+        assertEquals("test-file", updatedDocument.getCurrentVersion().getFileName());
     }
 }
