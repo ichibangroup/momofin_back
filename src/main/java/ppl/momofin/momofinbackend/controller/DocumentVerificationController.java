@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.response.*;
 import ppl.momofin.momofinbackend.security.JwtUtil;
@@ -112,9 +113,30 @@ public class DocumentVerificationController {
         }
     }
 
+    @PostMapping("/{documentId}/request-edit")
+    public ResponseEntity<EditRequest> requestEdit(
+            @PathVariable Long documentId,
+            @RequestBody Long userId) {
+        EditRequest editRequest = documentService.requestEdit(documentId, userId);
+        return ResponseEntity.ok(editRequest);
+    }
+
+    @GetMapping("/edit-requests")
+    public ResponseEntity<List<EditRequest>> getRequests(
+            @RequestHeader("Authorization") String token) {
+        Long userId = getUserId(token, jwtUtil);
+        List<EditRequest> editRequests = documentService.getEditRequests(userId);
+        return ResponseEntity.ok(editRequests);
+    }
+
     public static String getUsername(String token, JwtUtil jwtUtil) {
         String jwtToken = token.substring(7);
         return jwtUtil.extractUsername(jwtToken);
+    }
+
+    public static Long getUserId(String token, JwtUtil jwtUtil) {
+        String jwtToken = token.substring(7);
+        return jwtUtil.extractUserId(jwtToken);
     }
 
     public static String getOrgName(String token, JwtUtil jwtUtil) {
