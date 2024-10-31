@@ -5,13 +5,18 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import ppl.momofin.momofinbackend.model.AuditTrail;
 import ppl.momofin.momofinbackend.repository.AuditTrailRepository;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -26,6 +31,26 @@ class AuditTrailServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void whenGetAuditTrails_thenShouldReturnPagedResultsWithSorting() {
+        // Arrange
+        AuditTrail trail1 = new AuditTrail();
+        trail1.setAction("SUBMIT");
+        AuditTrail trail2 = new AuditTrail();
+        trail2.setAction("VERIFY");
+
+        List<AuditTrail> auditTrails = Arrays.asList(trail1, trail2);
+        when(auditTrailRepository.findAll(any(PageRequest.class))).thenReturn(new PageImpl<>(auditTrails));
+
+        Page<AuditTrail> result = auditTrailService.getAuditTrails(0, 2, "action", "ASC");
+
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).getAction()).isEqualTo("SUBMIT");
+        assertThat(result.getContent().get(1).getAction()).isEqualTo("VERIFY");
+
+        verify(auditTrailRepository, times(1)).findAll(any(PageRequest.class));
     }
 
     @Test
