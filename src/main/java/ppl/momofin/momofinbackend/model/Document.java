@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter @Setter @Entity
 @Table(name = "document")
 public class Document {
@@ -16,8 +19,16 @@ public class Document {
     @ManyToOne
     @JoinColumn(name = "owner", referencedColumnName = "userId")
     private User owner;
+    @OneToMany(mappedBy = "id.document", cascade = CascadeType.ALL)
+    private List<DocumentVersion> versions;
 
-    public Document() {}
+
+    @OneToOne
+    private DocumentVersion currentVersion;
+
+    public Document() {
+        versions = new ArrayList<>();
+    }
 
     public Document(String hashString, String name) {
         this.hashString = hashString;
