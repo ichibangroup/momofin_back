@@ -12,14 +12,18 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
+import ppl.momofin.momofinbackend.repository.EditRequestRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,6 +41,8 @@ class DocumentServiceTest {
 
     @Mock
     private CDNService cdnService;
+    @Mock
+    private EditRequestRepository editRequestRepository;
 
     @InjectMocks
     private DocumentServiceImpl documentService;
@@ -44,6 +50,7 @@ class DocumentServiceTest {
     private MockMultipartFile mockFile;
     private User mockUser;
     private String mockUsername;
+    private Document document;
 
     @BeforeEach
     void setUp() {
@@ -54,13 +61,16 @@ class DocumentServiceTest {
         Organization organization = new Organization("Momofin");
         mockUser.setName(mockUsername);
         mockUser.setOrganization(organization);
+
+        document = new Document();
+        document.setDocumentId(1L);
     }
 
     @Test
     void submitDocumentNewDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         when(documentRepository.findByHashString(any())).thenReturn(Optional.empty());
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
-        when(cdnService.uploadFile(eq(mockFile), eq(mockUser), any())).thenReturn(new Document());
+        when(cdnService.submitDocument(eq(mockFile), eq(mockUser), any())).thenReturn(new Document());
 
         String result = documentService.submitDocument(mockFile, mockUsername);
 
@@ -431,5 +441,91 @@ class DocumentServiceTest {
         when(documentRepository.findByDocumentId(123L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class, () -> documentService.fetchDocumentWithDocumentId(123L) );
+    }
+
+    @Test
+    public void testRequestEdit_Success() {
+        // Mock the expected behavior
+        EditRequest editRequest = new EditRequest();
+        editRequest.setDocument(document);
+        editRequest.setUser(mockUser);
+        when(editRequestRepository.save(any(EditRequest.class))).thenReturn(editRequest);
+
+        // Execute the method
+        EditRequest result = documentService.requestEdit(document.getDocumentId(), mockUser.getUserId());
+
+        // Verify interactions and result
+        verify(editRequestRepository).save(any(EditRequest.class));
+        assertEquals(document.getDocumentId(), result.getDocument().getDocumentId());
+        assertEquals(mockUser.getUserId(), result.getUser().getUserId());
+    }
+
+    @Test
+    public void testGetEditRequests_ReturnsRequestsForUser() {
+        // Set up sample edit requests
+        EditRequest editRequest1 = new EditRequest();
+        editRequest1.setDocument(document);
+        editRequest1.setUser(mockUser);
+
+        List<EditRequest> editRequests = new ArrayList<>();
+        editRequests.add(editRequest1);
+        when(editRequestRepository.findByUserId(mockUser.getUserId())).thenReturn(editRequests);
+
+        // Execute the method
+        List<EditRequest> result = documentService.getEditRequests(mockUser.getUserId());
+
+        // Verify interactions and result
+        verify(editRequestRepository).findByUserId(mockUser.getUserId());
+        assertEquals(1, result.size());
+        assertEquals(editRequest1, result.get(0));
+    }
+
+    @Test
+    public void testEditDocument_Success() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        EditRequest editRequest = new EditRequest();
+        editRequest.setDocument(document);
+        editRequest.setUser(mockUser);
+
+        Document updatedDocument = new Document();
+        updatedDocument.setDocumentId(1L);
+
+        // Mock interactions
+        when(cdnService.editDocument(any(MultipartFile.class), any(Document.class), anyString())).thenReturn(updatedDocument);
+
+        // Execute the method
+        Document result = documentService.editDocument(mockFile, editRequest);
+
+        // Verify interactions and result
+        verify(cdnService).editDocument(eq(mockFile), eq(document), anyString());
+        verify(editRequestRepository).delete(editRequest);
+        assertEquals(updatedDocument.getDocumentId(), result.getDocumentId());
+    }
+
+    @Test
+    public void testEditDocument_FileEmpty_ThrowsException() {
+        // Set up an empty file and an EditRequest
+        MockMultipartFile emptyFile = new MockMultipartFile("file", "", "application/pdf", new byte[0]);
+        EditRequest editRequest = new EditRequest();
+        editRequest.setDocument(document);
+
+        // Execute and verify exception
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            documentService.editDocument(emptyFile, editRequest);
+        });
+        assertEquals("File must not be null or empty", exception.getMessage());
+    }
+
+    @Test
+    public void testRejectEditRequest_Success() {
+        // Set up EditRequest
+        EditRequest editRequest = new EditRequest();
+        editRequest.setDocument(document);
+        editRequest.setUser(mockUser);
+
+        // Execute the method
+        documentService.rejectEditRequest(editRequest);
+
+        // Verify interactions
+        verify(editRequestRepository).delete(editRequest);
     }
 }

@@ -43,7 +43,7 @@ class OrganizationControllerTest {
         testOrg = new Organization("Test Org", "Test Description");
         testOrg.setOrganizationId(1L);
         testUser = new User(testOrg, "testuser", "Test User", "test@example.com", "password", "Developer", false);
-        testUserDTO = new UserDTO(testUser.getUserId(), testUser.getUsername(), testUser.getName(), testUser.getEmail(), testUser.getPosition(), testUser.isOrganizationAdmin());
+        testUserDTO = new UserDTO(testUser.getUserId(), testUser.getUsername(), testUser.getName(), testUser.getEmail(), testUser.getPosition(), testUser.isOrganizationAdmin(), testUser.isMomofinAdmin());
     }
 
     @Test
