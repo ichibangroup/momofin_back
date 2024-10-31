@@ -8,8 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
+import ppl.momofin.momofinbackend.repository.EditRequestRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import javax.crypto.Mac;
@@ -33,13 +35,15 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
+    private final EditRequestRepository editRequestRepository;
     private final CDNService cdnService;
 
     @Autowired
-    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService) {
+    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService, EditRequestRepository editRequestRepository) {
         this.userRepository = userRepository;
         this.documentRepository = documentRepository;
         this.cdnService = cdnService;
+        this.editRequestRepository = editRequestRepository;
     }
 
     @Override
@@ -57,7 +61,7 @@ public class DocumentServiceImpl implements DocumentService {
             if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");
 
             User user = owner.get();
-            Document document = cdnService.uploadFile(file, user, hashString);
+            Document document = cdnService.submitDocument(file, user, hashString);
 
             logger.info("New document saved: {}", document.getName());
             return "Your document " + document.getName()+" has been successfully stored";
@@ -154,5 +158,44 @@ public class DocumentServiceImpl implements DocumentService {
     public Document fetchDocumentWithDocumentId(Long documentId) {
         return documentRepository.findByDocumentId(documentId)
                 .orElseThrow(() -> new IllegalStateException("Document not found"));
+    }
+
+    @Override
+    public EditRequest requestEdit(Long documentId, Long userId) {
+        EditRequest request = new EditRequest();
+        Document document = new Document();
+        document.setDocumentId(documentId);
+
+        User user = new User();
+        user.setUserId(userId);
+
+        request.setDocument(document);
+        request.setUser(user);
+        return editRequestRepository.save(request);
+    }
+
+    @Override
+    public List<EditRequest> getEditRequests(Long userId) {
+        return editRequestRepository.findByUserId(userId);
+    }
+
+    @Override
+    public Document editDocument(MultipartFile file, EditRequest editRequest) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
+        }
+
+        String hashString = generateHash(file);
+
+        Document document = editRequest.getDocument();
+
+        Document editedDocument = cdnService.editDocument(file, document, hashString);
+        editRequestRepository.delete(editRequest);
+        return editedDocument;
+    }
+
+    @Override
+    public void rejectEditRequest(EditRequest editRequest) {
+        editRequestRepository.delete(editRequest);
     }
 }
