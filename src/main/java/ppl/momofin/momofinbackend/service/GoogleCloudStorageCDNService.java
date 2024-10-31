@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.DocumentVersion;
+import ppl.momofin.momofinbackend.model.DocumentVersionKey;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
 
@@ -75,21 +77,69 @@ public class GoogleCloudStorageCDNService implements CDNService {
     }
 
     @Override
-    public Document uploadFile(MultipartFile file, User user, String hashString) throws IOException {
+    public Document submitDocument(MultipartFile file, User user, String hashString) throws IOException {
         String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        String folderName = user.getOrganization().getName() +"/" + user.getUsername();
-        BlobId blobId = BlobId.of(bucketName, folderName + "/" + fileName);
+        String cleanedFileName =  fileName.replaceFirst("[.][^.]+$", "");
+        String folderName = user.getOrganization().getName() + "/" + user.getUsername();
+
+        // Define file path for version 1
+        String versionedFileName = String.format("%s/%s/version_1_%s", folderName, cleanedFileName, fileName);
+        BlobId blobId = BlobId.of(bucketName, versionedFileName);
         BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                 .setContentType("application/pdf")
                 .build();
         storage.create(blobInfo, file.getBytes());
 
+        // Create Document entity and its first version
         Document document = new Document();
-        document.setHashString(hashString);
         document.setName(fileName);
+        document.setHashString(hashString);
         document.setOwner(user);
+
+        DocumentVersion version = new DocumentVersion();
+        version.setFileName(cleanedFileName);
+        version.setHashString(hashString);
+
+        version.setVersion(1);
+        version.setDocument(document);
+
+        document.setCurrentVersion(version);
+        document.getVersions().add(version);
+
         return documentRepository.save(document);
     }
+
+
+    @Override
+    public Document editDocument(MultipartFile file, Document document, String hashString) throws IOException {
+        String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+
+        String folderName = document.getOwner().getOrganization().getName() + "/" + document.getOwner().getUsername();
+
+        // Calculate the next version number
+        int nextVersion = document.getVersions().size() + 1;
+        String versionedFileName = String.format("%s/%s/version_%d_%s", folderName, document.getName(), nextVersion, fileName);
+
+        // Upload new version to GCS
+        BlobId blobId = BlobId.of(bucketName, versionedFileName);
+        BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                .setContentType("application/pdf")
+                .build();
+        storage.create(blobInfo, file.getBytes());
+
+        DocumentVersion newVersion = new DocumentVersion();
+        newVersion.setDocument(document);
+        newVersion.setVersion(nextVersion);
+        newVersion.setFileName(document.getName());
+        newVersion.setHashString(hashString);
+
+        document.setCurrentVersion(newVersion);
+        document.setHashString(hashString);
+        document.getVersions().add(newVersion);
+
+        return documentRepository.save(document);
+    }
+
 
     @Override
     public String getViewableUrl(String fileName, String username, String organizationName) throws IOException {
