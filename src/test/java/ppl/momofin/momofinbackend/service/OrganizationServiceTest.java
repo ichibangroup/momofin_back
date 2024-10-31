@@ -84,7 +84,7 @@ class OrganizationServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User", "updated@example.com", "Senior Developer", false);
+        UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User", "updated@example.com", "Senior Developer", false, false);
         UserDTO result = organizationService.updateUserInOrganization(1L, 1L, updatedUserDTO);
 
         assertEquals(updatedUserDTO.getUsername(), result.getUsername());
@@ -102,7 +102,7 @@ class OrganizationServiceTest {
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
         when(userRepository.findById(2L)).thenReturn(Optional.of(userInAnotherOrg));
 
-        UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User", "updated@example.com", "Senior Developer", false);
+        UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User", "updated@example.com", "Senior Developer", false, false);
         assertThrows(IllegalArgumentException.class, () -> organizationService.updateUserInOrganization(1L, 2L, updatedUserDTO));
     }
 
