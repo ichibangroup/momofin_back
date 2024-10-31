@@ -185,6 +185,10 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
         }
 
+        if(!editRequestRepository.existsById(editRequest.getId())) {
+            throw new IllegalArgumentException("Edit request not found in the database.");
+        }
+
         String hashString = generateHash(file);
 
         Document document = editRequest.getDocument();

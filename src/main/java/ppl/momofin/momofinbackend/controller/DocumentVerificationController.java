@@ -121,12 +121,26 @@ public class DocumentVerificationController {
         return ResponseEntity.ok(editRequest);
     }
 
-    @GetMapping("/edit-requests")
+    @GetMapping("/edit-request")
     public ResponseEntity<List<EditRequest>> getRequests(
             @RequestHeader("Authorization") String token) {
         Long userId = getUserId(token, jwtUtil);
         List<EditRequest> editRequests = documentService.getEditRequests(userId);
         return ResponseEntity.ok(editRequests);
+    }
+
+    @PostMapping("/edit-request/{documentId}")
+    public ResponseEntity<Document> editDocument(
+            @PathVariable Long documentId,
+            @RequestHeader("Authorization") String token,
+            @RequestParam("file") MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        User user = new User();
+        user.setUserId(getUserId(token, jwtUtil));
+        Document document = new Document();
+        document.setDocumentId(documentId);
+        EditRequest request = new EditRequest(user, document);
+        Document editedDocument = documentService.editDocument(file, request);
+        return ResponseEntity.ok(editedDocument);
     }
 
     public static String getUsername(String token, JwtUtil jwtUtil) {
