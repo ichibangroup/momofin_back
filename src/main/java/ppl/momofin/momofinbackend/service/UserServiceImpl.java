@@ -80,7 +80,6 @@ public class UserServiceImpl implements UserService{
 
         updatePasswordIfRequired(existingUser, oldPassword, newPassword);
         updateUserFields(existingUser, updatedUser);
-
         User savedUser = userRepository.save(existingUser);
         logger.info("User with ID: {} successfully updated and saved", userId);
 

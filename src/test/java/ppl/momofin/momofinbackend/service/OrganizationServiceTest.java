@@ -8,6 +8,7 @@ import org.mockito.MockitoAnnotations;
 import ppl.momofin.momofinbackend.dto.UserDTO;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
+import ppl.momofin.momofinbackend.error.UserDeletionException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
@@ -57,34 +58,13 @@ class OrganizationServiceTest {
     }
 
     @Test
-    void removeUserFromOrganization_ShouldRemoveUserSuccessfully() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
-
-        organizationService.removeUserFromOrganization(1L, 1L);
-
-        verify(userRepository).delete(testUser);
-    }
-
-    @Test
-    void removeUserFromOrganization_ShouldThrowException_WhenUserNotInOrganization() {
-        Organization anotherOrg = new Organization("Another Org", "Another Description");
-        anotherOrg.setOrganizationId(2L);
-        User userInAnotherOrg = new User(anotherOrg, "anotheruser", "Another User", "another@example.com", "password", "Developer", false);
-
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(userInAnotherOrg));
-
-        assertThrows(IllegalArgumentException.class, () -> organizationService.removeUserFromOrganization(1L, 2L));
-    }
-
-    @Test
     void updateUserInOrganization_ShouldUpdateUserSuccessfully() {
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User", "updated@example.com", "Senior Developer", false, false);
+        UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User",
+                "updated@example.com", "Senior Developer", false, false);  // Added isMomofinAdmin
         UserDTO result = organizationService.updateUserInOrganization(1L, 1L, updatedUserDTO);
 
         assertEquals(updatedUserDTO.getUsername(), result.getUsername());
@@ -97,13 +77,16 @@ class OrganizationServiceTest {
     void updateUserInOrganization_ShouldThrowException_WhenUserNotInOrganization() {
         Organization anotherOrg = new Organization("Another Org", "Another Description");
         anotherOrg.setOrganizationId(2L);
-        User userInAnotherOrg = new User(anotherOrg, "anotheruser", "Another User", "another@example.com", "password", "Developer", false);
+        User userInAnotherOrg = new User(anotherOrg, "anotheruser", "Another User",
+                "another@example.com", "password", "Developer", false);
 
         when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
         when(userRepository.findById(2L)).thenReturn(Optional.of(userInAnotherOrg));
 
-        UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User", "updated@example.com", "Senior Developer", false, false);
-        assertThrows(IllegalArgumentException.class, () -> organizationService.updateUserInOrganization(1L, 2L, updatedUserDTO));
+        UserDTO updatedUserDTO = new UserDTO(null, "updateduser", "Updated User",
+                "updated@example.com", "Senior Developer", false, false);  // Added isMomofinAdmin
+        assertThrows(IllegalArgumentException.class,
+                () -> organizationService.updateUserInOrganization(1L, 2L, updatedUserDTO));
     }
 
     @Test
@@ -111,14 +94,6 @@ class OrganizationServiceTest {
         when(organizationRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () -> organizationService.getUsersInOrganization(999L));
-    }
-
-    @Test
-    void findUserById_ShouldThrowException_WhenUserNotFound() {
-        when(organizationRepository.findById(1L)).thenReturn(Optional.of(testOrg));
-        when(userRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(RuntimeException.class, () -> organizationService.removeUserFromOrganization(1L, 999L));
     }
     @Test
     void updateOrganization_ShouldUpdateAndReturnOrganization() {
@@ -257,4 +232,181 @@ class OrganizationServiceTest {
         assertThrows(OrganizationNotFoundException.class,
                 () -> organizationService.findOrganizationById(1L));
     }
+    @Test
+    void deleteUser_Success() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(1L);
+
+        User adminUser = new User();
+        adminUser.setOrganization(org);
+        adminUser.setOrganizationAdmin(true);
+        adminUser.setUsername("admin");
+
+        User userToDelete = new User();
+        userToDelete.setUserId(23L);
+        userToDelete.setOrganization(org);
+        userToDelete.setOrganizationAdmin(false);
+        userToDelete.setUsername("user");
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(org));
+        when(userRepository.findById(23L)).thenReturn(Optional.of(userToDelete));
+
+        // Execute
+        organizationService.deleteUser(1L, 23L, adminUser);
+
+        // Verify
+        verify(userRepository).delete(userToDelete);
+    }
+
+    @Test
+    void deleteUser_ThrowsException_WhenDeletingSystemUser() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(1L);
+        User adminUser = new User();
+        adminUser.setOrganization(org);
+        adminUser.setOrganizationAdmin(true);
+
+        User systemUser = new User();
+        systemUser.setUserId(-1L);
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(org));
+        when(userRepository.findById(-1L)).thenReturn(Optional.of(systemUser));
+
+        // Execute & Verify
+        assertThrows(UserDeletionException.class, () ->
+                organizationService.deleteUser(1L, -1L, adminUser)
+        );
+    }
+
+    @Test
+    void deleteUser_ThrowsException_WhenNotOrganizationAdmin() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(1L);
+        User regularUser = new User();
+        regularUser.setOrganization(org);
+        regularUser.setOrganizationAdmin(false);
+
+        User userToDelete = new User();
+        userToDelete.setUserId(23L);
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(org));
+        when(userRepository.findById(23L)).thenReturn(Optional.of(userToDelete));
+
+        // Execute & Verify
+        assertThrows(UserDeletionException.class, () ->
+                organizationService.deleteUser(1L, 23L, regularUser)
+        );
+    }
+
+    @Test
+    void deleteUser_ThrowsException_WhenDifferentOrganization() {
+        // Setup
+        Organization org1 = new Organization("Org 1", "Desc 1");
+        org1.setOrganizationId(1L);
+        Organization org2 = new Organization("Org 2", "Desc 2");
+        org2.setOrganizationId(2L);
+
+        User adminUser = new User();
+        adminUser.setOrganization(org1);
+        adminUser.setOrganizationAdmin(true);
+
+        User userToDelete = new User();
+        userToDelete.setUserId(23L);
+        userToDelete.setOrganization(org2);
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(org1));
+        when(userRepository.findById(23L)).thenReturn(Optional.of(userToDelete));
+
+        // Execute & Verify
+        assertThrows(UserDeletionException.class, () ->
+                organizationService.deleteUser(1L, 23L, adminUser)
+        );
+    }
+
+    @Test
+    void deleteUser_ThrowsException_WhenDeletingOrgAdmin() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(1L);
+
+        User adminUser = new User();
+        adminUser.setOrganization(org);
+        adminUser.setOrganizationAdmin(true);
+
+        User anotherAdmin = new User();
+        anotherAdmin.setUserId(23L);
+        anotherAdmin.setOrganization(org);
+        anotherAdmin.setOrganizationAdmin(true);
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(org));
+        when(userRepository.findById(23L)).thenReturn(Optional.of(anotherAdmin));
+
+        // Execute & Verify
+        assertThrows(UserDeletionException.class, () ->
+                organizationService.deleteUser(1L, 23L, adminUser)
+        );
+    }
+
+    @Test
+    void deleteUser_ThrowsException_WhenOrganizationNotFound() {
+        // Setup
+        User adminUser = new User();
+        adminUser.setOrganizationAdmin(true);
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        assertThrows(OrganizationNotFoundException.class, () ->
+                organizationService.deleteUser(1L, 23L, adminUser)
+        );
+    }
+
+    @Test
+    void deleteUser_ThrowsException_WhenUserNotFound() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(1L);
+
+        User adminUser = new User();
+        adminUser.setOrganization(org);
+        adminUser.setOrganizationAdmin(true);
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(org));
+        when(userRepository.findById(23L)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        assertThrows(RuntimeException.class, () ->
+                organizationService.deleteUser(1L, 23L, adminUser)
+        );
+    }
+    @Test
+    void deleteUser_ThrowsException_WhenAdminFromDifferentOrganization() {
+        // Setup
+        Organization org1 = new Organization("Org 1", "Desc 1");
+        org1.setOrganizationId(1L);
+
+        Organization adminOrg = new Organization("Admin Org", "Admin Desc");
+        adminOrg.setOrganizationId(2L);
+
+        User adminUser = new User();
+        adminUser.setOrganization(adminOrg);  // Admin is from a different org
+        adminUser.setOrganizationAdmin(true);
+
+        User userToDelete = new User();
+        userToDelete.setUserId(23L);
+        userToDelete.setOrganization(org1);
+
+        when(organizationRepository.findById(1L)).thenReturn(Optional.of(org1));
+        when(userRepository.findById(23L)).thenReturn(Optional.of(userToDelete));
+
+        // Execute & Verify
+        assertThrows(UserDeletionException.class, () ->
+                organizationService.deleteUser(1L, 23L, adminUser)
+        );
+    }
+
+
 }
