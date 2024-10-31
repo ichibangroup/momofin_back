@@ -5,9 +5,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import ppl.momofin.momofinbackend.model.AuditTrail;
 import ppl.momofin.momofinbackend.repository.AuditTrailRepository;
+import ppl.momofin.momofinbackend.repository.specification.AuditTrailSpecifications;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,10 +28,16 @@ public class AuditTrailServiceImpl implements AuditTrailService {
         return auditTrailRepository.findAll();
     }
 
-    public Page<AuditTrail> getAuditTrails(int page, int size, String sortBy, String direction) {
+    public Page<AuditTrail> getAuditTrails(String action, String user, int page, int size, String sortBy, String direction) {
         Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
-        return auditTrailRepository.findAll(pageable);
+
+        // Build specification based on non-null filters
+        Specification<AuditTrail> spec = Specification.where(action != null ? AuditTrailSpecifications.hasAction(action) : null)
+                .and(user != null ? AuditTrailSpecifications.hasUser(user) : null);
+
+        // Apply specification if filters are provided, else find all
+        return auditTrailRepository.findAll(spec, pageable);
     }
 
     public AuditTrail getAuditTrailById(Long id) {
