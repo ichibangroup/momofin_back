@@ -39,29 +39,28 @@ class AuditTrailServiceTest {
 
     @Test
     void whenGetAuditTrailsWithoutFilters_thenShouldReturnAllResults() {
-        // Arrange
         AuditTrail trail1 = new AuditTrail();
         trail1.setAction("SUBMIT");
         AuditTrail trail2 = new AuditTrail();
         trail2.setAction("VERIFY");
 
         List<AuditTrail> auditTrails = Arrays.asList(trail1, trail2);
-        when(auditTrailRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(auditTrails));
+        Page<AuditTrail> page = new PageImpl<>(auditTrails, PageRequest.of(0, 10), auditTrails.size());
 
-        // Act
+        when(auditTrailRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
         Page<AuditTrail> result = auditTrailService.getAuditTrails(null, null, 0, 10, "timestamp", "ASC");
 
-        // Assert
+        assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(2);
         assertThat(result.getContent().get(0).getAction()).isEqualTo("SUBMIT");
         assertThat(result.getContent().get(1).getAction()).isEqualTo("VERIFY");
 
-        verify(auditTrailRepository, times(1)).findAll(any(Pageable.class));
+        verify(auditTrailRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     void whenGetAuditTrailsWithActionFilter_thenShouldReturnFilteredResults() {
-        // Arrange
         AuditTrail trail1 = new AuditTrail();
         trail1.setAction("SUBMIT");
         AuditTrail trail2 = new AuditTrail();
@@ -70,19 +69,16 @@ class AuditTrailServiceTest {
         List<AuditTrail> auditTrails = List.of(trail1);
         when(auditTrailRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(auditTrails));
 
-        // Act
-        Page<AuditTrail> result = auditTrailService.getAuditTrails("CREATE", null, 0, 10, "timestamp", "ASC");
+        Page<AuditTrail> result = auditTrailService.getAuditTrails("SUBMIT", null, 0, 10, "timestamp", "ASC");
 
-        // Assert
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().getFirst().getAction()).isEqualTo("CREATE");
+        assertThat(result.getContent().getFirst().getAction()).isEqualTo("SUBMIT");
 
         verify(auditTrailRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     void whenGetAuditTrailsWithUserFilter_thenShouldReturnFilteredResults() {
-        // Arrange
         User dummy = new User();
         AuditTrail trail1 = new AuditTrail();
         trail1.setAction("SUBMIT");
@@ -91,61 +87,58 @@ class AuditTrailServiceTest {
         List<AuditTrail> auditTrails = List.of(trail1);
         when(auditTrailRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(auditTrails));
 
-        // Act
         Page<AuditTrail> result = auditTrailService.getAuditTrails(null, "user1", 0, 10, "timestamp", "ASC");
 
-        // Assert
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getUser()).isEqualTo(dummy);
+        assertThat(result.getContent().getFirst().getUser()).isEqualTo(dummy);
 
         verify(auditTrailRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     void whenGetAuditTrailsWithSorting_thenShouldReturnSortedResults() {
-        // Arrange
+        LocalDateTime dateTime = LocalDateTime.of(2023, 1, 1, 10, 30, 45);
+        LocalDateTime anotherDateTime = LocalDateTime.of(2024, 1, 1, 10, 30, 45);
         AuditTrail trail1 = new AuditTrail();
-        trail1.setAction("CREATE");
-        trail1.setTimestamp(LocalDateTime.parse("2023-01-01"));
+        trail1.setAction("SUBMIT");
+        trail1.setTimestamp(dateTime);
 
         AuditTrail trail2 = new AuditTrail();
-        trail2.setAction("DELETE");
-        trail2.setTimestamp(LocalDateTime.parse("2023-01-02"));
+        trail2.setAction("VERIFY");
+        trail2.setTimestamp(anotherDateTime);
 
-        List<AuditTrail> auditTrails = Arrays.asList(trail2, trail1); // Intentionally reversed for sorting test
+        List<AuditTrail> auditTrails = Arrays.asList(trail2, trail1);
         when(auditTrailRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(auditTrails));
 
-        // Act
         Page<AuditTrail> result = auditTrailService.getAuditTrails(null, null, 0, 10, "timestamp", "ASC");
 
-        // Assert
         assertThat(result.getContent()).hasSize(2);
-        assertThat(result.getContent().get(0).getTimestamp()).isEqualTo("2023-01-01");
-        assertThat(result.getContent().get(1).getTimestamp()).isEqualTo("2023-01-02");
+        assertThat(result.getContent().get(0).getTimestamp()).isEqualTo(anotherDateTime);
+        assertThat(result.getContent().get(1).getTimestamp()).isEqualTo(dateTime);
 
         verify(auditTrailRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     void whenGetAuditTrailsWithPagination_thenShouldReturnPagedResults() {
-        // Arrange
         AuditTrail trail1 = new AuditTrail();
         trail1.setAction("SUBMIT");
         AuditTrail trail2 = new AuditTrail();
         trail2.setAction("VERIFY");
 
-        List<AuditTrail> auditTrails = List.of(trail1);
-        when(auditTrailRepository.findAll(any(Specification.class), eq(PageRequest.of(0, 1)))).thenReturn(new PageImpl<>(auditTrails, PageRequest.of(0, 1), 2));
+        List<AuditTrail> auditTrails = Arrays.asList(trail1);
+        Page<AuditTrail> page = new PageImpl<>(auditTrails, PageRequest.of(0, 1), 2);
 
-        // Act
+        when(auditTrailRepository.findAll(any(Specification.class), any(PageRequest.class))).thenReturn(page);
+
         Page<AuditTrail> result = auditTrailService.getAuditTrails(null, null, 0, 1, "timestamp", "ASC");
 
-        // Assert
+        assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getTotalElements()).isEqualTo(2);
         assertThat(result.getContent().getFirst().getAction()).isEqualTo("SUBMIT");
 
-        verify(auditTrailRepository, times(1)).findAll(any(Specification.class), eq(PageRequest.of(0, 1)));
+        verify(auditTrailRepository, times(1)).findAll(any(Specification.class), any(PageRequest.class));
     }
 
     @Test

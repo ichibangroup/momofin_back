@@ -32,11 +32,9 @@ public class AuditTrailServiceImpl implements AuditTrailService {
         Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Build specification based on non-null filters
         Specification<AuditTrail> spec = Specification.where(action != null ? AuditTrailSpecifications.hasAction(action) : null)
                 .and(user != null ? AuditTrailSpecifications.hasUser(user) : null);
 
-        // Apply specification if filters are provided, else find all
         return auditTrailRepository.findAll(spec, pageable);
     }
 
