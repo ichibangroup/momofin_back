@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.impl.DefaultClaims;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.security.JwtUtil;
 import ppl.momofin.momofinbackend.service.DocumentService;
 import ppl.momofin.momofinbackend.model.User;
@@ -22,6 +24,7 @@ import ppl.momofin.momofinbackend.service.UserService;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.List;
 
 import java.util.Collections;
@@ -48,6 +51,9 @@ class DocumentVerificationControllerTest {
     @MockBean
     private UserService userService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private static final String VALID_TOKEN = "Bearer validToken";
     private static final String INVALID_TOKEN = "Bearer invalidToken";
     private static final String TEST_USERNAME = "testUser";
@@ -57,6 +63,7 @@ class DocumentVerificationControllerTest {
     void setUp() {
         when(jwtUtil.validateToken("validToken", TEST_USERNAME)).thenReturn(true);
         when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
+        when(jwtUtil.extractUserId("validToken")).thenReturn(10L);
         Claims claims = new DefaultClaims();
         claims.put("roles", Collections.singletonList("ROLE_USER"));
         when(jwtUtil.extractAllClaims("validToken")).thenReturn(claims);
@@ -309,5 +316,42 @@ class DocumentVerificationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.hashString").value("hashString"))
                 .andExpect(jsonPath("$.name").value("documentName"));
+    }
+
+    @Test
+    public void testRequestEdit_Success() throws Exception {
+        Document document = new Document();
+        document.setDocumentId(123L);
+        TEST_USER.setUserId(10L);
+        EditRequest editRequest = new EditRequest(TEST_USER, document);
+        when(documentService.requestEdit(123L, 10L)).thenReturn(editRequest);
+
+        mockMvc.perform(post("/doc/123/request-edit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(10L))
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.document.documentId").value(123L))
+                .andExpect(jsonPath("$.user.userId").value(10L));
+
+        verify(documentService).requestEdit(123L, 10L);
+    }
+
+    @Test
+    public void testGetRequests_Success() throws Exception {
+        Document document = new Document();
+        document.setDocumentId(123L);
+        EditRequest editRequest = new EditRequest(TEST_USER, document);
+        List<EditRequest> editRequests = List.of(editRequest);
+
+        when(documentService.getEditRequests(10L)).thenReturn(editRequests);
+
+        mockMvc.perform(get("/doc/edit-requests")
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].document.documentId").value(123L))
+                .andExpect(jsonPath("$[0].user.userId").value(10L));
+
+        verify(documentService).getEditRequests(10L);
     }
 }
