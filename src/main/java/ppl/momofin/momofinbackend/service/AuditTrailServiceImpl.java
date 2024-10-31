@@ -1,6 +1,10 @@
 package ppl.momofin.momofinbackend.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ppl.momofin.momofinbackend.model.AuditTrail;
 import ppl.momofin.momofinbackend.repository.AuditTrailRepository;
@@ -20,6 +24,12 @@ public class AuditTrailServiceImpl implements AuditTrailService {
 
     public List<AuditTrail> getAllAuditTrails() {
         return auditTrailRepository.findAll();
+    }
+
+    public Page<AuditTrail> getAuditTrails(int page, int size, String sortBy, String direction) {
+        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return auditTrailRepository.findAll(pageable);
     }
 
     public AuditTrail getAuditTrailById(Long id) {
