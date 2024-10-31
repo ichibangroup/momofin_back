@@ -346,12 +346,38 @@ class DocumentVerificationControllerTest {
 
         when(documentService.getEditRequests(10L)).thenReturn(editRequests);
 
-        mockMvc.perform(get("/doc/edit-requests")
+        mockMvc.perform(get("/doc/edit-request")
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].document.documentId").value(123L))
                 .andExpect(jsonPath("$[0].user.userId").value(10L));
 
         verify(documentService).getEditRequests(10L);
+    }
+
+    @Test
+    public void testEditDocument_Success() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+
+        // Mock the Document returned after editing
+        Document editedDocument = new Document();
+        editedDocument.setDocumentId(123L);
+        editedDocument.setName("test-document.pdf");
+
+        when(documentService.editDocument(eq(file), any(EditRequest.class)))
+                .thenReturn(editedDocument);
+
+        mockMvc.perform(multipart("/doc/edit-request/{documentId}", 123L)
+                        .file(file)
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.documentId").value(123L))
+                .andExpect(jsonPath("$.name").value("test-document.pdf"));
+    }
+    @Test
+    public void testEditDocument_MissingFile() throws Exception {
+        mockMvc.perform(multipart("/doc/edit-request/{documentId}", 123L)
+                        .header("Authorization", VALID_TOKEN))  // File not provided
+                .andExpect(status().isBadRequest());
     }
 }

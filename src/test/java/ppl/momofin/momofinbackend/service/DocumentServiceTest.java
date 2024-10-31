@@ -491,6 +491,7 @@ class DocumentServiceTest {
 
         // Mock interactions
         when(cdnService.editDocument(any(MultipartFile.class), any(Document.class), anyString())).thenReturn(updatedDocument);
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
 
         // Execute the method
         Document result = documentService.editDocument(mockFile, editRequest);
@@ -513,6 +514,32 @@ class DocumentServiceTest {
             documentService.editDocument(emptyFile, editRequest);
         });
         assertEquals("File must not be null or empty", exception.getMessage());
+    }
+
+    @Test
+    public void testEditDocument_FileNull_ThrowsException() {
+        EditRequest editRequest = new EditRequest();
+        editRequest.setDocument(document);
+
+        // Execute and verify exception
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            documentService.editDocument(null, editRequest);
+        });
+        assertEquals("File must not be null or empty", exception.getMessage());
+    }
+
+    @Test
+    public void testEditDocument_EditRequestNotExists_ThrowsException() {
+
+        EditRequest editRequest = new EditRequest();
+        editRequest.setDocument(document);
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(false);
+
+        // Execute and verify exception
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            documentService.editDocument(mockFile, editRequest);
+        });
+        assertEquals("Edit request not found in the database.", exception.getMessage());
     }
 
     @Test
