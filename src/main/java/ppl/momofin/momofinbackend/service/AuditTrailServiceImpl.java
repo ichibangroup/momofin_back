@@ -8,9 +8,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import ppl.momofin.momofinbackend.model.AuditTrail;
+import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.AuditTrailRepository;
 import ppl.momofin.momofinbackend.repository.specification.AuditTrailSpecifications;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,12 +30,12 @@ public class AuditTrailServiceImpl implements AuditTrailService {
         return auditTrailRepository.findAll();
     }
 
-    public Page<AuditTrail> getAuditTrails(String action, String user, int page, int size, String sortBy, String direction) {
-        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Specification<AuditTrail> spec = Specification.where(action != null ? AuditTrailSpecifications.hasAction(action) : null)
-                .and(user != null ? AuditTrailSpecifications.hasUser(user) : null);
+    public Page<AuditTrail> getAuditTrails(User user, String action, LocalDateTime startDateTime, LocalDateTime endDateTime, Pageable pageable) {
+        Specification<AuditTrail> spec = Specification.where(
+                        user != null ? AuditTrailSpecifications.hasUser(user) : null)
+                .and(action != null ? AuditTrailSpecifications.hasAction(action) : null)
+                .and(startDateTime != null ? AuditTrailSpecifications.afterTimestamp(startDateTime) : null)
+                .and(endDateTime != null ? AuditTrailSpecifications.beforeTimestamp(endDateTime) : null);
 
         return auditTrailRepository.findAll(spec, pageable);
     }
