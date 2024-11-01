@@ -13,7 +13,6 @@ public class AuditTrailResponse {
     private String username;
     private String document;
     private String action;
-    private String outcome;
     private String date;
 
     public static AuditTrailResponse fromAuditTrail(AuditTrail audit) {
@@ -25,7 +24,6 @@ public class AuditTrailResponse {
                 audit.getUser().getUsername(),
                 audit.getDocument().getName(),
                 audit.getAction(),
-                audit.getAuditOutcome(),
                 formattedDate
         );
     }
