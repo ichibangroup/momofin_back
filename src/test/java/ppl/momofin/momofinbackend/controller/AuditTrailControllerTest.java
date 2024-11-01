@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ppl.momofin.momofinbackend.model.AuditTrail;
@@ -12,9 +13,14 @@ import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.response.AuditTrailResponse;
 import ppl.momofin.momofinbackend.service.AuditTrailService;
+import ppl.momofin.momofinbackend.service.UserService;
 
-import java.util.Arrays;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -22,6 +28,9 @@ class AuditTrailControllerTest {
 
     @Mock
     private AuditTrailService auditTrailService;
+
+    @Mock
+    private UserService userService;
 
     @InjectMocks
     private AuditTrailController auditTrailController;
@@ -32,52 +41,84 @@ class AuditTrailControllerTest {
     }
 
     @Test
-    void testGetAllAudits_Success() {
-        List<AuditTrail> mockAuditTrails = getAuditTrails();
+    void testGetAllAudits_withFilters() {
+        // Arrange
+        String username = "testUser";
+        String action = "SUBMIT";
+        String startDate = "2023-10-01T08:00:00";
+        String endDate = "2023-10-02T13:00:00";
+        int page = 0;
+        int size = 10;
+        String sortBy = "timestamp";
+        String direction = "DESC";
 
-        List<AuditTrailResponse> expectedResponses = mockAuditTrails.stream()
-                .map(AuditTrailResponse::fromAuditTrail)
-                .toList();
+        User mockUser = new User();
+        mockUser.setUsername(username);
 
-        when(auditTrailService.getAllAuditTrails()).thenReturn(mockAuditTrails);
+        Document mockDoc = new Document();
+        mockDoc.setName("dummydoc");
 
-        ResponseEntity<List<AuditTrailResponse>> response = auditTrailController.getAllAudits();
+        when(userService.fetchUserByUsername(username)).thenReturn(mockUser);
 
-        List<AuditTrailResponse> actualResponses = response.getBody();
+        AuditTrail auditTrail = new AuditTrail();
+        auditTrail.setId(1L);
+        auditTrail.setUser(mockUser);
+        auditTrail.setDocument(mockDoc);
+        auditTrail.setAction(action);
+        auditTrail.setTimestamp(LocalDateTime.parse(startDate));
 
-        for (int i = 0; i < expectedResponses.size(); i++) {
-            AuditTrailResponse expected = expectedResponses.get(i);
-            AuditTrailResponse actual = actualResponses.get(i);
-            assertEquals(expected.getId(), actual.getId());
-            assertEquals(expected.getUsername(), actual.getUsername());
-            assertEquals(expected.getDocument(), actual.getDocument());
-            assertEquals(expected.getAction(), actual.getAction());
-            assertEquals(expected.getOutcome(), actual.getOutcome());
-        }
+        List<AuditTrail> auditTrailList = Collections.singletonList(auditTrail);
+        Page<AuditTrail> auditTrailPage = new PageImpl<>(auditTrailList, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy)), auditTrailList.size());
+
+        when(auditTrailService.getAuditTrails(eq(mockUser), eq(action), any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class)))
+                .thenReturn(auditTrailPage);
+
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(username, action, startDate, endDate, page, size, sortBy, direction);
+
+        assertEquals(1, Objects.requireNonNull(response.getBody()).getContent().size());
+
+        AuditTrailResponse auditTrailResponse = response.getBody().getContent().getFirst();
+        assertEquals(auditTrail.getId(), auditTrailResponse.getId());
+        assertEquals(auditTrail.getUser().getUsername(), auditTrailResponse.getUsername());
+        assertEquals(auditTrail.getAction(), auditTrailResponse.getAction());
+        assertEquals(auditTrail.getTimestamp().format(DateTimeFormatter.ofPattern("H:mm • d MMM, uuuu")), auditTrailResponse.getDate());
     }
 
-    private static List<AuditTrail> getAuditTrails() {
-        User testuser = new User();
-        testuser.setUserId(1L);
-        testuser.setUsername("tester");
+    @Test
+    void testGetAllAudits_withoutFilters() {
+        int page = 0;
+        int size = 10;
+        String sortBy = "timestamp";
+        String direction = "DESC";
 
-        Document testdoc = new Document();
-        testdoc.setDocumentId(1L);
-        testdoc.setName("testdoc");
+        User mockUser = new User();
+        mockUser.setUsername("dummyuser");
 
-        AuditTrail audit1 = new AuditTrail();
-        audit1.setId(1L);
-        audit1.setUser(testuser);
-        audit1.setDocument(testdoc);
+        Document mockDoc = new Document();
+        mockDoc.setName("dummydoc");
 
-        AuditTrail audit2 = new AuditTrail();
-        audit2.setId(2L);
-        audit2.setUser(testuser);
-        audit2.setDocument(testdoc);
+        AuditTrail auditTrail = new AuditTrail();
+        auditTrail.setId(1L);
+        auditTrail.setUser(mockUser);
+        auditTrail.setDocument(mockDoc);
+        auditTrail.setAction("VERIFY");
+        auditTrail.setTimestamp(LocalDateTime.now());
 
-        return Arrays.asList(audit1, audit2);
+        List<AuditTrail> auditTrailList = Collections.singletonList(auditTrail);
+        Page<AuditTrail> auditTrailPage = new PageImpl<>(auditTrailList, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy)), auditTrailList.size());
+
+        when(auditTrailService.getAuditTrails(any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(auditTrailPage);
+
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(null, null, null, null, page, size, sortBy, direction);
+
+        assertEquals(1, Objects.requireNonNull(response.getBody()).getContent().size());
+
+        AuditTrailResponse auditTrailResponse = response.getBody().getContent().getFirst();
+        assertEquals(auditTrail.getId(), auditTrailResponse.getId());
+        assertEquals(auditTrail.getAction(), auditTrailResponse.getAction());
+        assertEquals(auditTrail.getTimestamp().format(DateTimeFormatter.ofPattern("H:mm • d MMM, uuuu")), auditTrailResponse.getDate());
     }
-
 
     @Test
     void testGetAuditTrailById() {
