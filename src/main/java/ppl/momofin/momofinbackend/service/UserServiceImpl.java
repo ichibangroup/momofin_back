@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -141,7 +142,9 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public List<User> fetchAllUsers() {
-        return userRepository.findAll();
+        return userRepository.findAll().stream()
+                .filter(user -> user.getUserId() != -1)
+                .collect(Collectors.toList());
     }
     @Override
     public User getUserById(Long userId) {
