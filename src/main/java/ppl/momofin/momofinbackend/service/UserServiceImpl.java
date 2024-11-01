@@ -144,7 +144,7 @@ public class UserServiceImpl implements UserService{
     public List<User> fetchAllUsers() {
         return userRepository.findAll().stream()
                 .filter(user -> user.getUserId() != -1)
-                .collect(Collectors.toList());
+                .toList();
     }
     @Override
     public User getUserById(Long userId) {
