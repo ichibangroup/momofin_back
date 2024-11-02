@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.model.Organization;
@@ -25,6 +26,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -63,7 +65,7 @@ class DocumentServiceTest {
         mockUser.setOrganization(organization);
 
         document = new Document();
-        document.setDocumentId(1L);
+        document.setDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
     }
 
     @Test
@@ -81,7 +83,7 @@ class DocumentServiceTest {
 
     @Test
     void submitDocumentExistingDocument() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-        when(documentRepository.findByHashString(any())).thenReturn(Optional.of(new Document("hashString", "Existing Document")));
+        when(documentRepository.findByHashString(any())).thenReturn(Optional.of(new Document("hashString", "Existing Document",1)));
         String result = documentService.submitDocument(mockFile, mockUsername);
 
         assertNotNull(result);
@@ -142,21 +144,20 @@ class DocumentServiceTest {
     @Test
     void verifySpecificDocumentSuccess() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
 
-        Long documentId = 1L;
         String expectedHash = "testHash";
 
         Document mockDocument = new Document();
         mockDocument.setHashString(expectedHash);
         mockDocument.setOwner(mockUser);
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(documentRepository.findById(document.getDocumentId())).thenReturn(Optional.of(mockDocument));
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
 
         DocumentServiceImpl documentServiceSpy = spy(documentService);
         doReturn(expectedHash).when(documentServiceSpy).generateHash(any(MultipartFile.class)); // Simulate correct hash
 
         MockMultipartFile testFile = new MockMultipartFile("file", "test.txt", "text/plain", "Test content".getBytes());
-        Document result = documentServiceSpy.verifySpecificDocument(testFile, documentId, mockUsername);
+        Document result = documentServiceSpy.verifySpecificDocument(testFile, document.getDocumentId(), mockUsername);
 
         assertNotNull(result);
         assertEquals(mockDocument.getHashString(), result.getHashString());
@@ -165,43 +166,39 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentNullFile() {
-        Long documentId = 1L;
 
         assertThrows(IllegalArgumentException.class, () -> {
-            documentService.verifySpecificDocument(null, documentId, mockUsername);
+            documentService.verifySpecificDocument(null, document.getDocumentId(), mockUsername);
         });
     }
 
     @Test
     void verifySpecificDocumentEmptyFile() {
-        Long documentId = 1L;
         mockFile = new MockMultipartFile("file", "empty.txt", "text/plain", new byte[0]);
 
         assertThrows(IllegalArgumentException.class, () -> {
-            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+            documentService.verifySpecificDocument(mockFile, document.getDocumentId(), mockUsername);
         });
     }
 
     @Test
     void verifySpecificDocumentDocumentNotFound() {
-        Long documentId = 1L;
-        when(documentRepository.findById(documentId)).thenReturn(Optional.empty());
+        when(documentRepository.findById(document.getDocumentId())).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class, () -> {
-            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+            documentService.verifySpecificDocument(mockFile, document.getDocumentId(), mockUsername);
         });
     }
 
     @Test
     void verifySpecificDocumentAuthorizedUser() throws Exception {
-        Long documentId = 1L;
         String expectedHash = "expectedHash";
 
         Document mockDocument = new Document();
         mockDocument.setHashString(expectedHash);
         mockDocument.setOwner(mockUser);
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(documentRepository.findById(document.getDocumentId())).thenReturn(Optional.of(mockDocument));
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
 
         DocumentServiceImpl documentServiceSpy = spy(documentService);
@@ -209,7 +206,7 @@ class DocumentServiceTest {
 
         MockMultipartFile testFile = new MockMultipartFile("file", "test.txt", "text/plain", "Test content".getBytes());
 
-        Document result = documentServiceSpy.verifySpecificDocument(testFile, documentId, mockUsername);
+        Document result = documentServiceSpy.verifySpecificDocument(testFile, document.getDocumentId(), mockUsername);
 
         assertNotNull(result);
         assertEquals(mockDocument.getHashString(), result.getHashString());
@@ -218,12 +215,11 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentUnauthorizedUser()  {
-        Long documentId = 1L;
 
         MockMultipartFile testFile = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
 
         Document mockDocument = new Document();
-        mockDocument.setDocumentId(documentId);
+        mockDocument.setDocumentId(document.getDocumentId());
         mockDocument.setHashString("expectedHash");
         mockDocument.setOwner(mockUser);
 
@@ -232,13 +228,13 @@ class DocumentServiceTest {
         Organization organization = new Organization("Another Organization");
         unauthorizedUser.setOrganization(organization);
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(documentRepository.findById(document.getDocumentId())).thenReturn(Optional.of(mockDocument));
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(unauthorizedUser));
 
         ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            documentService.verifySpecificDocument(testFile, documentId, mockUsername);
+            documentService.verifySpecificDocument(testFile, document.getDocumentId(), mockUsername);
         });
 
         assertEquals("You are not authorized to verify this document.", exception.getMessage());
@@ -250,22 +246,21 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentOwnerNotFound() {
-        Long documentId = 1L;
 
         Document mockDocument = new Document();
-        mockDocument.setDocumentId(documentId);
+        mockDocument.setDocumentId(document.getDocumentId());
         mockDocument.setHashString("expectedHash");
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(documentRepository.findById(document.getDocumentId())).thenReturn(Optional.of(mockDocument));
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+            documentService.verifySpecificDocument(mockFile, document.getDocumentId(), mockUsername);
         });
 
         assertEquals("You are not authorized to verify this document.", exception.getMessage());
 
-        verify(documentRepository).findById(documentId);
+        verify(documentRepository).findById(document.getDocumentId());
         verify(userRepository).findByUsername(mockUsername);
     }
 
@@ -273,10 +268,9 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentOwnerMismatch() {
-        Long documentId = 1L;
 
         Document mockDocument = new Document();
-        mockDocument.setDocumentId(documentId);
+        mockDocument.setDocumentId(document.getDocumentId());
         mockDocument.setHashString("expectedHash");
 
         User differentOwner = new User();
@@ -285,16 +279,16 @@ class DocumentServiceTest {
         differentOwner.setOrganization(organization);
         mockDocument.setOwner(differentOwner);
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(documentRepository.findById(document.getDocumentId())).thenReturn(Optional.of(mockDocument));
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
+            documentService.verifySpecificDocument(mockFile, document.getDocumentId(), mockUsername);
         });
 
         assertEquals("You are not authorized to verify this document.", exception.getMessage());
 
-        verify(documentRepository).findById(documentId);
+        verify(documentRepository).findById(document.getDocumentId());
         verify(userRepository).findByUsername(mockUsername);
     }
 
@@ -303,7 +297,6 @@ class DocumentServiceTest {
 
     @Test
     void verifySpecificDocumentHashMismatch() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-        Long documentId = 1L;
         Document mockDocument = new Document();
         String expectedHash = "testHash";
         String wrongHash = "wrongHash";
@@ -311,7 +304,7 @@ class DocumentServiceTest {
         mockDocument.setOwner(mockUser);
         mockDocument.setHashString(expectedHash);
 
-        when(documentRepository.findById(documentId)).thenReturn(Optional.of(mockDocument));
+        when(documentRepository.findById(document.getDocumentId())).thenReturn(Optional.of(mockDocument));
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
 
         DocumentServiceImpl documentServiceSpy = spy(documentService);
@@ -321,7 +314,7 @@ class DocumentServiceTest {
         MockMultipartFile testFile = new MockMultipartFile("file", "test.txt", "text/plain", "Test content".getBytes());
 
         assertThrows(IllegalArgumentException.class, () -> {
-            documentServiceSpy.verifySpecificDocument(testFile, documentId, mockUsername);
+            documentServiceSpy.verifySpecificDocument(testFile, document.getDocumentId(), mockUsername);
         });
     }
 
@@ -362,85 +355,82 @@ class DocumentServiceTest {
     @Test
     void getViewableUrl_DocumentExists_ReturnsViewableUrl() throws IOException {
         // Arrange
-        Long documentId = 1L;
-        String username = "testuser";
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         String organizationName = "testorg";
         String filename = "testfile.pdf";
         String expectedUrl = "https://cdn.example.com/signed-url";
 
         Document document = new Document();
-        document.setDocumentId(documentId);
+        document.setDocumentId(document.getDocumentId());
         document.setName(filename);
 
-        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
-        when(cdnService.getViewableUrl(filename, username, organizationName)).thenReturn(expectedUrl);
+        when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(document, userId, organizationName)).thenReturn(expectedUrl);
 
         // Act
-        String actualUrl = documentService.getViewableUrl(documentId, username, organizationName);
+        String actualUrl = documentService.getViewableUrl(document.getDocumentId(), userId, organizationName);
 
         // Assert
         assertEquals(expectedUrl, actualUrl);
-        verify(documentRepository, times(1)).findByDocumentId(documentId);
-        verify(cdnService, times(1)).getViewableUrl(filename, username, organizationName);
+        verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
+        verify(cdnService, times(1)).getViewableUrl(document, userId, organizationName);
     }
 
     @Test
     void getViewableUrl_DocumentDoesNotExist_ThrowsIllegalArgumentException() throws IOException {
         // Arrange
-        Long documentId = 1L;
-        String username = "testuser";
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         String organizationName = "testorg";
 
-        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.empty());
+        when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.empty());
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                documentService.getViewableUrl(documentId, username, organizationName));
+                documentService.getViewableUrl(document.getDocumentId(), userId, organizationName));
 
-        assertEquals("Document with id " + documentId + " does not exist", exception.getMessage());
-        verify(documentRepository, times(1)).findByDocumentId(documentId);
-        verify(cdnService, never()).getViewableUrl(anyString(), anyString(), anyString());
+        assertEquals("Document with id " + document.getDocumentId() + " does not exist", exception.getMessage());
+        verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
+        verify(cdnService, never()).getViewableUrl(any(Document.class), any(UUID.class), anyString());
     }
 
     @Test
     void getViewableUrl_CdnServiceThrowsIOException_ThrowsIOException() throws IOException {
         // Arrange
-        Long documentId = 1L;
-        String username = "testuser";
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         String organizationName = "testorg";
         String filename = "testfile.pdf";
 
         Document document = new Document();
-        document.setDocumentId(documentId);
+        document.setDocumentId(document.getDocumentId());
         document.setName(filename);
 
-        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
-        when(cdnService.getViewableUrl(filename, username, organizationName)).thenThrow(new IOException("Failed to get URL"));
+        when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(document, userId, organizationName)).thenThrow(new IOException("Failed to get URL"));
 
         // Act & Assert
         IOException exception = assertThrows(IOException.class, () ->
-                documentService.getViewableUrl(documentId, username, organizationName));
+                documentService.getViewableUrl(document.getDocumentId(), userId, organizationName));
 
         assertEquals("Failed to get URL", exception.getMessage());
-        verify(documentRepository, times(1)).findByDocumentId(documentId);
-        verify(cdnService, times(1)).getViewableUrl(filename, username, organizationName);
+        verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
+        verify(cdnService, times(1)).getViewableUrl(document, userId, organizationName);
     }
 
     @Test
     void fetchDocumentByIdSuccess() {
         Document document = new Document();
-        when(documentRepository.findByDocumentId(123L)).thenReturn(Optional.of(document));
+        when(documentRepository.findByDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"))).thenReturn(Optional.of(document));
 
-        Document returnedDocument = documentService.fetchDocumentWithDocumentId(123L);
+        Document returnedDocument = documentService.fetchDocumentWithDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
 
         assertEquals(document, returnedDocument);
     }
 
     @Test
     void fetchDocumentByIdFailed() {
-        when(documentRepository.findByDocumentId(123L)).thenReturn(Optional.empty());
+        when(documentRepository.findByDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"))).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> documentService.fetchDocumentWithDocumentId(123L) );
+        assertThrows(IllegalStateException.class, () -> documentService.fetchDocumentWithDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe")) );
     }
 
     @Test
@@ -450,14 +440,30 @@ class DocumentServiceTest {
         editRequest.setDocument(document);
         editRequest.setUser(mockUser);
         when(editRequestRepository.save(any(EditRequest.class))).thenReturn(editRequest);
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
 
         // Execute the method
-        EditRequest result = documentService.requestEdit(document.getDocumentId(), mockUser.getUserId());
+        EditRequest result = documentService.requestEdit(document.getDocumentId(), mockUsername);
 
         // Verify interactions and result
         verify(editRequestRepository).save(any(EditRequest.class));
         assertEquals(document.getDocumentId(), result.getDocument().getDocumentId());
         assertEquals(mockUser.getUserId(), result.getUser().getUserId());
+    }
+
+    @Test
+    public void testRequestEdit_UserDoesNotExist() {
+        // Mock the expected behavior
+        EditRequest editRequest = new EditRequest();
+        editRequest.setDocument(document);
+        editRequest.setUser(mockUser);
+        when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
+
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
+            documentService.requestEdit(document.getDocumentId(), mockUsername);
+        });
+        String expectedErrorMessage = "User with username " + mockUsername + " not found";
+        assertEquals(expectedErrorMessage, exception.getMessage());
     }
 
     @Test
@@ -487,7 +493,7 @@ class DocumentServiceTest {
         editRequest.setUser(mockUser);
 
         Document updatedDocument = new Document();
-        updatedDocument.setDocumentId(1L);
+        updatedDocument.setDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
 
         // Mock interactions
         when(cdnService.editDocument(any(MultipartFile.class), any(Document.class), anyString())).thenReturn(updatedDocument);

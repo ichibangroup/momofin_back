@@ -6,12 +6,13 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Getter @Setter @Entity
 @Table(name = "document")
 public class Document {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long documentId;
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID documentId;
     @Column(name = "hash_string")
     private String hashString;
     @Column(name = "name")
@@ -19,19 +20,19 @@ public class Document {
     @ManyToOne
     @JoinColumn(name = "owner", referencedColumnName = "userId")
     private User owner;
-    @OneToMany(mappedBy = "id.document", cascade = CascadeType.ALL)
-    private List<DocumentVersion> versions;
+    private  int currentVersion;
 
-
-    @OneToOne
-    private DocumentVersion currentVersion;
-
-    public Document() {
-        versions = new ArrayList<>();
-    }
+    public Document() {}
 
     public Document(String hashString, String name) {
         this.hashString = hashString;
         this.name = name;
+        this.currentVersion = 1;
+    }
+
+    public Document(String hashString, String name, int currentVersion) {
+        this.hashString = hashString;
+        this.name = name;
+        this.currentVersion = currentVersion;
     }
 }

@@ -3,6 +3,7 @@ package ppl.momofin.momofinbackend.model;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,7 +14,7 @@ public class DocumentVersionTest {
         DocumentVersion documentVersion = new DocumentVersion();
 
         assertNotNull(documentVersion.getId());
-        assertNull(documentVersion.getDocument());
+        assertNull(documentVersion.getDocumentId());
         assertEquals(1,documentVersion.getVersion());
         assertNull(documentVersion.getFileName());
         assertNull(documentVersion.getHashString());
@@ -22,16 +23,16 @@ public class DocumentVersionTest {
 
     @Test
     void testEditRequestConstructor() {
-        Document document = new Document();
+        UUID documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
         int version = 4;
         String filename = "test-file";
         String hash = "hash";
 
 
-        DocumentVersion documentVersion = new DocumentVersion(version,document, filename, hash);
+        DocumentVersion documentVersion = new DocumentVersion(version,documentId, filename, hash);
 
         assertNotNull(documentVersion.getId());
-        assertEquals(document,documentVersion.getDocument());
+        assertEquals(documentId,documentVersion.getDocumentId());
         assertEquals(version,documentVersion.getVersion());
         assertEquals(filename,documentVersion.getFileName());
         assertEquals(hash, documentVersion.getHashString());
@@ -61,13 +62,13 @@ public class DocumentVersionTest {
 
     @Test
     void testGetSetDocument() {
-        Document document = new Document();
+        UUID documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
 
         DocumentVersion documentVersion = new DocumentVersion();
-        documentVersion.setDocument(document);
+        documentVersion.setDocumentId(documentId);
 
-        assertEquals(documentVersion.getDocument(), document);
-        assertEquals(documentVersion.getDocument(), documentVersion.getId().getDocument());
+        assertEquals(documentVersion.getDocumentId(), documentId);
+        assertEquals(documentVersion.getDocumentId(), documentVersion.getId().getDocumentId());
     }
 
     @Test
@@ -102,11 +103,11 @@ public class DocumentVersionTest {
 
     @Test
     void  testDocumentVersionKeyConstructor() {
-        Document document = new Document();
+        UUID documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
         int version = 4;
-        DocumentVersionKey key = new DocumentVersionKey(document, version);
+        DocumentVersionKey key = new DocumentVersionKey(documentId, version);
 
-        assertEquals(key.getDocument(), document);
+        assertEquals(key.getDocumentId(), documentId);
         assertEquals(key.getVersion(), version);
     }
 }

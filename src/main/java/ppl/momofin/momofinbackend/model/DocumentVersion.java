@@ -6,6 +6,7 @@ import lombok.Setter;
 
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Setter
@@ -24,10 +25,10 @@ public class DocumentVersion {
         setVersion(1);
     }
 
-    public DocumentVersion(int version, Document document, String fileName, String hashString) {
+    public DocumentVersion(int version, UUID documentId, String fileName, String hashString) {
         this.id = new DocumentVersionKey();
         this.id.setVersion(version);
-        this.id.setDocument(document);
+        this.id.setDocumentId(documentId);
         this.fileName = fileName;
         this.hashString = hashString;
     }
@@ -40,11 +41,11 @@ public class DocumentVersion {
         id.setVersion(version);
     }
 
-    public Document getDocument() {
-        return id.getDocument();
+    public UUID getDocumentId() {
+        return id.getDocumentId();
     }
 
-    public void setDocument(Document document) {
-        id.setDocument(document);
+    public void setDocumentId(UUID documentId) {
+        id.setDocumentId(documentId);
     }
 }

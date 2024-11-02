@@ -22,6 +22,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DocumentServiceImpl implements DocumentService {
@@ -83,7 +84,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Document verifySpecificDocument(MultipartFile file, Long documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    public Document verifySpecificDocument(MultipartFile file, UUID documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
         }
@@ -144,30 +145,29 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public String getViewableUrl(Long documentId, String username, String organizationName) throws IOException {
+    public String getViewableUrl(UUID documentId, UUID userId, String organizationName) throws IOException {
         Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
 
         if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + " does not exist");
 
         Document document = optionalDocument.get();
-        String filename = document.getName();
-        return cdnService.getViewableUrl(filename, username, organizationName);
+        return cdnService.getViewableUrl(document, userId, organizationName);
     }
 
     @Override
-    public Document fetchDocumentWithDocumentId(Long documentId) {
+    public Document fetchDocumentWithDocumentId(UUID documentId) {
         return documentRepository.findByDocumentId(documentId)
                 .orElseThrow(() -> new IllegalStateException("Document not found"));
     }
 
     @Override
-    public EditRequest requestEdit(Long documentId, Long userId) {
+    public EditRequest requestEdit(UUID documentId, String username) {
+        Optional<User> optionalUser = userRepository.findByUsername(username);
+        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");
+        User user = optionalUser.get();
         EditRequest request = new EditRequest();
         Document document = new Document();
         document.setDocumentId(documentId);
-
-        User user = new User();
-        user.setUserId(userId);
 
         request.setDocument(document);
         request.setUser(user);
@@ -175,7 +175,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public List<EditRequest> getEditRequests(Long userId) {
+    public List<EditRequest> getEditRequests(UUID userId) {
         return editRequestRepository.findByUserId(userId);
     }
 

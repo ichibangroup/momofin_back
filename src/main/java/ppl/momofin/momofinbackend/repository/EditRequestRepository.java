@@ -7,8 +7,9 @@ import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.model.EditRequestKey;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface EditRequestRepository extends JpaRepository<EditRequest, EditRequestKey> {
     @Query("SELECT e FROM EditRequest e WHERE e.id.user.userId = :userId")
-    List<EditRequest> findByUserId(@Param("userId") Long userId);
+    List<EditRequest> findByUserId(@Param("userId") UUID userId);
 }

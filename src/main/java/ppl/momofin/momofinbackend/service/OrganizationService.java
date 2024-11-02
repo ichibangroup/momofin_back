@@ -13,6 +13,7 @@ import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class OrganizationService {
@@ -27,7 +28,7 @@ public class OrganizationService {
         this.userRepository = userRepository;
     }
 
-    public Organization updateOrganization(Long orgId, String name, String description, String industry, String location) {
+    public Organization updateOrganization(UUID orgId, String name, String description, String industry, String location) {
         if (orgId == null) {
             throw new InvalidOrganizationException("Organization ID cannot be null");
         }
@@ -45,14 +46,14 @@ public class OrganizationService {
         return organizationRepository.save(org);
     }
 
-    public List<UserDTO> getUsersInOrganization(Long orgId) {
+    public List<UserDTO> getUsersInOrganization(UUID orgId) {
         Organization org = findOrganizationById(orgId);
         return userRepository.findByOrganization(org).stream()
                 .map(UserDTO::fromUser)
                 .toList();
     }
 
-    public UserDTO updateUserInOrganization(Long orgId, Long userId, UserDTO updatedUserDTO) {
+    public UserDTO updateUserInOrganization(UUID orgId, UUID userId, UserDTO updatedUserDTO) {
         Organization org = findOrganizationById(orgId);
         User user = findUserById(userId);
         if (!user.getOrganization().equals(org)) {
@@ -67,12 +68,12 @@ public class OrganizationService {
         return UserDTO.fromUser(savedUser);
     }
 
-    public Organization findOrganizationById(Long orgId) {
+    public Organization findOrganizationById(UUID orgId) {
         return organizationRepository.findById(orgId)
                 .orElseThrow(OrganizationNotFoundException::new);
     }
 
-    private User findUserById(Long userId) {
+    private User findUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
@@ -88,13 +89,10 @@ public class OrganizationService {
         return organizationRepository.save(newOrganization);
     }
     @Transactional
-    public void deleteUser(Long orgId, Long userId, User requestingUser) {
+    public void deleteUser(UUID orgId, UUID userId, User requestingUser) {
         Organization org = findOrganizationById(orgId);
         User userToDelete = findUserById(userId);
         // Don't allow deletion of the system deleted user
-        if (userId == -1) {
-            throw new UserDeletionException("Cannot delete system user");
-        }
 
         // Permission checks
         if (!requestingUser.isOrganizationAdmin()) {

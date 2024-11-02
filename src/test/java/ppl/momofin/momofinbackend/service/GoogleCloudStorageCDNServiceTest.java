@@ -21,12 +21,15 @@ import ppl.momofin.momofinbackend.model.DocumentVersion;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
+import ppl.momofin.momofinbackend.repository.DocumentVersionRepository;
+import ppl.momofin.momofinbackend.repository.EditRequestRepository;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,6 +42,8 @@ class GoogleCloudStorageCDNServiceTest {
     private Storage mockStorage;
     @Mock
     private DocumentRepository documentRepository;
+    @Mock
+    private DocumentVersionRepository documentVersionRepository;
 
     @Mock
     private Blob blob;
@@ -64,10 +69,11 @@ class GoogleCloudStorageCDNServiceTest {
 
         Organization organization = new Organization("Momofin");
         user = new User(organization, "Executive John", "Marshall Jordan", "marshall@jordan.email.com", "1234567890999", "Executive");
+        user.setUserId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
 
         mockFile = new MockMultipartFile("test file", "test-file.pdf", MediaType.APPLICATION_PDF_VALUE,"test file content".getBytes());
 
-        cdnService = new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, privateKeyFilePath, serviceName, clientId, documentRepository) {
+        cdnService = new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, privateKeyFilePath, serviceName, clientId, documentRepository, documentVersionRepository) {
             @Override
             protected Storage createStorage(GoogleCredentials credentials) {
                 return mockStorage;
@@ -81,7 +87,7 @@ class GoogleCloudStorageCDNServiceTest {
 
         cdnService.submitDocument(mockFile, user, "hashString");
 
-        BlobId expectedBlobId = BlobId.of(bucketName, user.getOrganization().getName() + "/" + user.getUsername() + "/test-file/version_1_test-file.pdf");
+        BlobId expectedBlobId = BlobId.of(bucketName, user.getOrganization().getName() + "/" + user.getUserId() + "/test-file/version_1_test-file.pdf");
         BlobInfo expectedBlobInfo = BlobInfo.newBuilder(expectedBlobId)
                 .setContentType("application/pdf")
                 .build();
@@ -101,17 +107,21 @@ class GoogleCloudStorageCDNServiceTest {
     void testConstructorWithInvalidCredentials() {
         String wrongFilePath = System.getenv("PKEY_DIRECTORY")+"/wrongkey.pem";
         assertThrows(IOException.class, () -> {
-            new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, wrongFilePath, serviceName, clientId, documentRepository);
+            new GoogleCloudStorageCDNService(bucketName, projectId, privateKeyId, wrongFilePath, serviceName, clientId, documentRepository, documentVersionRepository);
         });
     }
 
     @Test
     void testGetViewableUrl_Success() throws IOException {
-        // Arrange
+        Document document = new Document();
         String fileName = "test.pdf";
-        String username = "user123";
+        document.setName(fileName);
+        DocumentVersion currentVersion = new DocumentVersion();
+        currentVersion.setVersion(4);
+        document.setCurrentVersion(4);
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         String organizationName = "OrgXYZ";
-        String folderPath = organizationName + "/" + username + "/" + fileName;
+        String folderPath = organizationName + "/" + userId + "/test/version_" + currentVersion.getVersion() + "_" +fileName;
         BlobId blobId = BlobId.of(bucketName, folderPath);
 
         when(mockStorage.get(blobId)).thenReturn(blob);
@@ -120,7 +130,7 @@ class GoogleCloudStorageCDNServiceTest {
         when(blob.signUrl(1, TimeUnit.HOURS)).thenReturn(signedUrl);
 
         // Act
-        String viewableUrl = cdnService.getViewableUrl(fileName, username, organizationName);
+        String viewableUrl = cdnService.getViewableUrl(document, userId, organizationName);
 
         // Assert
         assertNotNull(viewableUrl);
@@ -132,17 +142,22 @@ class GoogleCloudStorageCDNServiceTest {
     @Test
     void testGetViewableUrl_FileNotFound() {
         // Arrange
+        Document document = new Document();
         String fileName = "nonexistent.pdf";
-        String username = "user123";
+        document.setName(fileName);
+        DocumentVersion currentVersion = new DocumentVersion();
+        currentVersion.setVersion(4);
+        document.setCurrentVersion(4);
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         String organizationName = "OrgXYZ";
-        String folderPath = organizationName + "/" + username + "/" + fileName;
+        String folderPath = organizationName + "/" + userId + "/nonexistent/version_" + currentVersion.getVersion() + "_" +fileName;
         BlobId blobId = BlobId.of(bucketName, folderPath);
 
         when(mockStorage.get(blobId)).thenReturn(null);
 
         // Act & Assert
         FileNotFoundException exception = assertThrows(FileNotFoundException.class, () -> {
-            cdnService.getViewableUrl(fileName, username, organizationName);
+            cdnService.getViewableUrl(document, userId, organizationName);
         });
 
         assertEquals("File not found: " + fileName, exception.getMessage());
@@ -151,17 +166,21 @@ class GoogleCloudStorageCDNServiceTest {
 
     @Test
     public void testEditDocument_NewVersionUploaded() throws IOException {
-        String fileName = StringUtils.cleanPath(Objects.requireNonNull(mockFile.getOriginalFilename()));
+        String fileName = "test-file.pdf";
         String cleanedFileName =  fileName.replaceFirst("[.][^.]+$", "");
 
 
         // Expected values
-        String folderName = user.getOrganization().getName() + "/" + user.getUsername();
         Document document = new Document();
+        DocumentVersion documentVersion = new DocumentVersion();
+        documentVersion.setVersion(4);
+        document.setCurrentVersion(4);
         document.setOwner(user);
-        document.setName("test-file");
-        int nextVersion = document.getVersions().size() + 1;
-        String expectedVersionedFileName = String.format("%s/%s/version_%d_%s", folderName, cleanedFileName, nextVersion, fileName);
+        document.setName(fileName);
+        int nextVersion = document.getCurrentVersion() + 1;
+        String folderPath = user.getOrganization().getName() + "/" + user.getUserId() + "/" + cleanedFileName+ "/version_" + nextVersion+ "_" +fileName;
+
+        String expectedVersionedFileName = String.format("%s", folderPath);
 
         BlobId expectedBlobId = BlobId.of(bucketName, expectedVersionedFileName);
         BlobInfo expectedBlobInfo = BlobInfo.newBuilder(expectedBlobId).setContentType("application/pdf").build();
@@ -177,32 +196,6 @@ class GoogleCloudStorageCDNServiceTest {
         verify(documentRepository).save(document);
 
         assertEquals("newHash", updatedDocument.getHashString());
-        assertEquals(nextVersion, updatedDocument.getVersions().size());
-        assertEquals(nextVersion, updatedDocument.getCurrentVersion().getVersion());
-        assertEquals(cleanedFileName, updatedDocument.getCurrentVersion().getFileName());
-    }
-
-    @Test
-    public void testEditDocument_UpdatesDocumentAndVersionList() throws IOException {
-        ArgumentCaptor<Document> documentCaptor = ArgumentCaptor.forClass(Document.class);
-        DocumentVersion existingVersion = new DocumentVersion();
-        existingVersion.setVersion(1);
-        Document document = new Document();
-        document.setOwner(user);
-        document.setName("test-file");
-        document.getVersions().add(existingVersion);
-
-        // Execute the method
-        cdnService.editDocument(mockFile, document, "updatedHash");
-
-        verify(documentRepository).save(documentCaptor.capture());
-
-        Document updatedDocument = documentCaptor.getValue();
-
-        // Check that the new version is added and that the hash is updated
-        assertEquals("updatedHash", updatedDocument.getHashString());
-        assertEquals(2, updatedDocument.getVersions().size());
-        assertEquals(2, updatedDocument.getCurrentVersion().getVersion());
-        assertEquals("test-file", updatedDocument.getCurrentVersion().getFileName());
+        assertEquals(nextVersion, updatedDocument.getCurrentVersion());
     }
 }
