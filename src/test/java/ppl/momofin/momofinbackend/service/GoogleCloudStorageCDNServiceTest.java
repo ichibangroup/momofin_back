@@ -14,7 +14,6 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.model.DocumentVersion;
@@ -22,13 +21,11 @@ import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
 import ppl.momofin.momofinbackend.repository.DocumentVersionRepository;
-import ppl.momofin.momofinbackend.repository.EditRequestRepository;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -165,7 +162,7 @@ class GoogleCloudStorageCDNServiceTest {
     }
 
     @Test
-    public void testEditDocument_NewVersionUploaded() throws IOException {
+    void testEditDocument_NewVersionUploaded() throws IOException {
         String fileName = "test-file.pdf";
         String cleanedFileName =  fileName.replaceFirst("[.][^.]+$", "");
 

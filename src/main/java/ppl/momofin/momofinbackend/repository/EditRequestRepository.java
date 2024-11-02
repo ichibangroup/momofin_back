@@ -10,6 +10,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface EditRequestRepository extends JpaRepository<EditRequest, EditRequestKey> {
-    @Query("SELECT e FROM EditRequest e WHERE e.id.user.userId = :userId")
+    @Query("SELECT e FROM EditRequest e WHERE e.id.userId = :userId")
     List<EditRequest> findByUserId(@Param("userId") UUID userId);
 }

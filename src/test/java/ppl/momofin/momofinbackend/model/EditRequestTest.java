@@ -2,7 +2,7 @@ package ppl.momofin.momofinbackend.model;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,24 +39,28 @@ class EditRequestTest {
 
     @Test
     void testGetSetUser() {
+        UUID userId = UUID.randomUUID();
         User user = new User();
+        user.setUserId(userId);
 
         EditRequest request = new EditRequest();
         request.setUser(user);
 
         assertEquals(request.getUser(), user);
-        assertEquals(request.getUser(), request.getId().getUser());
+        assertEquals(userId, request.getId().getUserId());
     }
 
     @Test
     void testGetSetDocument() {
+        UUID documentId = UUID.randomUUID();
         Document document = new Document();
+        document.setDocumentId(documentId);
 
         EditRequest request = new EditRequest();
         request.setDocument(document);
 
         assertEquals(request.getDocument(), document);
-        assertEquals(request.getDocument(), request.getId().getDocument());
+        assertEquals(documentId, request.getId().getDocumentId());
     }
 }
 

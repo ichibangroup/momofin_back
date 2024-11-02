@@ -85,7 +85,7 @@ public class GoogleCloudStorageCDNService implements CDNService {
     @Override
     public Document submitDocument(MultipartFile file, User user, String hashString) throws IOException {
         String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
-        String cleanedFileName =  fileName.replaceFirst("[.][^.]+$", "");
+        String cleanedFileName =  cleanFileName(fileName);
         String folderName = user.getOrganization().getName() + "/" + user.getUserId();
 
         // Define file path for version 1
@@ -112,20 +112,6 @@ public class GoogleCloudStorageCDNService implements CDNService {
         version.setDocumentId(document.getDocumentId());
         documentVersionRepository.save(version);
 
-        System.out.println(document.getDocumentId());
-        System.out.println(document.getHashString());
-        System.out.println(document.getOwner());
-        System.out.println(document.getName());
-        System.out.println(version.getVersion());
-        System.out.println(version.getDocumentId());
-        System.out.println(version.getCreatedDate());
-        System.out.println(version.getFileName());
-        System.out.println(version.getHashString());
-        System.out.println(version.getId());
-        System.out.println(version.getId().getDocumentId());
-        System.out.println(version.getId().getVersion());
-
-
         return documentRepository.save(document);
     }
 
@@ -133,7 +119,7 @@ public class GoogleCloudStorageCDNService implements CDNService {
     @Override
     public Document editDocument(MultipartFile file, Document document, String hashString) throws IOException {
         String fileName = document.getName();
-        String cleanedFileName =  fileName.replaceFirst("[.][^.]+$", "");
+        String cleanedFileName =  cleanFileName(fileName);
 
         String folderName = document.getOwner().getOrganization().getName() + "/" + document.getOwner().getUserId();
 
@@ -166,7 +152,7 @@ public class GoogleCloudStorageCDNService implements CDNService {
     @Override
     public String getViewableUrl(Document document, UUID userId, String organizationName) throws IOException {
         String fileName = document.getName();
-        String cleanedFileName =  fileName.replaceFirst("[.][^.]+$", "");
+        String cleanedFileName =  cleanFileName(fileName);
 
         String versionedFileName = "version_" + document.getCurrentVersion() + "_" + fileName;
         String folderName = organizationName + "/" + userId + "/" + cleanedFileName;
@@ -180,5 +166,9 @@ public class GoogleCloudStorageCDNService implements CDNService {
         // Generate a signed URL that expires in 1 hour
         URL signedUrl = blob.signUrl(1, TimeUnit.HOURS);
         return signedUrl.toString();
+    }
+
+    private String cleanFileName(String fileName) {
+        return fileName.replaceFirst("[.][^.]+$", "");
     }
 }

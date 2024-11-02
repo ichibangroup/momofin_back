@@ -25,7 +25,6 @@ import ppl.momofin.momofinbackend.service.UserService;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.List;
 
 import java.util.Collections;
@@ -322,7 +321,7 @@ class DocumentVerificationControllerTest {
     }
 
     @Test
-    public void testRequestEdit_Success() throws Exception {
+    void testRequestEdit_Success() throws Exception {
         Document document = new Document();
         document.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
         EditRequest editRequest = new EditRequest(TEST_USER, document);
@@ -342,7 +341,7 @@ class DocumentVerificationControllerTest {
     }
 
     @Test
-    public void testGetRequests_Success() throws Exception {
+    void testGetRequests_Success() throws Exception {
         Document document = new Document();
         document.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
 
@@ -354,14 +353,14 @@ class DocumentVerificationControllerTest {
         mockMvc.perform(get("/doc/edit-request")
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id.document.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
-                .andExpect(jsonPath("$[0].id.user.userId").value("292aeace-0148-4a20-98bf-bf7f12871efe"));
+                .andExpect(jsonPath("$[0].id.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
+                .andExpect(jsonPath("$[0].id.userId").value("292aeace-0148-4a20-98bf-bf7f12871efe"));
 
         verify(documentService).getEditRequests(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
     }
 
     @Test
-    public void testEditDocument_Success() throws Exception {
+    void testEditDocument_Success() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
 
         // Mock the Document returned after editing
@@ -380,7 +379,7 @@ class DocumentVerificationControllerTest {
                 .andExpect(jsonPath("$.name").value("test-document.pdf"));
     }
     @Test
-    public void testEditDocument_MissingFile() throws Exception {
+    void testEditDocument_MissingFile() throws Exception {
         mockMvc.perform(multipart("/doc/edit-request/{documentId}", "bd7ef7cf-8875-45fb-9fe5-f36319acddff")
                         .header("Authorization", VALID_TOKEN))  // File not provided
                 .andExpect(status().isBadRequest());

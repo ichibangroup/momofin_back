@@ -1,7 +1,6 @@
 package ppl.momofin.momofinbackend.model;
 
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,9 +9,7 @@ import java.util.UUID;
 
 @Embeddable @Getter @Setter
 public class EditRequestKey implements Serializable {
-    @ManyToOne
-    private User user;
+    private UUID userId;
 
-    @ManyToOne
-    private Document document;
+    private UUID documentId;
 }

@@ -53,6 +53,7 @@ class DocumentServiceTest {
     private User mockUser;
     private String mockUsername;
     private Document document;
+    private UUID documentId;
 
     @BeforeEach
     void setUp() {
@@ -65,7 +66,9 @@ class DocumentServiceTest {
         mockUser.setOrganization(organization);
 
         document = new Document();
-        document.setDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
+        documentId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
+        document.setDocumentId(documentId);
+        document.setName("testfile.pdf");
     }
 
     @Test
@@ -168,7 +171,7 @@ class DocumentServiceTest {
     void verifySpecificDocumentNullFile() {
 
         assertThrows(IllegalArgumentException.class, () -> {
-            documentService.verifySpecificDocument(null, document.getDocumentId(), mockUsername);
+            documentService.verifySpecificDocument(null, documentId, mockUsername);
         });
     }
 
@@ -177,7 +180,7 @@ class DocumentServiceTest {
         mockFile = new MockMultipartFile("file", "empty.txt", "text/plain", new byte[0]);
 
         assertThrows(IllegalArgumentException.class, () -> {
-            documentService.verifySpecificDocument(mockFile, document.getDocumentId(), mockUsername);
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
         });
     }
 
@@ -186,7 +189,7 @@ class DocumentServiceTest {
         when(documentRepository.findById(document.getDocumentId())).thenReturn(Optional.empty());
 
         assertThrows(IllegalStateException.class, () -> {
-            documentService.verifySpecificDocument(mockFile, document.getDocumentId(), mockUsername);
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
         });
     }
 
@@ -234,7 +237,7 @@ class DocumentServiceTest {
         ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            documentService.verifySpecificDocument(testFile, document.getDocumentId(), mockUsername);
+            documentService.verifySpecificDocument(testFile, documentId, mockUsername);
         });
 
         assertEquals("You are not authorized to verify this document.", exception.getMessage());
@@ -255,7 +258,7 @@ class DocumentServiceTest {
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            documentService.verifySpecificDocument(mockFile, document.getDocumentId(), mockUsername);
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
         });
 
         assertEquals("You are not authorized to verify this document.", exception.getMessage());
@@ -283,7 +286,7 @@ class DocumentServiceTest {
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.of(mockUser));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            documentService.verifySpecificDocument(mockFile, document.getDocumentId(), mockUsername);
+            documentService.verifySpecificDocument(mockFile, documentId, mockUsername);
         });
 
         assertEquals("You are not authorized to verify this document.", exception.getMessage());
@@ -314,7 +317,7 @@ class DocumentServiceTest {
         MockMultipartFile testFile = new MockMultipartFile("file", "test.txt", "text/plain", "Test content".getBytes());
 
         assertThrows(IllegalArgumentException.class, () -> {
-            documentServiceSpy.verifySpecificDocument(testFile, document.getDocumentId(), mockUsername);
+            documentServiceSpy.verifySpecificDocument(testFile, documentId, mockUsername);
         });
     }
 
@@ -357,12 +360,7 @@ class DocumentServiceTest {
         // Arrange
         UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         String organizationName = "testorg";
-        String filename = "testfile.pdf";
         String expectedUrl = "https://cdn.example.com/signed-url";
-
-        Document document = new Document();
-        document.setDocumentId(document.getDocumentId());
-        document.setName(filename);
 
         when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.of(document));
         when(cdnService.getViewableUrl(document, userId, organizationName)).thenReturn(expectedUrl);
@@ -386,7 +384,7 @@ class DocumentServiceTest {
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                documentService.getViewableUrl(document.getDocumentId(), userId, organizationName));
+                documentService.getViewableUrl(documentId, userId, organizationName));
 
         assertEquals("Document with id " + document.getDocumentId() + " does not exist", exception.getMessage());
         verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
@@ -400,16 +398,12 @@ class DocumentServiceTest {
         String organizationName = "testorg";
         String filename = "testfile.pdf";
 
-        Document document = new Document();
-        document.setDocumentId(document.getDocumentId());
-        document.setName(filename);
-
         when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.of(document));
         when(cdnService.getViewableUrl(document, userId, organizationName)).thenThrow(new IOException("Failed to get URL"));
 
         // Act & Assert
         IOException exception = assertThrows(IOException.class, () ->
-                documentService.getViewableUrl(document.getDocumentId(), userId, organizationName));
+                documentService.getViewableUrl(documentId, userId, organizationName));
 
         assertEquals("Failed to get URL", exception.getMessage());
         verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
@@ -418,10 +412,9 @@ class DocumentServiceTest {
 
     @Test
     void fetchDocumentByIdSuccess() {
-        Document document = new Document();
         when(documentRepository.findByDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"))).thenReturn(Optional.of(document));
 
-        Document returnedDocument = documentService.fetchDocumentWithDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
+        Document returnedDocument = documentService.fetchDocumentWithDocumentId(documentId);
 
         assertEquals(document, returnedDocument);
     }
@@ -430,11 +423,11 @@ class DocumentServiceTest {
     void fetchDocumentByIdFailed() {
         when(documentRepository.findByDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"))).thenReturn(Optional.empty());
 
-        assertThrows(IllegalStateException.class, () -> documentService.fetchDocumentWithDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe")) );
+        assertThrows(IllegalStateException.class, () -> documentService.fetchDocumentWithDocumentId(documentId) );
     }
 
     @Test
-    public void testRequestEdit_Success() {
+    void testRequestEdit_Success() {
         // Mock the expected behavior
         EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
@@ -452,22 +445,23 @@ class DocumentServiceTest {
     }
 
     @Test
-    public void testRequestEdit_UserDoesNotExist() {
+    void testRequestEdit_UserDoesNotExist() {
         // Mock the expected behavior
         EditRequest editRequest = new EditRequest();
+        UUID documentId = document.getDocumentId();
         editRequest.setDocument(document);
         editRequest.setUser(mockUser);
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
 
         UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
-            documentService.requestEdit(document.getDocumentId(), mockUsername);
+            documentService.requestEdit(documentId, mockUsername);
         });
         String expectedErrorMessage = "User with username " + mockUsername + " not found";
         assertEquals(expectedErrorMessage, exception.getMessage());
     }
 
     @Test
-    public void testGetEditRequests_ReturnsRequestsForUser() {
+    void testGetEditRequests_ReturnsRequestsForUser() {
         // Set up sample edit requests
         EditRequest editRequest1 = new EditRequest();
         editRequest1.setDocument(document);
@@ -487,7 +481,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    public void testEditDocument_Success() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    void testEditDocument_Success() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
         editRequest.setUser(mockUser);
@@ -509,7 +503,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    public void testEditDocument_FileEmpty_ThrowsException() {
+    void testEditDocument_FileEmpty_ThrowsException() {
         // Set up an empty file and an EditRequest
         MockMultipartFile emptyFile = new MockMultipartFile("file", "", "application/pdf", new byte[0]);
         EditRequest editRequest = new EditRequest();
@@ -523,7 +517,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    public void testEditDocument_FileNull_ThrowsException() {
+    void testEditDocument_FileNull_ThrowsException() {
         EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
 
@@ -535,7 +529,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    public void testEditDocument_EditRequestNotExists_ThrowsException() {
+    void testEditDocument_EditRequestNotExists_ThrowsException() {
 
         EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
@@ -549,7 +543,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    public void testRejectEditRequest_Success() {
+    void testRejectEditRequest_Success() {
         // Set up EditRequest
         EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);

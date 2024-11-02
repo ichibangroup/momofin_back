@@ -30,6 +30,7 @@ public class DocumentServiceImpl implements DocumentService {
     private static final String ALGORITHM = "HmacSHA256";
 
     private static final String FILE_EMPTY_ERROR_MESSAGE = "File must not be null or empty";
+    private static final String NOT_FOUND = " not found";
 
     @Value("${hmac.secret.key}")
     private String secretKey;
@@ -59,7 +60,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (documentFound.isEmpty()) {
             Optional<User> owner = userRepository.findByUsername(username);
 
-            if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");
+            if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + NOT_FOUND);
 
             User user = owner.get();
             Document document = cdnService.submitDocument(file, user, hashString);
@@ -92,7 +93,7 @@ public class DocumentServiceImpl implements DocumentService {
         Optional<Document> documentOptional = documentRepository.findById(documentId);
 
         if (documentOptional.isEmpty()) {
-            throw new IllegalStateException("Document with ID " + documentId + " not found");
+            throw new IllegalStateException("Document with ID " + documentId + NOT_FOUND);
         }
 
         Document document = documentOptional.get();
@@ -163,7 +164,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public EditRequest requestEdit(UUID documentId, String username) {
         Optional<User> optionalUser = userRepository.findByUsername(username);
-        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");
+        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + NOT_FOUND);
         User user = optionalUser.get();
         EditRequest request = new EditRequest();
         Document document = new Document();
