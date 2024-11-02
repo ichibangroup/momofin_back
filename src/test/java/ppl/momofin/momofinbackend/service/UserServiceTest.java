@@ -242,12 +242,25 @@ class UserServiceTest {
 
     @Test
     void testFetchAllUsers() {
-        momofinUsers.addAll(otherOrganizationUsers);
-        when(userRepository.findAll()).thenReturn(momofinUsers);
+        // Setup test data ensuring each user has an ID that's not -1
+        momofinUsers.forEach(user -> user.setUserId(1L));  // Or use different IDs if needed
+        otherOrganizationUsers.forEach(user -> user.setUserId(2L));
+
+        List<User> allUsers = new ArrayList<>(momofinUsers);
+        allUsers.addAll(otherOrganizationUsers);
+
+        // Add the deleted user (ID -1) to verify it gets filtered out
+        User deletedUser = new User();
+        deletedUser.setUserId(-1L);
+        allUsers.add(deletedUser);
+
+        when(userRepository.findAll()).thenReturn(allUsers);
 
         List<User> fetchedUsers = userService.fetchAllUsers();
 
-        assertEquals(momofinUsers, fetchedUsers);
+        // Verify the result doesn't include the deleted user
+        assertEquals(momofinUsers.size() + otherOrganizationUsers.size(), fetchedUsers.size());
+        assertFalse(fetchedUsers.stream().anyMatch(user -> user.getUserId() == -1L));
         verify(userRepository, times(1)).findAll();
     }
 
