@@ -30,6 +30,7 @@ public class UserProfileController {
 
     @GetMapping("/profile/{userId}")
     public ResponseEntity<User> getUserProfile(@PathVariable String userId) {
+        userId = userId.replaceAll("[\n\r]", "_");
         logger.info("GET request received for user ID: {}", userId);
         try {
             User user = userService.getUserById(UUID.fromString(userId));
@@ -46,6 +47,8 @@ public class UserProfileController {
             @RequestBody User updatedUser,
             @RequestParam(required = false) String oldPassword,
             @RequestParam(required = false) String newPassword) {
+        userId = userId.replaceAll("[\n\r]", "_");
+
 
         logger.info("Received update request for user ID: {}", userId);
 
