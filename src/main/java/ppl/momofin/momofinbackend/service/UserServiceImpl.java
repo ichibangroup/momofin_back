@@ -142,7 +142,9 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public List<User> fetchAllUsers() {
-        return userRepository.findAll();
+        return userRepository.findAll().stream()
+                .filter(user -> !user.getUsername().equals("deleted_user"))
+                .toList();
     }
     @Override
     public User getUserById(UUID userId) {
