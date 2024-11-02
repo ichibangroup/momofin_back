@@ -396,7 +396,6 @@ class DocumentServiceTest {
         // Arrange
         UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         String organizationName = "testorg";
-        String filename = "testfile.pdf";
 
         when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.of(document));
         when(cdnService.getViewableUrl(document, userId, organizationName)).thenThrow(new IOException("Failed to get URL"));
@@ -448,7 +447,6 @@ class DocumentServiceTest {
     void testRequestEdit_UserDoesNotExist() {
         // Mock the expected behavior
         EditRequest editRequest = new EditRequest();
-        UUID documentId = document.getDocumentId();
         editRequest.setDocument(document);
         editRequest.setUser(mockUser);
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
