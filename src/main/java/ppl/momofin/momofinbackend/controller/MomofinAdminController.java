@@ -15,6 +15,7 @@ import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.request.AddOrganizationRequest;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/momofin-admin")
@@ -75,9 +76,9 @@ public class MomofinAdminController {
         );
     }
     @PutMapping("/organizations/{orgId}")
-    public ResponseEntity<OrganizationResponse> updateOrganization(@PathVariable Long orgId, @RequestBody AddOrganizationRequest request) {
+    public ResponseEntity<OrganizationResponse> updateOrganization(@PathVariable String orgId, @RequestBody AddOrganizationRequest request) {
         try {
-            Organization updatedOrganization = organizationService.updateOrganization(orgId, request.getName(), request.getDescription(), request.getIndustry(), request.getLocation());
+            Organization updatedOrganization = organizationService.updateOrganization(UUID.fromString(orgId), request.getName(), request.getDescription(), request.getIndustry(), request.getLocation());
             return ResponseEntity.ok(OrganizationResponse.fromOrganization(updatedOrganization));
         } catch (OrganizationNotFoundException e) {
             return ResponseEntity.notFound().build();

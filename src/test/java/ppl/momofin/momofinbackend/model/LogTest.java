@@ -3,6 +3,7 @@ package ppl.momofin.momofinbackend.model;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -11,7 +12,7 @@ class LogTest {
     @Test
     void testLogConstructor() {
         LocalDateTime timestamp = LocalDateTime.now();
-        Long userId = 1L;
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         String level = "INFO";
         String message = "User Login Successful";
         String logName = "/auth/login";
