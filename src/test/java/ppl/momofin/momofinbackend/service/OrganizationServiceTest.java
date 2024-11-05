@@ -28,7 +28,7 @@ class OrganizationServiceTest {
     private UserRepository userRepository;
 
     @InjectMocks
-    private OrganizationService organizationService;
+    private OrganizationServiceImpl organizationService;
 
     private Organization testOrg;
     private User testUser;
@@ -170,7 +170,7 @@ class OrganizationServiceTest {
         when(organizationRepository.findAll()).thenReturn(Collections.emptyList());
 
         // Act
-        OrganizationService newOrganizationService = new OrganizationService(organizationRepository, userRepository);
+        OrganizationService newOrganizationService = new OrganizationServiceImpl(organizationRepository, userRepository);
 
         // Assert
         assertNotNull(newOrganizationService);
