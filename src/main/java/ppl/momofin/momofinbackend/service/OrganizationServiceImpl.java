@@ -6,12 +6,15 @@ import org.springframework.transaction.annotation.Transactional;
 import ppl.momofin.momofinbackend.dto.UserDTO;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
+import ppl.momofin.momofinbackend.error.SecurityValidationException;
 import ppl.momofin.momofinbackend.error.UserDeletionException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
-
+import ppl.momofin.momofinbackend.security.SqlInjectionValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,15 +23,19 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     private final OrganizationRepository organizationRepository;
     private final UserRepository userRepository;
+    private final SqlInjectionValidator sqlInjectionValidator;
+    private static final Logger logger = LoggerFactory.getLogger(OrganizationServiceImpl.class);
 
     @Autowired
-    public OrganizationServiceImpl(OrganizationRepository organizationRepository, UserRepository userRepository) {
+    public OrganizationServiceImpl(OrganizationRepository organizationRepository, UserRepository userRepository, SqlInjectionValidator sqlInjectionValidator) {
         this.organizationRepository = organizationRepository;
         this.userRepository = userRepository;
+        this.sqlInjectionValidator = sqlInjectionValidator;
     }
 
     @Override
     public Organization updateOrganization(UUID orgId, String name, String description, String industry, String location) {
+        validateInputs(name, description, industry, location);
         if (orgId == null) {
             throw new InvalidOrganizationException("Organization ID cannot be null");
         }
@@ -89,6 +96,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     @Override
     public Organization createOrganization(String name, String description, String industry, String location) {
+        validateInputs(name, description, industry, location);
         if (name == null || name.trim().isEmpty()) {
             throw new InvalidOrganizationException("Organization name cannot be empty");
         }
@@ -119,5 +127,13 @@ public class OrganizationServiceImpl implements OrganizationService {
         }
 
         userRepository.delete(userToDelete);
+    }
+    private void validateInputs(String... inputs) {
+        for (String input : inputs) {
+            if (input != null && sqlInjectionValidator.containsSqlInjection(input)) {
+                logger.error("SQL injection attempt detected in input");
+                throw new SecurityValidationException("SQL injection detected in input");
+            }
+        }
     }
 }
