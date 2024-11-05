@@ -8,11 +8,13 @@ import org.mockito.MockitoAnnotations;
 import ppl.momofin.momofinbackend.dto.UserDTO;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
+import ppl.momofin.momofinbackend.error.SecurityValidationException;
 import ppl.momofin.momofinbackend.error.UserDeletionException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
+import ppl.momofin.momofinbackend.security.SqlInjectionValidator;
 
 import java.util.*;
 
@@ -26,6 +28,8 @@ class OrganizationServiceTest {
 
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private SqlInjectionValidator sqlInjectionValidator;
 
     @InjectMocks
     private OrganizationServiceImpl organizationService;
@@ -45,6 +49,8 @@ class OrganizationServiceTest {
         testOrg.setOrganizationId(organizationId);
         testUser = new User(testOrg, "testuser", "Test User", "test@example.com", "password", "Developer", false);
         testUserDTO = UserDTO.fromUser(testUser);
+
+        when(sqlInjectionValidator.containsSqlInjection(any())).thenReturn(false);
     }
 
     @Test
@@ -170,7 +176,11 @@ class OrganizationServiceTest {
         when(organizationRepository.findAll()).thenReturn(Collections.emptyList());
 
         // Act
-        OrganizationService newOrganizationService = new OrganizationServiceImpl(organizationRepository, userRepository);
+        OrganizationService newOrganizationService = new OrganizationServiceImpl(
+                organizationRepository,
+                userRepository,
+                sqlInjectionValidator
+        );
 
         // Assert
         assertNotNull(newOrganizationService);
@@ -380,6 +390,34 @@ class OrganizationServiceTest {
         // Execute & Verify
         assertThrows(UserDeletionException.class, () ->
                 organizationService.deleteUser(organizationId, userId, adminUser)
+        );
+    }
+    @Test
+    void validateInputs_WithSpecialCharacters() {
+        // Arrange
+        String nameWithSpecialChars = "John's Hardware & Tools";
+        Organization expectedOrg = new Organization(nameWithSpecialChars, "Description", "Retail", "NY");
+
+        when(sqlInjectionValidator.containsSqlInjection(any())).thenReturn(false);
+        when(organizationRepository.save(any(Organization.class))).thenReturn(expectedOrg);
+
+        // Act
+        Organization result = organizationService.createOrganization(
+                nameWithSpecialChars, "Description", "Retail", "NY");
+
+        // Assert
+        assertEquals(nameWithSpecialChars, result.getName());
+    }
+
+    @Test
+    void createOrganization_WithMultipleValidations() {
+        // Test that all fields are validated
+        when(sqlInjectionValidator.containsSqlInjection("name")).thenReturn(false);
+        when(sqlInjectionValidator.containsSqlInjection("description")).thenReturn(false);
+        when(sqlInjectionValidator.containsSqlInjection("MALICIOUS")).thenReturn(true);
+
+        assertThrows(SecurityValidationException.class, () ->
+                organizationService.createOrganization("name", "description", "MALICIOUS", "location")
         );
     }
 
