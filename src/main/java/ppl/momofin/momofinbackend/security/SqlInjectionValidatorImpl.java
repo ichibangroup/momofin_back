@@ -9,15 +9,22 @@ import java.util.regex.Pattern;
 public class SqlInjectionValidatorImpl implements SqlInjectionValidator {
     private static final Logger logger = LoggerFactory.getLogger(SqlInjectionValidatorImpl.class);
 
-    // Updated pattern to be more precise and allow apostrophes in business names
-    private static final Pattern SQL_INJECTION_PATTERN = Pattern.compile(
-            ".*((--)|(/\\*)|(%22)|(%27)|(%2F%2A)|(%23)|(%3B)|(;)).*"
+    // Define maximum input length to prevent ReDoS
+    private static final int MAX_INPUT_LENGTH = 1000;
+
+    // Split patterns for better control and security
+    private static final Pattern SQL_KEYWORDS_PATTERN = Pattern.compile(
+            "\\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|CREATE|ALTER|TRUNCATE|SCHEMA|GRANT|REVOKE)\\b(?!\\w)",
+            Pattern.CASE_INSENSITIVE
     );
 
-    private static final String[] SQL_KEYWORDS = {
-            "SELECT ", "INSERT ", "UPDATE ", "DELETE ", "DROP ", "UNION ",
-            "CREATE ", "ALTER ", "TRUNCATE ", " OR ", "WHERE "
-    };
+    private static final Pattern SQL_COMMENTS_PATTERN = Pattern.compile(
+            "(--.*)|(\\*/)|(^/\\*)|(/\\*$)"
+    );
+
+    private static final Pattern SQL_INJECTION_CHARS_PATTERN = Pattern.compile(
+            "(';)|(^--)|(%27)|(\\+27)|(%3B)|(;\\s*$)|('\\s+OR\\s+')"
+    );
 
     @Override
     public boolean containsSqlInjection(String input) {
@@ -25,19 +32,27 @@ public class SqlInjectionValidatorImpl implements SqlInjectionValidator {
             return false;
         }
 
-        String upperInput = " " + input.toUpperCase() + " ";
-
-        // Check for SQL keywords with word boundaries
-        for (String keyword : SQL_KEYWORDS) {
-            if (upperInput.contains(keyword.toUpperCase())) {
-                logger.warn("SQL injection attempt detected with keyword: {}", keyword.trim());
-                return true;
-            }
+        // Prevent ReDoS with length check
+        if (input.length() > MAX_INPUT_LENGTH) {
+            logger.warn("Input exceeds maximum length");
+            return true;
         }
 
-        // Check for SQL injection patterns
-        if (SQL_INJECTION_PATTERN.matcher(input).matches()) {
-            logger.warn("SQL injection attempt detected with pattern matching");
+        // Check for SQL keywords with proper word boundaries
+        if (SQL_KEYWORDS_PATTERN.matcher(input).find()) {
+            logger.warn("SQL injection attempt detected: SQL keyword found");
+            return true;
+        }
+
+        // Check for SQL comments (but allow # in addresses)
+        if (SQL_COMMENTS_PATTERN.matcher(input).find()) {
+            logger.warn("SQL injection attempt detected: Comment pattern found");
+            return true;
+        }
+
+        // Check for SQL injection character sequences
+        if (SQL_INJECTION_CHARS_PATTERN.matcher(input).find()) {
+            logger.warn("SQL injection attempt detected: Suspicious character sequence found");
             return true;
         }
 
