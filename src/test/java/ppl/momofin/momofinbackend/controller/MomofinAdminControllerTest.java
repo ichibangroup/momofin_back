@@ -7,11 +7,13 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
 import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.request.AddOrganizationRequest;
 import ppl.momofin.momofinbackend.response.FetchAllUserResponse;
 import ppl.momofin.momofinbackend.service.OrganizationService;
@@ -33,6 +35,8 @@ class MomofinAdminControllerTest {
 
     @Mock
     private UserService userService;
+    @Mock
+    private OrganizationRepository organizationRepository;
 
     @InjectMocks
     private MomofinAdminController momofinAdminController;
@@ -40,6 +44,7 @@ class MomofinAdminControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        ReflectionTestUtils.setField(momofinAdminController, "organizationRepository", organizationRepository);
     }
 
     @Test
@@ -145,45 +150,35 @@ class MomofinAdminControllerTest {
         // Arrange
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("New Org");
-        request.setDescription("Description");
-        request.setIndustry("Industry");
-        request.setLocation("Location");
-        request.setAdminUsername("existingAdmin");
-        request.setAdminPassword("password");
+        Organization org = new Organization();
 
-        when(organizationService.createOrganization(anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(new Organization("New Org", "Description"));
-        when(userService.registerOrganizationAdmin(any(), anyString(), anyString(), any(), anyString(), any()))
+        when(organizationService.createOrganization(any(), any(), any(), any()))
+                .thenReturn(org);
+        when(userService.registerOrganizationAdmin(eq(org), any(), any(), any(), any(), any()))
                 .thenThrow(new UserAlreadyExistsException("Admin user already exists"));
 
         // Act
         ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
 
         // Assert
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
-        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("Admin user already exists", response.getBody().getErrorMessage());
+        verify(organizationRepository).delete(org);
     }
 
     @Test
     void addOrganization_shouldReturnErrorResponse_whenUnexpectedException() {
         // Arrange
         AddOrganizationRequest request = new AddOrganizationRequest();
-        request.setName("New Org");
-        request.setDescription("Description");
-        request.setIndustry("Industry");
-        request.setLocation("Location");
-
-        when(organizationService.createOrganization(anyString(), anyString(), anyString(), anyString()))
+        when(organizationService.createOrganization(any(), any(), any(), any()))
                 .thenThrow(new RuntimeException("Unexpected error"));
 
         // Act
         ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
 
         // Assert
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode().value());
-        assertNotNull(response.getBody());
-        assertEquals("An unexpected error occurred", response.getBody().getErrorMessage());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("An unexpected error occurred: Unexpected error", response.getBody().getErrorMessage());
     }
 
     @Test
