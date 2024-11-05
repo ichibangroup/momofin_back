@@ -27,6 +27,7 @@ import ppl.momofin.momofinbackend.security.JwtUtil;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,7 +65,7 @@ class AuthControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         mockUser = new User();
-        mockUser.setUserId(1L);
+        mockUser.setUserId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
         mockUser.setName("test User real name");
         mockUser.setEmail("test.user@gmail.com");
         mockUser.setPosition("Tester");

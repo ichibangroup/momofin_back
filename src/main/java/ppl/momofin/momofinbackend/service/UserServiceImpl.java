@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -74,7 +75,7 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public User updateUser(Long userId, User updatedUser, String oldPassword, String newPassword) {
+    public User updateUser(UUID userId, User updatedUser, String oldPassword, String newPassword) {
         User existingUser = getUserById(userId);
         logger.info("Updating user with ID: {}", userId);
 
@@ -141,10 +142,12 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public List<User> fetchAllUsers() {
-        return userRepository.findAll();
+        return userRepository.findAll().stream()
+                .filter(user -> !user.getUsername().equals("deleted_user"))
+                .toList();
     }
     @Override
-    public User getUserById(Long userId) {
+    public User getUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
     }

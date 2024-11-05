@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.impl.DefaultClaims;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.EditRequest;
+import ppl.momofin.momofinbackend.request.EditRequestRequest;
 import ppl.momofin.momofinbackend.security.JwtUtil;
 import ppl.momofin.momofinbackend.service.DocumentService;
 import ppl.momofin.momofinbackend.model.User;
@@ -25,6 +28,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import java.util.Collections;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -48,6 +52,9 @@ class DocumentVerificationControllerTest {
     @MockBean
     private UserService userService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private static final String VALID_TOKEN = "Bearer validToken";
     private static final String INVALID_TOKEN = "Bearer invalidToken";
     private static final String TEST_USERNAME = "testUser";
@@ -57,7 +64,9 @@ class DocumentVerificationControllerTest {
     void setUp() {
         when(jwtUtil.validateToken("validToken", TEST_USERNAME)).thenReturn(true);
         when(jwtUtil.extractUsername("validToken")).thenReturn(TEST_USERNAME);
+        when(jwtUtil.extractUserId("validToken")).thenReturn("292aeace-0148-4a20-98bf-bf7f12871efe");
         Claims claims = new DefaultClaims();
+        TEST_USER.setUserId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
         claims.put("roles", Collections.singletonList("ROLE_USER"));
         when(jwtUtil.extractAllClaims("validToken")).thenReturn(claims);
     }
@@ -110,7 +119,7 @@ class DocumentVerificationControllerTest {
     void verifyDocument_Success() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
         Document document = new Document();
-        document.setDocumentId(1L);
+        document.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
         document.setName("test.txt");
         document.setHashString("hash123");
         when(documentService.verifyDocument(any(), eq(TEST_USERNAME))).thenReturn(document);
@@ -119,7 +128,7 @@ class DocumentVerificationControllerTest {
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.document.documentId").value(document.getDocumentId()))
+                .andExpect(jsonPath("$.document.documentId").value(document.getDocumentId().toString()))
                 .andExpect(jsonPath("$.document.hashString").value("hash123"))
                 .andExpect(jsonPath("$.document.name").value("test.txt"));
 
@@ -145,21 +154,21 @@ class DocumentVerificationControllerTest {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
 
         Document document = new Document();
-        document.setDocumentId(1L);
+        document.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
         document.setName("test.txt");
         document.setHashString("expectedHash");
 
-        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenReturn(document);
+        when(documentService.verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any())).thenReturn(document);
 
-        mockMvc.perform(multipart("/doc/verify/1")
+        mockMvc.perform(multipart("/doc/verify/bd7ef7cf-8875-45fb-9fe5-f36319acddff")
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.document.documentId").value(document.getDocumentId()))
+                .andExpect(jsonPath("$.document.documentId").value(document.getDocumentId().toString()))
                 .andExpect(jsonPath("$.document.name").value(document.getName()))
                 .andExpect(jsonPath("$.document.hashString").value(document.getHashString()));
 
-        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+        verify(documentService).verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any());
     }
 
 
@@ -168,60 +177,60 @@ class DocumentVerificationControllerTest {
     void verifySpecifiedDocument_NotFound() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
 
-        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenThrow(new IllegalStateException("Document with ID 1 not found"));
+        when(documentService.verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any())).thenThrow(new IllegalStateException("Document with ID bd7ef7cf-8875-45fb-9fe5-f36319acddff not found"));
 
-        mockMvc.perform(multipart("/doc/verify/1")
+        mockMvc.perform(multipart("/doc/verify/bd7ef7cf-8875-45fb-9fe5-f36319acddff")
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.errorMessage").value("Document with ID 1 not found"));
+                .andExpect(jsonPath("$.errorMessage").value("Document with ID bd7ef7cf-8875-45fb-9fe5-f36319acddff not found"));
 
-        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+        verify(documentService).verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any());
     }
 
     @Test
     void verifySpecifiedDocument_IOException() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
 
-        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenThrow(new IOException("I/O error occurred"));
+        when(documentService.verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any())).thenThrow(new IOException("I/O error occurred"));
 
-        mockMvc.perform(multipart("/doc/verify/1")
+        mockMvc.perform(multipart("/doc/verify/bd7ef7cf-8875-45fb-9fe5-f36319acddff")
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorMessage").value("Verification failed: I/O error occurred"));
 
-        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+        verify(documentService).verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any());
     }
 
     @Test
     void verifySpecifiedDocument_NoSuchAlgorithmException() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
 
-        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenThrow(new NoSuchAlgorithmException("Algorithm not found"));
+        when(documentService.verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any())).thenThrow(new NoSuchAlgorithmException("Algorithm not found"));
 
-        mockMvc.perform(multipart("/doc/verify/1")
+        mockMvc.perform(multipart("/doc/verify/bd7ef7cf-8875-45fb-9fe5-f36319acddff")
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorMessage").value("Verification failed: Algorithm not found"));
 
-        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+        verify(documentService).verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any());
     }
 
     @Test
     void verifySpecifiedDocument_InvalidKeyException() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
 
-        when(documentService.verifySpecificDocument(any(), eq(1L), any())).thenThrow(new InvalidKeyException("Invalid key error"));
+        when(documentService.verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any())).thenThrow(new InvalidKeyException("Invalid key error"));
 
-        mockMvc.perform(multipart("/doc/verify/1")
+        mockMvc.perform(multipart("/doc/verify/bd7ef7cf-8875-45fb-9fe5-f36319acddff")
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorMessage").value("Verification failed: Invalid key error"));
 
-        verify(documentService).verifySpecificDocument(any(), eq(1L), any());
+        verify(documentService).verifySpecificDocument(any(), eq(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff")), any());
     }
 
 
@@ -262,52 +271,117 @@ class DocumentVerificationControllerTest {
     @Test
     void getViewableUrl_Success_ReturnsOkResponse() throws Exception {
         // Arrange
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
         String organizationName = "testorg";
         String viewableUrl = "https://cdn.example.com/document-url";
 
         when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
-        when(documentService.getViewableUrl(documentId, TEST_USERNAME, organizationName)).thenReturn(viewableUrl);
+        when(documentService.getViewableUrl(documentId, UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"), organizationName)).thenReturn(viewableUrl);
 
-        mockMvc.perform(get("/doc/view/1")
+        mockMvc.perform(get("/doc/view/bd7ef7cf-8875-45fb-9fe5-f36319acddff")
                 .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.url").value(viewableUrl));
 
-        verify(jwtUtil, times(2)).extractUsername("validToken");
+        verify(jwtUtil, times(1)).extractUserId("validToken");
         verify(jwtUtil, times(1)).extractOrganizationName("validToken");
-        verify(documentService, times(1)).getViewableUrl(documentId, TEST_USERNAME, organizationName);
+        verify(documentService, times(1)).getViewableUrl(documentId, UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"), organizationName);
     }
 
     @Test
     void getViewableUrl_DocumentServiceThrowsIOException_ReturnsBadRequest() throws Exception {
         // Arrange
-        Long documentId = 1L;
+        UUID documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
         String organizationName = "testorg";
 
         when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
-        when(documentService.getViewableUrl(documentId, TEST_USERNAME, organizationName)).thenThrow(new IOException("File not found: test.txt"));
+        when(documentService.getViewableUrl(documentId, UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"), organizationName)).thenThrow(new IOException("File not found: test.txt"));
 
-        mockMvc.perform(get("/doc/view/1")
+        mockMvc.perform(get("/doc/view/bd7ef7cf-8875-45fb-9fe5-f36319acddff")
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorMessage").value("Error retrieving document: File not found: test.txt"));
 
-        verify(jwtUtil, times(2)).extractUsername("validToken");
+        verify(jwtUtil, times(1)).extractUserId("validToken");
         verify(jwtUtil, times(1)).extractOrganizationName("validToken");
-        verify(documentService, times(1)).getViewableUrl(documentId, TEST_USERNAME, organizationName);
+        verify(documentService, times(1)).getViewableUrl(documentId, UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"), organizationName);
     }
 
     @Test
     void getDocumentToBeVerifiedTest() throws Exception {
         Document document = new Document("hashString", "documentName");
 
-        when(documentService.fetchDocumentWithDocumentId(123L)).thenReturn(document);
+        when(documentService.fetchDocumentWithDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))).thenReturn(document);
 
-        mockMvc.perform(get("/doc/verify/123")
+        mockMvc.perform(get("/doc/verify/bd7ef7cf-8875-45fb-9fe5-f36319acddff")
                 .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.hashString").value("hashString"))
                 .andExpect(jsonPath("$.name").value("documentName"));
+    }
+
+    @Test
+    void testRequestEdit_Success() throws Exception {
+        Document document = new Document();
+        document.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
+        EditRequest editRequest = new EditRequest(TEST_USER, document);
+        EditRequestRequest request = new EditRequestRequest();
+        request.setUsername("Bertrum");
+        when(documentService.requestEdit(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"), "Bertrum")).thenReturn(editRequest);
+
+        mockMvc.perform(post("/doc/bd7ef7cf-8875-45fb-9fe5-f36319acddff/request-edit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.document.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
+                .andExpect(jsonPath("$.user.userId").value("292aeace-0148-4a20-98bf-bf7f12871efe"));
+
+        verify(documentService).requestEdit(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"), "Bertrum");
+    }
+
+    @Test
+    void testGetRequests_Success() throws Exception {
+        Document document = new Document();
+        document.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
+
+        EditRequest editRequest = new EditRequest(TEST_USER, document);
+        List<EditRequest> editRequests = List.of(editRequest);
+
+        when(documentService.getEditRequests(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"))).thenReturn(editRequests);
+
+        mockMvc.perform(get("/doc/edit-request")
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
+                .andExpect(jsonPath("$[0].id.userId").value("292aeace-0148-4a20-98bf-bf7f12871efe"));
+
+        verify(documentService).getEditRequests(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
+    }
+
+    @Test
+    void testEditDocument_Success() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+
+        // Mock the Document returned after editing
+        Document editedDocument = new Document();
+        editedDocument.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
+        editedDocument.setName("test-document.pdf");
+
+        when(documentService.editDocument(eq(file), any(EditRequest.class)))
+                .thenReturn(editedDocument);
+
+        mockMvc.perform(multipart("/doc/edit-request/{documentId}", "bd7ef7cf-8875-45fb-9fe5-f36319acddff")
+                        .file(file)
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
+                .andExpect(jsonPath("$.name").value("test-document.pdf"));
+    }
+    @Test
+    void testEditDocument_MissingFile() throws Exception {
+        mockMvc.perform(multipart("/doc/edit-request/{documentId}", "bd7ef7cf-8875-45fb-9fe5-f36319acddff")
+                        .header("Authorization", VALID_TOKEN))  // File not provided
+                .andExpect(status().isBadRequest());
     }
 }

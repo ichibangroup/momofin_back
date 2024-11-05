@@ -1,6 +1,9 @@
 package ppl.momofin.momofinbackend.model;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class OrganizationTest {
@@ -23,7 +26,7 @@ class OrganizationTest {
 
     @Test
     void testGetSetOrganizationId() {
-        Long organizationId = 1L;
+        UUID organizationId = UUID.fromString("ebe2e5c8-1434-4f91-a5f5-da690db03a6a");
         Organization organization = new Organization();
         organization.setOrganizationId(organizationId);
         assertEquals(organizationId, organization.getOrganizationId());

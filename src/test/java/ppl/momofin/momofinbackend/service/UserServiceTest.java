@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,6 +48,7 @@ class UserServiceTest {
     private List<User> momofinUsers;
     private List<User> otherOrganizationUsers;
     private User initialUser;
+    private UUID userId;
 
     @BeforeEach
     void setup() {
@@ -69,7 +71,8 @@ class UserServiceTest {
         otherOrganizationUsers.add(user5);
 
         initialUser = new User();
-        initialUser.setUserId(1L);
+        userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
+        initialUser.setUserId(userId);
         initialUser.setEmail("old@example.com");
         initialUser.setUsername("oldUsername");
         initialUser.setPassword("encodedOldPassword");
@@ -239,18 +242,29 @@ class UserServiceTest {
 
     @Test
     void testFetchAllUsers() {
-        momofinUsers.addAll(otherOrganizationUsers);
-        when(userRepository.findAll()).thenReturn(momofinUsers);
+        // Setup test data ensuring each user has an ID that's not -1
+        momofinUsers.forEach(user -> user.setUserId(userId));  // Or use different IDs if needed
+
+        List<User> allUsers = new ArrayList<>(momofinUsers);
+        allUsers.addAll(otherOrganizationUsers);
+
+        // Add the deleted user (ID -1) to verify it gets filtered out
+        User deletedUser = new User();
+        deletedUser.setUsername("deleted_user");
+        allUsers.add(deletedUser);
+
+        when(userRepository.findAll()).thenReturn(allUsers);
 
         List<User> fetchedUsers = userService.fetchAllUsers();
 
-        assertEquals(momofinUsers, fetchedUsers);
+        // Verify the result doesn't include the deleted user
+        assertEquals(momofinUsers.size() + otherOrganizationUsers.size(), fetchedUsers.size());
+        assertFalse(fetchedUsers.stream().anyMatch(user -> user.getUsername().equals("deleted_user")));
         verify(userRepository, times(1)).findAll();
     }
 
     @Test
     void getUserById_ReturnsUser_WhenUserExists() {
-        Long userId = 1L;
         User mockUser = new User();
         mockUser.setUserId(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(mockUser));
@@ -262,7 +276,6 @@ class UserServiceTest {
 
     @Test
     void getUserById_ThrowsException_WhenUserDoesNotExist() {
-        Long userId = 1L;
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> userService.getUserById(userId));
@@ -270,7 +283,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatesUsername() {
-        Long userId = 1L;
         String newUsername = "NewUsername";
 
         User userUnderTest = new User();
@@ -289,7 +301,6 @@ class UserServiceTest {
     }
     @Test
     void updateUser_UpdatesEmail() {
-        Long userId = 1L;
         String newEmail = "new@example.com";
 
         User userUnderTest = new User();
@@ -309,7 +320,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatesName() {
-        Long userId = 1L;
         String newName = "New Name";
 
         User userUnderTest = new User();
@@ -329,7 +339,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatesPosition() {
-        Long userId = 1L;
         String newPosition = "New Position";
 
         User userUnderTest = new User();
@@ -349,7 +358,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_SuccessfulPasswordUpdate() {
-        Long userId = 1L;
         String oldPassword = "VeryPowrfulPassword.com";
         String newPassword = "NewStrongPassword123";
 
@@ -370,7 +378,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordIsNullOrEmpty_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(initialUser));
@@ -384,25 +391,24 @@ class UserServiceTest {
     @Test
     void updateUser_InvalidOldPassword_ThrowsInvalidPasswordException() {
         User updatedUser = new User();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(initialUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(initialUser));
         when(passwordEncoder.matches("wrongPassword", "encodedOldPassword")).thenReturn(false);
 
         assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(1L, updatedUser, "wrongPassword", "newPassword"));
+                () -> userService.updateUser(userId, updatedUser, "wrongPassword", "newPassword"));
     }
 
     @Test
     void updateUser_NewPasswordWithoutOldPassword_ThrowsInvalidPasswordException() {
         User updatedUser = new User();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(initialUser));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(initialUser));
 
         assertThrows(InvalidPasswordException.class,
-                () -> userService.updateUser(1L, updatedUser, null, "newPassword"));
+                () -> userService.updateUser(userId, updatedUser, null, "newPassword"));
     }
 
     @Test
     void updateUser_NoPasswordChange_UpdatesOtherFields() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         updatedUser.setEmail("new@example.com");
@@ -427,7 +433,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_OldPasswordProvidedNewPasswordNull_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
 
@@ -440,7 +445,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatesAllFields() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         updatedUser.setEmail("new@example.com");
@@ -536,7 +540,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_OnlyUsernameProvided() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
 
@@ -560,7 +563,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_OnlyEmailProvided() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setEmail("new@example.com");
 
@@ -584,7 +586,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_OnlyNameProvided() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setName("New Name");
 
@@ -607,7 +608,6 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OnlyPositionProvided() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setPosition("New Position");
 
@@ -631,7 +631,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_NoFieldsProvided_NoChanges() {
-        Long userId = 1L;
         User updatedUser = new User();
 
         User userUnderTest = new User();
@@ -654,7 +653,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_PasswordChangeWithoutOtherFields() {
-        Long userId = 1L;
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
         String newPassword = "NewPassword123";
@@ -676,7 +674,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_NullFields() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setUsername(null);
         updatedUser.setEmail(null);
@@ -702,7 +699,6 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OnlyOldPasswordProvided_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
 
@@ -723,7 +719,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_EmptyFieldsProvided() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setUsername("");
         updatedUser.setEmail("");
@@ -750,7 +745,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordProvidedWithEmptyOldPassword_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User(); // Empty user object
         String oldPassword = ""; // Empty string instead of null
         String newPassword = "NewPassword123";
@@ -773,7 +767,6 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OnlyPasswordUpdate_SuccessfulUpdate() {
-        Long userId = 1L;
         User updatedUser = new User(); // No fields set
         String oldPassword = "OldPassword123";
         String newPassword = "NewPassword123";
@@ -809,7 +802,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordWithEmptyOldPassword_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User(); // No fields set
         String newPassword = "NewPassword123";
         String oldPassword = ""; // Empty string instead of null
@@ -836,7 +828,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordProvidedOldPasswordNullUpdatedUserNull_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = null; // Set updatedUser to null
         String oldPassword = null;
         String newPassword = "NewPassword123";
@@ -859,7 +850,6 @@ class UserServiceTest {
     }
     @Test
     void updateUser_NewPasswordProvidedWithoutOldPassword_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User(); // Empty user object
         String oldPassword = null; // Explicitly set to null
         String newPassword = "NewPassword123";
@@ -883,7 +873,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordProvidedWithoutOldPasswordAllFieldsNull_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setUsername(null);
         updatedUser.setEmail(null);
@@ -914,7 +903,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_NoChanges_StillSavesUser() {
-        Long userId = 1L;
         User updatedUser = new User(); // Empty user object
         String oldPassword = null;
         String newPassword = null;
@@ -946,7 +934,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_NewPasswordEdgeCases() {
-        Long userId = 1L;
         User updatedUser = new User();
         User userUnderTest = new User();
         userUnderTest.setUserId(userId);
@@ -981,7 +968,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_UpdatedUserNull_NoChanges() {
-        Long userId = 1L;
         User updatedUser = null;
         String oldPassword = null;
         String newPassword = null;
@@ -1003,7 +989,6 @@ class UserServiceTest {
     }
     @Test
     void updateUser_UnrecognizedField_NoChange() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         updatedUser.setEmail("new@email.com");
@@ -1062,7 +1047,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_OldPasswordNullNewPasswordProvided_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User();
         String oldPassword = null;
         String newPassword = "NewPassword123";
@@ -1084,7 +1068,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_OldPasswordProvidedNewPasswordProvided_SuccessfulPasswordChange() {
-        Long userId = 1L;
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
         String newPassword = "NewPassword123";
@@ -1109,7 +1092,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_OldPasswordProvidedNewPasswordEmpty_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User();
         String oldPassword = "OldPassword123";
         String newPassword = "";
@@ -1133,7 +1115,6 @@ class UserServiceTest {
 
     @Test
     void updateUser_BothPasswordsNullOrEmpty_NoPasswordChange() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         String oldPassword = null;
@@ -1156,7 +1137,6 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OldPasswordNotNullButEmpty_NoPasswordChange() {
-        Long userId = 1L;
         User updatedUser = new User();
         updatedUser.setUsername("newUsername");
         String oldPassword = ""; // Not null, but empty
@@ -1179,7 +1159,6 @@ class UserServiceTest {
     }
     @Test
     void updateUser_OldPasswordNotNullButEmpty_ThrowsInvalidPasswordException() {
-        Long userId = 1L;
         User updatedUser = new User();
         String oldPassword =
                 ""; // Not null, but empty

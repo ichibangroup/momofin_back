@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -93,9 +95,16 @@ class AuditTrailControllerTest {
 
         User mockUser = new User();
         mockUser.setUsername("dummyuser");
+    private static List<AuditTrail> getAuditTrails() {
+        User testuser = new User();
+        testuser.setUserId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
+        testuser.setUsername("tester");
 
         Document mockDoc = new Document();
         mockDoc.setName("dummydoc");
+        Document testdoc = new Document();
+        testdoc.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
+        testdoc.setName("testdoc");
 
         AuditTrail auditTrail = new AuditTrail();
         auditTrail.setId(1L);

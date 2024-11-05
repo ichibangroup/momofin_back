@@ -7,10 +7,11 @@ import ppl.momofin.momofinbackend.model.User;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface DocumentRepository extends JpaRepository<Document, Long> {
+public interface DocumentRepository extends JpaRepository<Document, UUID> {
     Optional<Document> findByHashString(String hashString);
-    Optional<Document> findByDocumentId(Long documentId);
+    Optional<Document> findByDocumentId(UUID documentId);
     List<Document> findAllByOwner(User user);
 }
