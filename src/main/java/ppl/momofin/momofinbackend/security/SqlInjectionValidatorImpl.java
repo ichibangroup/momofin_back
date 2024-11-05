@@ -4,17 +4,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import java.util.regex.Pattern;
+
 @Component
 public class SqlInjectionValidatorImpl implements SqlInjectionValidator {
     private static final Logger logger = LoggerFactory.getLogger(SqlInjectionValidatorImpl.class);
 
+    // Updated pattern to be more precise and allow apostrophes in business names
     private static final Pattern SQL_INJECTION_PATTERN = Pattern.compile(
-            ".*([';]|(--)|(/\\*)|(\"|%22)|(%27)|(%2F%2A)|(#)|(%23)|(%3B)).*"
+            ".*((--)|(/\\*)|(%22)|(%27)|(%2F%2A)|(%23)|(%3B)|(;)).*"
     );
 
     private static final String[] SQL_KEYWORDS = {
-            "SELECT", "INSERT", "UPDATE", "DELETE", "DROP", "UNION",
-            "CREATE", "ALTER", "TRUNCATE"
+            "SELECT ", "INSERT ", "UPDATE ", "DELETE ", "DROP ", "UNION ",
+            "CREATE ", "ALTER ", "TRUNCATE ", " OR ", "WHERE "
     };
 
     @Override
@@ -23,12 +25,12 @@ public class SqlInjectionValidatorImpl implements SqlInjectionValidator {
             return false;
         }
 
-        String upperInput = input.toUpperCase();
+        String upperInput = " " + input.toUpperCase() + " ";
 
-        // Check for SQL keywords
+        // Check for SQL keywords with word boundaries
         for (String keyword : SQL_KEYWORDS) {
-            if (upperInput.contains(keyword)) {
-                logger.warn("SQL injection attempt detected with keyword: {}", keyword);
+            if (upperInput.contains(keyword.toUpperCase())) {
+                logger.warn("SQL injection attempt detected with keyword: {}", keyword.trim());
                 return true;
             }
         }

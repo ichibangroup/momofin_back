@@ -1,5 +1,24 @@
 package ppl.momofin.momofinbackend.security;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import ppl.momofin.momofinbackend.error.SecurityValidationException;
+import ppl.momofin.momofinbackend.model.Organization;
+import ppl.momofin.momofinbackend.repository.OrganizationRepository;
+import ppl.momofin.momofinbackend.repository.UserRepository;
+import ppl.momofin.momofinbackend.service.OrganizationServiceImpl;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 class SqlInjectionPreventionTest {
     @Mock
@@ -16,40 +35,32 @@ class SqlInjectionPreventionTest {
 
     private UUID orgId;
     private Organization testOrg;
-    private User testAdmin;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         orgId = UUID.randomUUID();
-
-        // Setup test organization
         testOrg = new Organization("Test Org", "Test Description", "Test Industry", "Test Location");
         testOrg.setOrganizationId(orgId);
-
-        // Setup test admin
-        testAdmin = new User(testOrg, "admin", "Admin User", "admin@test.com", "password", "Admin", true);
     }
 
     @Test
     void createOrganization_WithSqlInjection_ShouldThrowException() {
         // Arrange
         String maliciousName = "company'; DROP TABLE users;--";
-        String maliciousDescription = "description'; DELETE FROM organizations;--";
 
+        // Only stub the first check since it will throw immediately
         when(sqlInjectionValidator.containsSqlInjection(maliciousName)).thenReturn(true);
-        when(sqlInjectionValidator.containsSqlInjection(maliciousDescription)).thenReturn(true);
 
         // Act & Assert
         SecurityValidationException exception = assertThrows(SecurityValidationException.class, () ->
-                organizationService.createOrganization(maliciousName, maliciousDescription, "Tech", "NY")
+                organizationService.createOrganization(maliciousName, "description", "Tech", "NY")
         );
         assertEquals("SQL injection detected in input", exception.getMessage());
     }
 
     @Test
     void createOrganization_WithValidInput_ShouldSucceed() {
-        // This test ensures normal organization creation still works
+        // Arrange
         String validName = "Tech Company Inc";
         String validDescription = "A good company";
         Organization expectedOrg = new Organization(validName, validDescription, "Tech", "NY");
@@ -57,21 +68,45 @@ class SqlInjectionPreventionTest {
         when(sqlInjectionValidator.containsSqlInjection(any())).thenReturn(false);
         when(organizationRepository.save(any(Organization.class))).thenReturn(expectedOrg);
 
+        // Act
         Organization result = organizationService.createOrganization(validName, validDescription, "Tech", "NY");
 
+        // Assert
         assertNotNull(result);
         assertEquals(validName, result.getName());
     }
 
     @Test
     void updateOrganization_WithSqlInjection_ShouldThrowException() {
-        // This test verifies that malicious updates are caught
+        // Arrange
         String maliciousName = "company'; TRUNCATE TABLE users;--";
 
+        // Only stub the first check since it will throw immediately
         when(sqlInjectionValidator.containsSqlInjection(maliciousName)).thenReturn(true);
 
-        assertThrows(SecurityValidationException.class, () ->
+        // Act & Assert
+        SecurityValidationException exception = assertThrows(SecurityValidationException.class, () ->
                 organizationService.updateOrganization(orgId, maliciousName, "description", "Tech", "NY")
         );
+        assertEquals("SQL injection detected in input", exception.getMessage());
+    }
+
+    @Test
+    void updateOrganization_WithValidInput_ShouldSucceed() {
+        // Arrange
+        String validName = "Updated Tech Corp";
+        Organization updatedOrg = new Organization(validName, "New Desc", "Tech", "NY");
+        updatedOrg.setOrganizationId(orgId);
+
+        when(sqlInjectionValidator.containsSqlInjection(any())).thenReturn(false);
+        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(testOrg));
+        when(organizationRepository.save(any(Organization.class))).thenReturn(updatedOrg);
+
+        // Act
+        Organization result = organizationService.updateOrganization(orgId, validName, "New Desc", "Tech", "NY");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(validName, result.getName());
     }
 }
