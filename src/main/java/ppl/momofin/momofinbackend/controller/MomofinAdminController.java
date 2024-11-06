@@ -28,13 +28,15 @@ public class MomofinAdminController {
 
     private final OrganizationService organizationService;
     private final UserService userService;
-    @Autowired
-    private OrganizationRepository organizationRepository;
+    private final OrganizationRepository organizationRepository;
 
     @Autowired
-    public MomofinAdminController(OrganizationService organizationService, UserService userService) {
+    public MomofinAdminController(OrganizationService organizationService,
+                                  UserService userService,
+                                  OrganizationRepository organizationRepository) {
         this.organizationService = organizationService;
         this.userService = userService;
+        this.organizationRepository = organizationRepository;
     }
 
     @GetMapping("/organizations")
@@ -60,17 +62,8 @@ public class MomofinAdminController {
     public ResponseEntity<OrganizationResponse> addOrganization(@RequestBody AddOrganizationRequest request) {
         try {
             Organization newOrganization = createOrganization(request);
-            try {
-                createOrganizationAdmin(newOrganization, request);
-                logger.info("Admin created successfully for organization: {}", newOrganization.getName());
-            } catch (Exception e) {
-                logger.error("Failed to create admin, rolling back organization creation. Error: {}", e.getMessage());
-                organizationRepository.delete(newOrganization);
-                throw e;
-            }
-
+            createOrganizationWithAdmin(newOrganization, request);
             return ResponseEntity.ok(OrganizationResponse.fromOrganization(newOrganization));
-
         } catch (SecurityValidationException e) {
             logger.warn("Security validation failed: {}", e.getMessage());
             return ResponseEntity.badRequest().body(
@@ -88,9 +81,24 @@ public class MomofinAdminController {
             );
         }
     }
+    private void createOrganizationWithAdmin(Organization organization, AddOrganizationRequest request) {
+        try {
+            createOrganizationAdmin(organization, request);
+            logger.info("Admin created successfully for organization: {}", organization.getName());
+        } catch (Exception e) {
+            logger.error("Failed to create admin, rolling back organization creation. Error: {}", e.getMessage());
+            organizationRepository.delete(organization);
+            throw e;
+        }
+    }
 
     private Organization createOrganization(AddOrganizationRequest request) {
-        return organizationService.createOrganization(request.getName(), request.getDescription(), request.getIndustry(), request.getLocation());
+        return organizationService.createOrganization(
+                request.getName(),
+                request.getDescription(),
+                request.getIndustry(),
+                request.getLocation()
+        );
     }
 
     private void createOrganizationAdmin(Organization organization, AddOrganizationRequest request) {
@@ -103,10 +111,17 @@ public class MomofinAdminController {
                 null
         );
     }
+
     @PutMapping("/organizations/{orgId}")
     public ResponseEntity<OrganizationResponse> updateOrganization(@PathVariable String orgId, @RequestBody AddOrganizationRequest request) {
         try {
-            Organization updatedOrganization = organizationService.updateOrganization(UUID.fromString(orgId), request.getName(), request.getDescription(), request.getIndustry(), request.getLocation());
+            Organization updatedOrganization = organizationService.updateOrganization(
+                    UUID.fromString(orgId),
+                    request.getName(),
+                    request.getDescription(),
+                    request.getIndustry(),
+                    request.getLocation()
+            );
             return ResponseEntity.ok(OrganizationResponse.fromOrganization(updatedOrganization));
         } catch (OrganizationNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -116,6 +131,4 @@ public class MomofinAdminController {
             return ResponseEntity.internalServerError().body(new OrganizationResponse(null, "An unexpected error occurred", null));
         }
     }
-
-
 }
