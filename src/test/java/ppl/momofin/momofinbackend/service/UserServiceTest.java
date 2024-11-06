@@ -1174,5 +1174,119 @@ class UserServiceTest {
         verifyNoInteractions(passwordEncoder);
         verifyNoMoreInteractions(userRepository);
     }
+    @Test
+    void updateUser_NewUsernameAlreadyExists_ThrowsUserAlreadyExistsException() {
+        // Setup existing user to update
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setUsername("oldUsername");
+
+        // Setup updated user with new username
+        User updatedUser = new User();
+        updatedUser.setUsername("existingUsername");
+
+        // Setup another existing user in the system with the desired username
+        User userWithDesiredUsername = new User();
+        userWithDesiredUsername.setUsername("existingUsername");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByUsername("existingUsername")).thenReturn(Optional.of(userWithDesiredUsername));
+
+        // Test and verify exception
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
+                () -> userService.updateUser(userId, updatedUser, null, null));
+
+        assertEquals("A user with this username already exists", exception.getMessage());
+
+        // Verify repository calls
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByUsername("existingUsername");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_NewUsernameAvailable_UpdatesSuccessfully() {
+        // Setup existing user to update
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setUsername("oldUsername");
+
+        // Setup updated user with new username
+        User updatedUser = new User();
+        updatedUser.setUsername("newUsername");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByUsername("newUsername")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        // Test
+        User result = userService.updateUser(userId, updatedUser, null, null);
+
+        // Verify
+        assertEquals("newUsername", result.getUsername());
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByUsername("newUsername");
+        verify(userRepository).save(any(User.class));
+    }
+    @Test
+    void updateUser_SameUsernameWithEmailUpdate_UpdatesSuccessfully() {
+        // Setup existing user
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setUsername("existingUsername");
+        existingUser.setEmail("old@example.com");
+
+        // Setup updated user with same username but new email
+        User updatedUser = new User();
+        updatedUser.setUsername("existingUsername");  // Same username
+        updatedUser.setEmail("new@example.com");      // New email
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+        // Test
+        User result = userService.updateUser(userId, updatedUser, null, null);
+
+        // Verify that email was updated while keeping the same username
+        assertEquals("existingUsername", result.getUsername());
+        assertEquals("new@example.com", result.getEmail());
+        verify(userRepository).findById(userId);
+        // Username check should not happen when username hasn't changed
+        verify(userRepository, never()).findByUsername(anyString());
+        verify(userRepository).save(any(User.class));
+    }
+
+    @Test
+    void updateUser_NewUsernameAlreadyExists_ThrowsException() {
+        // Setup existing user
+        User existingUser = new User();
+        existingUser.setUserId(userId);
+        existingUser.setUsername("oldUsername");
+        existingUser.setEmail("old@example.com");
+
+        // Setup updated user with a username that already exists
+        User updatedUser = new User();
+        updatedUser.setUsername("takenUsername");  // Different username that's already taken
+        updatedUser.setEmail("new@example.com");
+
+        // Setup mock for existing username in database
+        User existingUserWithUsername = new User();
+        existingUserWithUsername.setUsername("takenUsername");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByUsername("takenUsername")).thenReturn(Optional.of(existingUserWithUsername));
+
+        // Test and verify exception is thrown
+        UserAlreadyExistsException exception = assertThrows(UserAlreadyExistsException.class,
+                () -> userService.updateUser(userId, updatedUser, null, null));
+
+        assertEquals("A user with this username already exists", exception.getMessage());
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByUsername("takenUsername");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+
+
 
 }

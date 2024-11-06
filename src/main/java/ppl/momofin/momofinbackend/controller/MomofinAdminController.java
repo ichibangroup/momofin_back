@@ -12,7 +12,6 @@ import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.response.FetchAllUserResponse;
-import ppl.momofin.momofinbackend.security.SqlInjectionValidator;
 import ppl.momofin.momofinbackend.service.OrganizationService;
 import ppl.momofin.momofinbackend.response.OrganizationResponse;
 import ppl.momofin.momofinbackend.service.UserService;

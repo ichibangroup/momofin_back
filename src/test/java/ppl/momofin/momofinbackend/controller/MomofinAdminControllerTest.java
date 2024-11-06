@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
+import ppl.momofin.momofinbackend.error.SecurityValidationException;
 import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
@@ -283,5 +284,26 @@ class MomofinAdminControllerTest {
         users.add(user4);
         users.add(user5);
         return users;
+    }
+    @Test
+    void addOrganization_shouldReturnErrorResponse_whenSecurityValidationException() {
+        // Arrange
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("SELECT * FROM users");  // SQL injection attempt
+        request.setDescription("Description");
+
+        when(organizationService.createOrganization(any(), any(), any(), any()))
+                .thenThrow(new SecurityValidationException("SQL injection detected in input"));
+
+        // Act
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNull(response.getBody().getOrganizationId());
+        assertEquals("SQL injection detected in input", response.getBody().getErrorMessage());
+        assertEquals("Description", response.getBody().getDescription());
+        assertNull(response.getBody().getName());
     }
 }
