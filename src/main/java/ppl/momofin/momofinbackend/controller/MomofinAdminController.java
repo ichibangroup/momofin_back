@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.controller;
 
+import io.sentry.Sentry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,24 +64,33 @@ public class MomofinAdminController {
         try {
             Organization newOrganization = createOrganization(request);
             createOrganizationWithAdmin(newOrganization, request);
+
+            // Success logging
+            Sentry.captureMessage(String.format(
+                    "[Success] Organization created - Name: %s, Industry: %s, ID: %s",
+                    request.getName(),
+                    request.getIndustry(),
+                    newOrganization.getOrganizationId()
+            ));
+
             return ResponseEntity.ok(OrganizationResponse.fromOrganization(newOrganization));
-        } catch (SecurityValidationException e) {
-            logger.warn("Security validation failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(
-                    new OrganizationResponse(null, e.getMessage(), request.getDescription())
-            );
-        } catch (InvalidOrganizationException | UserAlreadyExistsException e) {
+        } catch (SecurityValidationException | InvalidOrganizationException | UserAlreadyExistsException e) {
+            // Handle all validation-related exceptions with 400
             logger.warn("Validation failed: {}", e.getMessage());
+            Sentry.captureException(e);
             return ResponseEntity.badRequest().body(
                     new OrganizationResponse(null, e.getMessage(), request.getDescription())
             );
         } catch (Exception e) {
+            // Handle unexpected errors with 500
             logger.error("Unexpected error creating organization", e);
+            Sentry.captureException(e);
             return ResponseEntity.internalServerError().body(
                     new OrganizationResponse(null, "An unexpected error occurred: " + e.getMessage(), request.getDescription())
             );
         }
     }
+
     private void createOrganizationWithAdmin(Organization organization, AddOrganizationRequest request) {
         try {
             createOrganizationAdmin(organization, request);
@@ -110,23 +120,5 @@ public class MomofinAdminController {
         );
     }
 
-    @PutMapping("/organizations/{orgId}")
-    public ResponseEntity<OrganizationResponse> updateOrganization(@PathVariable String orgId, @RequestBody AddOrganizationRequest request) {
-        try {
-            Organization updatedOrganization = organizationService.updateOrganization(
-                    UUID.fromString(orgId),
-                    request.getName(),
-                    request.getDescription(),
-                    request.getIndustry(),
-                    request.getLocation()
-            );
-            return ResponseEntity.ok(OrganizationResponse.fromOrganization(updatedOrganization));
-        } catch (OrganizationNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (InvalidOrganizationException e) {
-            return ResponseEntity.badRequest().body(new OrganizationResponse(null, e.getMessage(), null));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new OrganizationResponse(null, "An unexpected error occurred", null));
-        }
-    }
+
 }
