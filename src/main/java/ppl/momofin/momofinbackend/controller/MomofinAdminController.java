@@ -120,5 +120,38 @@ public class MomofinAdminController {
         );
     }
 
+    @PutMapping("/organizations/{orgId}")
+    public ResponseEntity<OrganizationResponse> updateOrganization(
+            @PathVariable String orgId,
+            @RequestBody AddOrganizationRequest request) {
+        try {
+            Organization updatedOrganization = organizationService.updateOrganization(
+                    UUID.fromString(orgId),
+                    request.getName(),
+                    request.getDescription(),
+                    request.getIndustry(),
+                    request.getLocation()
+            );
 
+            Sentry.captureMessage(String.format(
+                    "[Success] Organization updated - ID: %s, New Name: %s",
+                    orgId,
+                    request.getName()
+            ));
+
+            return ResponseEntity.ok(OrganizationResponse.fromOrganization(updatedOrganization));
+        } catch (SecurityValidationException | InvalidOrganizationException e) {
+            // Handle validation-related exceptions with 400
+            Sentry.captureException(e);
+            return ResponseEntity.badRequest().body(new OrganizationResponse(null, e.getMessage(), null));
+        } catch (OrganizationNotFoundException e) {
+            // Handle not found with 404
+            Sentry.captureException(e);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            // Handle unexpected errors with 500
+            Sentry.captureException(e);
+            return ResponseEntity.internalServerError().body(new OrganizationResponse(null, "An unexpected error occurred", null));
+        }
+    }
 }
