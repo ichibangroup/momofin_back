@@ -84,9 +84,7 @@ public class MomofinAdminController {
     private void createOrganizationWithAdmin(Organization organization, AddOrganizationRequest request) {
         try {
             createOrganizationAdmin(organization, request);
-            logger.info("Admin created successfully for organization: {}", organization.getName());
         } catch (Exception e) {
-            logger.error("Failed to create admin, rolling back organization creation. Error: {}", e.getMessage());
             organizationRepository.delete(organization);
             throw e;
         }
