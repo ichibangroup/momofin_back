@@ -208,11 +208,18 @@ public class DocumentServiceImpl implements DocumentService {
         String hashString = generateHash(file);
 
         UUID documentId = editRequest.getDocumentId();
+        UUID userId = editRequest.getUserId();
 
-        Document document = documentRepository.findByDocumentId(documentId).get();
-        User editor = userRepository.findById(editRequest.getUserId()).get();
+        Optional<Document> document = documentRepository.findByDocumentId(documentId);
+        if(document.isEmpty()) {
+            throw new IllegalStateException("Document with ID " + documentId + NOT_FOUND);
+        }
+        Optional<User> editor = userRepository.findById(userId);
+        if (editor.isEmpty()) {
+            throw new UserNotFoundException("User with ID " + userId + NOT_FOUND);
+        }
 
-        Document editedDocument = cdnService.editDocument(file, document, hashString, editor);
+        Document editedDocument = cdnService.editDocument(file, document.get(), hashString, editor.get());
         editRequestRepository.delete(editRequest);
         return editedDocument;
     }

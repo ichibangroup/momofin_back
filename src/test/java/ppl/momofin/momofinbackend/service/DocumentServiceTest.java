@@ -30,9 +30,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
 class DocumentServiceTest {
@@ -566,8 +563,7 @@ class DocumentServiceTest {
     }
 
     @Test
-    void  testFetchDocumentVersions() throws Exception {
-        UUID documentId = UUID.randomUUID();
+    void  testFetchDocumentVersions() {
         DocumentVersion documentVersion = new DocumentVersion(1, documentId, "test.pdf", "jydkvlklififilviugilfilgi");
         DocumentVersion documentVersion2 = new DocumentVersion(2, documentId, "test.pdf", "iouivoikuicvliiulibivuivilb");
         List<DocumentVersion> versionList = new ArrayList<>();
@@ -633,6 +629,82 @@ class DocumentServiceTest {
         assertEquals("Failed to get URL", exception.getMessage());
         verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
         verify(cdnService, times(1)).getViewableUrl(document, userId, organizationName, 555);
+    }
+
+    @Test
+    void editDocument_WhenDocumentNotFound_ThrowsIllegalStateException() throws Exception {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        EditRequest editRequest = new EditRequest();
+        EditRequestKey key = new EditRequestKey();
+        key.setUserId(userId);
+        key.setDocumentId(documentId);
+        editRequest.setId(key);
+        editRequest.setDocumentId(documentId);
+        editRequest.setUserId(userId);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.pdf",
+                "application/pdf",
+                "test content".getBytes()
+        );
+
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> documentService.editDocument(file, editRequest)
+        );
+
+        assertEquals("Document with ID " + documentId + " not found", exception.getMessage());
+        verify(documentRepository).findByDocumentId(documentId);
+        verify(editRequestRepository).existsById(editRequest.getId());
+        verify(userRepository, never()).findById(any());
+        verify(cdnService, never()).editDocument(any(), any(), any(), any());
+        verify(editRequestRepository, never()).delete(any());
+    }
+
+    @Test
+    void editDocument_WhenUserNotFound_ThrowsUserNotFoundException() throws Exception {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        EditRequest editRequest = new EditRequest();
+        EditRequestKey key = new EditRequestKey();
+        key.setUserId(userId);
+        key.setDocumentId(documentId);
+        editRequest.setId(key);
+        editRequest.setDocumentId(documentId);
+        editRequest.setUserId(userId);
+
+        Document document = new Document();
+        document.setDocumentId(documentId);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.pdf",
+                "application/pdf",
+                "test content".getBytes()
+        );
+
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        UserNotFoundException exception = assertThrows(
+                UserNotFoundException.class,
+                () -> documentService.editDocument(file, editRequest)
+        );
+
+        assertEquals("User with ID " + userId + " not found", exception.getMessage());
+        verify(documentRepository).findByDocumentId(documentId);
+        verify(editRequestRepository).existsById(editRequest.getId());
+        verify(userRepository).findById(userId);
+        verify(cdnService, never()).editDocument(any(), any(), any(), any());
+        verify(editRequestRepository, never()).delete(any());
     }
 
 }
