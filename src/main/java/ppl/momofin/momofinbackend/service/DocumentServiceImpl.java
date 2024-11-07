@@ -6,11 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.dto.EditRequestDTO;
 import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.DocumentVersion;
 import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
+import ppl.momofin.momofinbackend.repository.DocumentVersionRepository;
 import ppl.momofin.momofinbackend.repository.EditRequestRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
@@ -39,13 +42,15 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserRepository userRepository;
     private final EditRequestRepository editRequestRepository;
     private final CDNService cdnService;
+    private final DocumentVersionRepository documentVersionRepository;
 
     @Autowired
-    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService, EditRequestRepository editRequestRepository) {
+    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService, EditRequestRepository editRequestRepository, DocumentVersionRepository documentVersionRepository) {
         this.userRepository = userRepository;
         this.documentRepository = documentRepository;
         this.cdnService = cdnService;
         this.editRequestRepository = editRequestRepository;
+        this.documentVersionRepository = documentVersionRepository;
     }
 
     @Override
@@ -156,6 +161,16 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    public String getViewableUrl(UUID documentId, UUID userId, String organizationName, int version) throws IOException {
+        Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
+
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + " does not exist");
+
+        Document document = optionalDocument.get();
+        return cdnService.getViewableUrl(document, userId, organizationName, version);
+    }
+
+    @Override
     public Document fetchDocumentWithDocumentId(UUID documentId) {
         return documentRepository.findByDocumentId(documentId)
                 .orElseThrow(() -> new IllegalStateException("Document not found"));
@@ -176,8 +191,8 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public List<EditRequest> getEditRequests(UUID userId) {
-        return editRequestRepository.findByUserId(userId);
+    public List<EditRequestDTO> getEditRequests(UUID userId) {
+        return editRequestRepository.findByUserIdAsDTO(userId);
     }
 
     @Override
@@ -192,15 +207,25 @@ public class DocumentServiceImpl implements DocumentService {
 
         String hashString = generateHash(file);
 
-        Document document = editRequest.getDocument();
+        UUID documentId = editRequest.getDocumentId();
 
-        Document editedDocument = cdnService.editDocument(file, document, hashString);
+        Document document = documentRepository.findByDocumentId(documentId).get();
+        User editor = userRepository.findById(editRequest.getUserId()).get();
+
+        Document editedDocument = cdnService.editDocument(file, document, hashString, editor);
         editRequestRepository.delete(editRequest);
         return editedDocument;
     }
 
+
+
     @Override
     public void rejectEditRequest(EditRequest editRequest) {
         editRequestRepository.delete(editRequest);
+    }
+
+    @Override
+    public List<DocumentVersion> findVersionsOfDocument(UUID documentId) {
+        return documentVersionRepository.findById_DocumentId(documentId);
     }
 }

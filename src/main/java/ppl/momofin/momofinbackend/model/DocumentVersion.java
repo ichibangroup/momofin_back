@@ -18,11 +18,15 @@ public class DocumentVersion {
 
     private String fileName;
     private String hashString;
-    private LocalDateTime createdDate = LocalDateTime.now();
+    @ManyToOne
+    @JoinColumn(name = "edited_by", referencedColumnName = "userId")
+    private User editedBy;
+    private LocalDateTime createdDate;
 
     public DocumentVersion() {
         this.id = new DocumentVersionKey();
         setVersion(1);
+        createdDate = LocalDateTime.now();
     }
 
     public DocumentVersion(int version, UUID documentId, String fileName, String hashString) {
@@ -31,6 +35,7 @@ public class DocumentVersion {
         this.id.setDocumentId(documentId);
         this.fileName = fileName;
         this.hashString = hashString;
+        createdDate = LocalDateTime.now();
     }
 
     public int getVersion() {
