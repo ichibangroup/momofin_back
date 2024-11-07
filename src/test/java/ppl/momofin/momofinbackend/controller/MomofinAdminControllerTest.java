@@ -1,10 +1,9 @@
 package ppl.momofin.momofinbackend.controller;
 
+import io.sentry.Sentry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -305,5 +304,114 @@ class MomofinAdminControllerTest {
         assertEquals("SQL injection detected in input", response.getBody().getErrorMessage());
         assertEquals("Description", response.getBody().getDescription());
         assertNull(response.getBody().getName());
+    }
+    @Test
+    void addOrganization_shouldLogSuccessMessage_whenCreateSuccessful() {
+        // Arrange
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("New Org");
+        request.setDescription("New Description");
+        request.setIndustry("New Industry");
+        request.setLocation("New Location");
+        request.setAdminUsername("admin");
+        request.setAdminPassword("password");
+
+        Organization newOrg = new Organization("New Org", "New Description", "New Industry", "New Location");
+        when(organizationService.createOrganization("New Org", "New Description", "New Industry", "New Location"))
+                .thenReturn(newOrg);
+
+        User adminUser = new User();
+        when(userService.registerOrganizationAdmin(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull()))
+                .thenReturn(adminUser);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            sentryMock.verify(() ->
+                    Sentry.captureMessage(String.format(
+                            "[Success] Organization created - Name: %s, Industry: %s, ID: %s",
+                            request.getName(),
+                            request.getIndustry(),
+                            newOrg.getOrganizationId()
+                    ))
+            );
+        }
+    }
+
+    @Test
+    void addOrganization_shouldLogException_whenSecurityValidationOccurs() {
+        // Arrange
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("SELECT * FROM users");
+        request.setDescription("Description");
+
+        SecurityValidationException exception = new SecurityValidationException("SQL injection detected in input");
+        when(organizationService.createOrganization(any(), any(), any(), any()))
+                .thenThrow(exception);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
+
+            // Assert
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+            sentryMock.verify(() -> Sentry.captureException(exception));
+        }
+    }
+
+    @Test
+    void updateOrganization_shouldLogSuccessMessage_whenUpdateSuccessful() {
+        // Arrange
+        String stringOrgId = "ebe2e5c8-1434-4f91-a5f5-da690db03a6a";
+        UUID orgId = UUID.fromString(stringOrgId);
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("Updated Org");
+        request.setDescription("Updated Description");
+        request.setIndustry("Updated Industry");
+        request.setLocation("Updated Location");
+
+        Organization updatedOrg = new Organization("Updated Org", "Updated Description", "Updated Industry", "Updated Location");
+        when(organizationService.updateOrganization(orgId, "Updated Org", "Updated Description", "Updated Industry", "Updated Location"))
+                .thenReturn(updatedOrg);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(stringOrgId, request);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            sentryMock.verify(() ->
+                    Sentry.captureMessage(String.format(
+                            "[Success] Organization updated - ID: %s, New Name: %s",
+                            stringOrgId,
+                            request.getName()
+                    ))
+            );
+        }
+    }
+
+    @Test
+    void updateOrganization_shouldLogException_whenSecurityValidationOccurs() {
+        // Arrange
+        String stringOrgId = "ebe2e5c8-1434-4f91-a5f5-da690db03a6a";
+        UUID orgId = UUID.fromString(stringOrgId);
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("SELECT * FROM users");
+
+        SecurityValidationException exception = new SecurityValidationException("SQL injection detected");
+        when(organizationService.updateOrganization(eq(orgId), any(), any(), any(), any()))
+                .thenThrow(exception);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(stringOrgId, request);
+
+            // Assert
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+            sentryMock.verify(() -> Sentry.captureException(exception));
+        }
     }
 }
