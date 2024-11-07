@@ -679,9 +679,6 @@ class DocumentServiceTest {
         editRequest.setDocumentId(documentId);
         editRequest.setUserId(userId);
 
-        Document document = new Document();
-        document.setDocumentId(documentId);
-
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.pdf",
