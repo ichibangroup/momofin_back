@@ -8,6 +8,7 @@ import ppl.momofin.momofinbackend.model.Log;
 import ppl.momofin.momofinbackend.repository.LogRepository;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -26,7 +27,7 @@ class LogServiceTest {
 
     @Test
     void testLogMethod() {
-        Long userID = 1L;
+        UUID userID = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         String level = "ERROR";
         String message = "Failed Login Attempt";
         String logName = "/auth/login";
@@ -50,7 +51,7 @@ class LogServiceTest {
 
     @Test
     void testLogException() {
-        Long userId = 1L;
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         Exception exception = new RuntimeException("Test Exception");
         String logName = "/test/log";
         String sourceUrl = "http://localhost/test";

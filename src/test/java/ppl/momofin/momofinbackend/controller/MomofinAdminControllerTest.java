@@ -1,17 +1,19 @@
 package ppl.momofin.momofinbackend.controller;
 
+import io.sentry.Sentry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
 import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
+import ppl.momofin.momofinbackend.error.SecurityValidationException;
 import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.request.AddOrganizationRequest;
 import ppl.momofin.momofinbackend.response.FetchAllUserResponse;
 import ppl.momofin.momofinbackend.service.OrganizationService;
@@ -19,10 +21,7 @@ import ppl.momofin.momofinbackend.response.OrganizationResponse;
 import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.utility.Roles;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -36,6 +35,8 @@ class MomofinAdminControllerTest {
 
     @Mock
     private UserService userService;
+    @Mock
+    private OrganizationRepository organizationRepository;
 
     @InjectMocks
     private MomofinAdminController momofinAdminController;
@@ -43,6 +44,7 @@ class MomofinAdminControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        ReflectionTestUtils.setField(momofinAdminController, "organizationRepository", organizationRepository);
     }
 
     @Test
@@ -97,7 +99,8 @@ class MomofinAdminControllerTest {
     @Test
     void updateOrganization_shouldUpdateExistingOrganization() {
         // Arrange
-        Long orgId = 1L;
+        String stringOrgId = "ebe2e5c8-1434-4f91-a5f5-da690db03a6a";
+        UUID orgId = UUID.fromString(stringOrgId);
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("Updated Org");
         request.setDescription("Updated Description");
@@ -108,7 +111,7 @@ class MomofinAdminControllerTest {
         when(organizationService.updateOrganization(orgId, "Updated Org", "Updated Description", "Updated Industry", "Updated Location")).thenReturn(updatedOrg);
 
         // Act
-        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(stringOrgId, request);
 
         // Assert
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
@@ -147,51 +150,42 @@ class MomofinAdminControllerTest {
         // Arrange
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("New Org");
-        request.setDescription("Description");
-        request.setIndustry("Industry");
-        request.setLocation("Location");
-        request.setAdminUsername("existingAdmin");
-        request.setAdminPassword("password");
+        Organization org = new Organization();
 
-        when(organizationService.createOrganization(anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(new Organization("New Org", "Description"));
-        when(userService.registerOrganizationAdmin(any(), anyString(), anyString(), any(), anyString(), any()))
+        when(organizationService.createOrganization(any(), any(), any(), any()))
+                .thenReturn(org);
+        when(userService.registerOrganizationAdmin(eq(org), any(), any(), any(), any(), any()))
                 .thenThrow(new UserAlreadyExistsException("Admin user already exists"));
 
         // Act
         ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
 
         // Assert
-        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
-        assertNotNull(response.getBody());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("Admin user already exists", response.getBody().getErrorMessage());
+        verify(organizationRepository).delete(org);
     }
 
     @Test
     void addOrganization_shouldReturnErrorResponse_whenUnexpectedException() {
         // Arrange
         AddOrganizationRequest request = new AddOrganizationRequest();
-        request.setName("New Org");
-        request.setDescription("Description");
-        request.setIndustry("Industry");
-        request.setLocation("Location");
-
-        when(organizationService.createOrganization(anyString(), anyString(), anyString(), anyString()))
+        when(organizationService.createOrganization(any(), any(), any(), any()))
                 .thenThrow(new RuntimeException("Unexpected error"));
 
         // Act
         ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
 
         // Assert
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode().value());
-        assertNotNull(response.getBody());
-        assertEquals("An unexpected error occurred", response.getBody().getErrorMessage());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("An unexpected error occurred: Unexpected error", response.getBody().getErrorMessage());
     }
 
     @Test
     void updateOrganization_shouldReturnNotFound_whenOrganizationNotFoundException() {
         // Arrange
-        Long orgId = 1L;
+        String stringOrgId = "ebe2e5c8-1434-4f91-a5f5-da690db03a6a";
+        UUID orgId = UUID.fromString(stringOrgId);
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("Updated Org");
         request.setDescription("Updated Description");
@@ -202,7 +196,7 @@ class MomofinAdminControllerTest {
                 .thenThrow(new OrganizationNotFoundException("Organization not found"));
 
         // Act
-        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(stringOrgId, request);
 
         // Assert
         assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatusCode().value());
@@ -211,7 +205,8 @@ class MomofinAdminControllerTest {
     @Test
     void updateOrganization_shouldReturnBadRequest_whenInvalidOrganizationException() {
         // Arrange
-        Long orgId = 1L;
+        String stringOrgId = "ebe2e5c8-1434-4f91-a5f5-da690db03a6a";
+        UUID orgId = UUID.fromString(stringOrgId);
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("");
         request.setDescription("Updated Description");
@@ -222,7 +217,7 @@ class MomofinAdminControllerTest {
                 .thenThrow(new InvalidOrganizationException("Invalid organization name"));
 
         // Act
-        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(stringOrgId, request);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
@@ -233,7 +228,8 @@ class MomofinAdminControllerTest {
     @Test
     void updateOrganization_shouldReturnErrorResponse_whenUnexpectedException() {
         // Arrange
-        Long orgId = 1L;
+        String stringOrgId = "ebe2e5c8-1434-4f91-a5f5-da690db03a6a";
+        UUID orgId = UUID.fromString(stringOrgId);
         AddOrganizationRequest request = new AddOrganizationRequest();
         request.setName("Updated Org");
         request.setDescription("Updated Description");
@@ -244,7 +240,7 @@ class MomofinAdminControllerTest {
                 .thenThrow(new RuntimeException("Unexpected error"));
 
         // Act
-        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(orgId, request);
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(stringOrgId, request);
 
         // Assert
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode().value());
@@ -287,5 +283,135 @@ class MomofinAdminControllerTest {
         users.add(user4);
         users.add(user5);
         return users;
+    }
+    @Test
+    void addOrganization_shouldReturnErrorResponse_whenSecurityValidationException() {
+        // Arrange
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("SELECT * FROM users");  // SQL injection attempt
+        request.setDescription("Description");
+
+        when(organizationService.createOrganization(any(), any(), any(), any()))
+                .thenThrow(new SecurityValidationException("SQL injection detected in input"));
+
+        // Act
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
+
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNull(response.getBody().getOrganizationId());
+        assertEquals("SQL injection detected in input", response.getBody().getErrorMessage());
+        assertEquals("Description", response.getBody().getDescription());
+        assertNull(response.getBody().getName());
+    }
+    @Test
+    void addOrganization_shouldLogSuccessMessage_whenCreateSuccessful() {
+        // Arrange
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("New Org");
+        request.setDescription("New Description");
+        request.setIndustry("New Industry");
+        request.setLocation("New Location");
+        request.setAdminUsername("admin");
+        request.setAdminPassword("password");
+
+        Organization newOrg = new Organization("New Org", "New Description", "New Industry", "New Location");
+        when(organizationService.createOrganization("New Org", "New Description", "New Industry", "New Location"))
+                .thenReturn(newOrg);
+
+        User adminUser = new User();
+        when(userService.registerOrganizationAdmin(eq(newOrg), eq("admin"), eq("New Org Admin"), isNull(), eq("password"), isNull()))
+                .thenReturn(adminUser);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            sentryMock.verify(() ->
+                    Sentry.captureMessage(String.format(
+                            "[Success] Organization created - Name: %s, Industry: %s, ID: %s",
+                            request.getName(),
+                            request.getIndustry(),
+                            newOrg.getOrganizationId()
+                    ))
+            );
+        }
+    }
+
+    @Test
+    void addOrganization_shouldLogException_whenSecurityValidationOccurs() {
+        // Arrange
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("SELECT * FROM users");
+        request.setDescription("Description");
+
+        SecurityValidationException exception = new SecurityValidationException("SQL injection detected in input");
+        when(organizationService.createOrganization(any(), any(), any(), any()))
+                .thenThrow(exception);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<OrganizationResponse> response = momofinAdminController.addOrganization(request);
+
+            // Assert
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+            sentryMock.verify(() -> Sentry.captureException(exception));
+        }
+    }
+
+    @Test
+    void updateOrganization_shouldLogSuccessMessage_whenUpdateSuccessful() {
+        // Arrange
+        String stringOrgId = "ebe2e5c8-1434-4f91-a5f5-da690db03a6a";
+        UUID orgId = UUID.fromString(stringOrgId);
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("Updated Org");
+        request.setDescription("Updated Description");
+        request.setIndustry("Updated Industry");
+        request.setLocation("Updated Location");
+
+        Organization updatedOrg = new Organization("Updated Org", "Updated Description", "Updated Industry", "Updated Location");
+        when(organizationService.updateOrganization(orgId, "Updated Org", "Updated Description", "Updated Industry", "Updated Location"))
+                .thenReturn(updatedOrg);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(stringOrgId, request);
+
+            // Assert
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            sentryMock.verify(() ->
+                    Sentry.captureMessage(String.format(
+                            "[Success] Organization updated - ID: %s, New Name: %s",
+                            stringOrgId,
+                            request.getName()
+                    ))
+            );
+        }
+    }
+
+    @Test
+    void updateOrganization_shouldLogException_whenSecurityValidationOccurs() {
+        // Arrange
+        String stringOrgId = "ebe2e5c8-1434-4f91-a5f5-da690db03a6a";
+        UUID orgId = UUID.fromString(stringOrgId);
+        AddOrganizationRequest request = new AddOrganizationRequest();
+        request.setName("SELECT * FROM users");
+
+        SecurityValidationException exception = new SecurityValidationException("SQL injection detected");
+        when(organizationService.updateOrganization(eq(orgId), any(), any(), any(), any()))
+                .thenThrow(exception);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<OrganizationResponse> response = momofinAdminController.updateOrganization(stringOrgId, request);
+
+            // Assert
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+            sentryMock.verify(() -> Sentry.captureException(exception));
+        }
     }
 }

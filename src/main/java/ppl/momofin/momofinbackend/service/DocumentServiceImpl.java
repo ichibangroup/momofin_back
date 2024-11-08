@@ -6,10 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.dto.EditRequestDTO;
 import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.DocumentVersion;
+import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
+import ppl.momofin.momofinbackend.repository.DocumentVersionRepository;
+import ppl.momofin.momofinbackend.repository.EditRequestRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import javax.crypto.Mac;
@@ -20,6 +25,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DocumentServiceImpl implements DocumentService {
@@ -27,19 +33,26 @@ public class DocumentServiceImpl implements DocumentService {
     private static final String ALGORITHM = "HmacSHA256";
 
     private static final String FILE_EMPTY_ERROR_MESSAGE = "File must not be null or empty";
+    private static final String NOT_FOUND = " not found";
+    private static final String DOES_NOT_EXIST = " does not exist";
+
 
     @Value("${hmac.secret.key}")
     private String secretKey;
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
+    private final EditRequestRepository editRequestRepository;
     private final CDNService cdnService;
+    private final DocumentVersionRepository documentVersionRepository;
 
     @Autowired
-    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService) {
+    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService, EditRequestRepository editRequestRepository, DocumentVersionRepository documentVersionRepository) {
         this.userRepository = userRepository;
         this.documentRepository = documentRepository;
         this.cdnService = cdnService;
+        this.editRequestRepository = editRequestRepository;
+        this.documentVersionRepository = documentVersionRepository;
     }
 
     @Override
@@ -54,10 +67,10 @@ public class DocumentServiceImpl implements DocumentService {
         if (documentFound.isEmpty()) {
             Optional<User> owner = userRepository.findByUsername(username);
 
-            if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");
+            if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + NOT_FOUND);
 
             User user = owner.get();
-            Document document = cdnService.uploadFile(file, user, hashString);
+            Document document = cdnService.submitDocument(file, user, hashString);
 
             logger.info("New document saved: {}", document.getName());
             return "Your document " + document.getName()+" has been successfully stored";
@@ -79,7 +92,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Document verifySpecificDocument(MultipartFile file, Long documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    public Document verifySpecificDocument(MultipartFile file, UUID documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
         }
@@ -87,7 +100,7 @@ public class DocumentServiceImpl implements DocumentService {
         Optional<Document> documentOptional = documentRepository.findById(documentId);
 
         if (documentOptional.isEmpty()) {
-            throw new IllegalStateException("Document with ID " + documentId + " not found");
+            throw new IllegalStateException("Document with ID " + documentId + NOT_FOUND);
         }
 
         Document document = documentOptional.get();
@@ -140,19 +153,88 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public String getViewableUrl(Long documentId, String username, String organizationName) throws IOException {
+    public String getViewableUrl(UUID documentId, UUID userId, String organizationName) throws IOException {
         Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
 
-        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + " does not exist");
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + DOES_NOT_EXIST);
 
         Document document = optionalDocument.get();
-        String filename = document.getName();
-        return cdnService.getViewableUrl(filename, username, organizationName);
+        return cdnService.getViewableUrl(document, userId, organizationName);
     }
 
     @Override
-    public Document fetchDocumentWithDocumentId(Long documentId) {
+    public String getViewableUrl(UUID documentId, UUID userId, String organizationName, int version) throws IOException {
+        Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
+
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + DOES_NOT_EXIST);
+
+        Document document = optionalDocument.get();
+        return cdnService.getViewableUrl(document, userId, organizationName, version);
+    }
+
+    @Override
+    public Document fetchDocumentWithDocumentId(UUID documentId) {
         return documentRepository.findByDocumentId(documentId)
                 .orElseThrow(() -> new IllegalStateException("Document not found"));
+    }
+
+    @Override
+    public EditRequest requestEdit(UUID documentId, String username) {
+        Optional<User> optionalUser = userRepository.findByUsername(username);
+        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + DOES_NOT_EXIST);
+        User user = optionalUser.get();
+        EditRequest request = new EditRequest();
+        Document document = new Document();
+        document.setDocumentId(documentId);
+
+        request.setDocument(document);
+        request.setUser(user);
+        return editRequestRepository.save(request);
+    }
+
+    @Override
+    public List<EditRequestDTO> getEditRequests(UUID userId) {
+        return editRequestRepository.findByUserIdAsDTO(userId);
+    }
+
+    @Override
+    public Document editDocument(MultipartFile file, EditRequest editRequest) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
+        }
+
+        if(!editRequestRepository.existsById(editRequest.getId())) {
+            throw new IllegalArgumentException("Edit request not found in the database.");
+        }
+
+        String hashString = generateHash(file);
+
+        UUID documentId = editRequest.getDocumentId();
+        UUID userId = editRequest.getUserId();
+
+        Optional<Document> document = documentRepository.findByDocumentId(documentId);
+        if(document.isEmpty()) {
+            throw new IllegalStateException("Document with ID " + documentId + NOT_FOUND);
+        }
+        Optional<User> editor = userRepository.findById(userId);
+        if (editor.isEmpty()) {
+            throw new UserNotFoundException("User with ID " + userId + NOT_FOUND);
+        }
+
+        Document editedDocument = cdnService.editDocument(file, document.get(), hashString, editor.get());
+        editRequestRepository.delete(editRequest);
+        return editedDocument;
+    }
+
+
+
+    @Override
+    public void rejectEditRequest(EditRequest editRequest) {
+        editRequestRepository.delete(editRequest);
+    }
+
+    @Override
+    public List<DocumentVersion> findVersionsOfDocument(UUID documentId) {
+        return documentVersionRepository.findById_DocumentId(documentId);
     }
 }

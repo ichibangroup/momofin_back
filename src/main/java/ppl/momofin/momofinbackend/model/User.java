@@ -8,24 +8,25 @@ import ppl.momofin.momofinbackend.utility.Roles;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity @Getter @Setter
 @Table(name = "users")
 public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID userId;
 
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email")
     private String email;
 
     @JsonIgnore
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "position", nullable = false)
+    @Column(name = "position")
     private String position;
 
     @Column(name = "username", nullable = false)

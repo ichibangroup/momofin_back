@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -74,13 +75,12 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public User updateUser(Long userId, User updatedUser, String oldPassword, String newPassword) {
+    public User updateUser(UUID userId, User updatedUser, String oldPassword, String newPassword) {
         User existingUser = getUserById(userId);
         logger.info("Updating user with ID: {}", userId);
 
         updatePasswordIfRequired(existingUser, oldPassword, newPassword);
         updateUserFields(existingUser, updatedUser);
-
         User savedUser = userRepository.save(existingUser);
         logger.info("User with ID: {} successfully updated and saved", userId);
 
@@ -105,6 +105,13 @@ public class UserServiceImpl implements UserService{
 
     private void updateUserFields(User existingUser, User updatedUser) {
         if (updatedUser == null) return;
+
+        String newUsername = updatedUser.getUsername();
+        if (newUsername != null && !newUsername.isEmpty()
+                && !newUsername.equals(existingUser.getUsername())
+                && userRepository.findByUsername(newUsername).isPresent()) {
+            throw new UserAlreadyExistsException("A user with this username already exists");
+        }
 
         updateField(existingUser, updatedUser.getUsername(), "Username");
         updateField(existingUser, updatedUser.getEmail(), "Email");
@@ -142,10 +149,12 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public List<User> fetchAllUsers() {
-        return userRepository.findAll();
+        return userRepository.findAll().stream()
+                .filter(user -> !user.getUsername().equals("deleted_user"))
+                .toList();
     }
     @Override
-    public User getUserById(Long userId) {
+    public User getUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
     }
