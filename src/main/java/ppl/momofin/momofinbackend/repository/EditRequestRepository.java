@@ -15,7 +15,7 @@ public interface EditRequestRepository extends JpaRepository<EditRequest, EditRe
             + "e.document.documentId, "
             + "e.user.userId, "
             + "e.document.owner.organization.name, "
-            + "e.document.owner.username, "
+            + "e.document.owner.name, "
             + "e.document.owner.position, "
             + "e.document.owner.email, "
             + "e.document.name) "
