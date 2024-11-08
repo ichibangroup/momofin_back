@@ -1,0 +1,70 @@
+name: Build and Deploy to GCP
+on:
+  push:
+    branches:
+      - staging
+jobs:
+  build:
+    name: Build and analyze
+    runs-on: ubuntu-latest
+    environment:
+      name: production-notable-allx/momofin
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Create .gcp directory for keys
+      - name: Create directory for GCP keys
+        run: mkdir -p .gcp
+
+      # Set up Storage Service Account Key
+      - name: Set up GCP Service Account Key
+        run: |
+          echo "${{ secrets.GCP_SA_PRIVATE_KEY }}" > .gcp/gcp_sa_private_key.pem
+          echo "wrong key" > .gcp/wrongkey.pem
+
+      # Setup Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Login to Google Cloud
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CB_KEY }}'
+
+      # Configure Docker for GCP
+      - name: Configure Docker for GCP
+        run: gcloud auth configure-docker asia-southeast2-docker.pkg.dev
+
+      # Build and Push Docker image
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: asia-southeast2-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_REPOSITORY }}/${{ secrets.IMAGE_NAME }}:${{ github.sha }}
+
+      # Deploy to Cloud Run
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ secrets.CLOUD_RUN_SERVICE_NAME }}
+          region: ${{ secrets.GCP_REGION }}
+          image: asia-southeast2-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ secrets.GCP_REPOSITORY }}/${{ secrets.IMAGE_NAME }}:${{ github.sha }}
+          env_vars: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            SONAR_TOKEN=${{ secrets.SONAR_TOKEN }}
+            DB_URL=${{ secrets.DB_URL }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            GCP_BUCKET_NAME=${{ secrets.GCP_BUCKET_NAME }}
+            GCP_PROJECT=${{ secrets.GCP_PROJECT }}
+            GCP_SA_PRIVATE_KEY_ID=${{ secrets.GCP_SA_PRIVATE_KEY_ID }}
+            GCP_SA_NAME=${{ secrets.GCP_SA_NAME }}
+            GCP_SA_CLIENT_ID=${{ secrets.GCP_SA_CLIENT_ID }}
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+            PKEY_DIRECTORY=/home/runner/work

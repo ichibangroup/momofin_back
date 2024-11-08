@@ -20,9 +20,15 @@ public class OrganizationController {
         this.organizationService = organizationService;
     }
 
+    @GetMapping("/{orgId}")
+    public ResponseEntity<Organization> getOrganization(@PathVariable Long orgId) {
+        Organization organization = organizationService.findOrganizationById(orgId);
+        return ResponseEntity.ok(organization);
+    }
+
     @PutMapping("/{orgId}")
     public ResponseEntity<Organization> updateOrganization(@PathVariable Long orgId, @RequestBody Organization organizationDetails) {
-        Organization updatedOrganization = organizationService.updateOrganization(orgId, organizationDetails.getName(), organizationDetails.getDescription());
+        Organization updatedOrganization = organizationService.updateOrganization(orgId, organizationDetails.getName(), organizationDetails.getDescription(), organizationDetails.getIndustry(), organizationDetails.getLocation());
         return ResponseEntity.ok(updatedOrganization);
     }
 

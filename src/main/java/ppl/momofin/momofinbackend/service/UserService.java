@@ -12,6 +12,7 @@ public interface UserService {
     List<User> fetchUsersByOrganization(Organization organization);
     List<User> fetchAllUsers();
     User getUserById(Long userId);
-    User updateUser(Long userId, User updatedUser);
+    User updateUser(Long userId, User updatedUser, String oldPassword, String newPassword);
     User fetchUserByUsername(String username);
+    User registerOrganizationAdmin(Organization organization, String username, String name, String email, String password, String position);
 }

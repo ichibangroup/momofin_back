@@ -5,8 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -27,22 +26,26 @@ public class DocumentServiceImpl implements DocumentService {
     private static final Logger logger = LoggerFactory.getLogger(DocumentServiceImpl.class);
     private static final String ALGORITHM = "HmacSHA256";
 
+    private static final String FILE_EMPTY_ERROR_MESSAGE = "File must not be null or empty";
+
     @Value("${hmac.secret.key}")
     private String secretKey;
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
+    private final CDNService cdnService;
 
     @Autowired
-    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository) {
+    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService) {
         this.userRepository = userRepository;
         this.documentRepository = documentRepository;
+        this.cdnService = cdnService;
     }
 
     @Override
     public String submitDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File must not be null or empty");
+            throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
         }
 
         String hashString = generateHash(file);
@@ -50,23 +53,24 @@ public class DocumentServiceImpl implements DocumentService {
 
         if (documentFound.isEmpty()) {
             Optional<User> owner = userRepository.findByUsername(username);
-            Document document = new Document();
-            document.setHashString(hashString);
-            document.setName(StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename())));
-            owner.ifPresent(document::setOwner);
-            documentRepository.save(document);
+
+            if (owner.isEmpty()) throw new UserNotFoundException("User with username " + username + " not found");
+
+            User user = owner.get();
+            Document document = cdnService.uploadFile(file, user, hashString);
+
             logger.info("New document saved: {}", document.getName());
-            return "Your document " + document.getName()+" has been successfully submitted";
+            return "Your document " + document.getName()+" has been successfully stored";
         } else {
             logger.info("Document already exists: {}", documentFound.get().getName());
-            return documentFound.get().getName() + " has already been submitted before";
+            return documentFound.get().getName() + " has already been stored before";
         }
     }
 
     @Override
     public Document verifyDocument(MultipartFile file, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File must not be null or empty");
+            throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
         }
 
         String hashString = generateHash(file);
@@ -74,7 +78,35 @@ public class DocumentServiceImpl implements DocumentService {
                 .orElseThrow(() -> new IllegalStateException("Document not found"));
     }
 
-    private String generateHash(MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+    @Override
+    public Document verifySpecificDocument(MultipartFile file, Long documentId, String username) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException(FILE_EMPTY_ERROR_MESSAGE);
+        }
+
+        Optional<Document> documentOptional = documentRepository.findById(documentId);
+
+        if (documentOptional.isEmpty()) {
+            throw new IllegalStateException("Document with ID " + documentId + " not found");
+        }
+
+        Document document = documentOptional.get();
+
+        Optional<User> ownerOptional = userRepository.findByUsername(username);
+        if (ownerOptional.isEmpty() || !document.getOwner().equals(ownerOptional.get())) {
+            throw new IllegalStateException("You are not authorized to verify this document.");
+        }
+
+        String hashString = generateHash(file);
+
+        if (!document.getHashString().equals(hashString)) {
+            throw  new IllegalArgumentException("File does not match the specified document.");
+        }
+
+        return document;
+    }
+
+     String generateHash(MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
         try (InputStream fileStream = file.getInputStream()) {
             SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getBytes(), ALGORITHM);
             Mac mac = Mac.getInstance(ALGORITHM);
@@ -105,5 +137,22 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException("User must not be null");
         }
         return documentRepository.findAllByOwner(user);
+    }
+
+    @Override
+    public String getViewableUrl(Long documentId, String username, String organizationName) throws IOException {
+        Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
+
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + " does not exist");
+
+        Document document = optionalDocument.get();
+        String filename = document.getName();
+        return cdnService.getViewableUrl(filename, username, organizationName);
+    }
+
+    @Override
+    public Document fetchDocumentWithDocumentId(Long documentId) {
+        return documentRepository.findByDocumentId(documentId)
+                .orElseThrow(() -> new IllegalStateException("Document not found"));
     }
 }

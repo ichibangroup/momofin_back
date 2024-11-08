@@ -4,13 +4,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ppl.momofin.momofinbackend.dto.UserDTO;
+import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
+import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class OrganizationService {
@@ -25,10 +26,21 @@ public class OrganizationService {
         this.userRepository = userRepository;
     }
 
-    public Organization updateOrganization(Long orgId, String name, String description) {
-        Organization org = findOrganizationById(orgId);
+    public Organization updateOrganization(Long orgId, String name, String description, String industry, String location) {
+        if (orgId == null) {
+            throw new InvalidOrganizationException("Organization ID cannot be null");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            throw new InvalidOrganizationException("Organization name cannot be empty");
+        }
+
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new OrganizationNotFoundException("Organization not found with id: " + orgId));
+
         org.setName(name);
         org.setDescription(description);
+        org.setIndustry(industry);
+        org.setLocation(location);
         return organizationRepository.save(org);
     }
 
@@ -63,13 +75,24 @@ public class OrganizationService {
         return UserDTO.fromUser(savedUser);
     }
 
-    private Organization findOrganizationById(Long orgId) {
+    public Organization findOrganizationById(Long orgId) {
         return organizationRepository.findById(orgId)
-                .orElseThrow(() -> new RuntimeException("Organization not found"));
+                .orElseThrow(OrganizationNotFoundException::new);
     }
 
     private User findUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+    @Transactional(readOnly = true)
+    public List<Organization> getAllOrganizations() {
+        return organizationRepository.findAll();
+    }
+    public Organization createOrganization(String name, String description, String industry, String location) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new InvalidOrganizationException("Organization name cannot be empty");
+        }
+        Organization newOrganization = new Organization(name, description, industry, location);
+        return organizationRepository.save(newOrganization);
     }
 }
