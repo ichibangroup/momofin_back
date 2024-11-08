@@ -456,7 +456,7 @@ class DocumentServiceTest {
         UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
             documentService.requestEdit(documentId, mockUsername);
         });
-        String expectedErrorMessage = "User with username " + mockUsername + " not found";
+        String expectedErrorMessage = "User with username " + mockUsername + " does not exist";
         assertEquals(expectedErrorMessage, exception.getMessage());
     }
 

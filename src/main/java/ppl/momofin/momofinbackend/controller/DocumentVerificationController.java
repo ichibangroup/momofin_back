@@ -133,11 +133,16 @@ public class DocumentVerificationController {
     }
 
     @PostMapping("/{documentId}/request-edit")
-    public ResponseEntity<EditRequest> requestEdit(
+    public ResponseEntity<?> requestEdit(
             @PathVariable String documentId,
             @RequestBody EditRequestRequest request) {
-        EditRequest editRequest = documentService.requestEdit(UUID.fromString(documentId), request.getUsername());
-        return ResponseEntity.ok(editRequest);
+        try {
+            EditRequest editRequest = documentService.requestEdit(UUID.fromString(documentId), request.getUsername());
+            return ResponseEntity.ok(editRequest);
+        } catch (RuntimeException  e) {
+            ErrorResponse errorResponse = new ErrorResponse("Error making request: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
     @GetMapping("/edit-request")

@@ -179,7 +179,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public EditRequest requestEdit(UUID documentId, String username) {
         Optional<User> optionalUser = userRepository.findByUsername(username);
-        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + NOT_FOUND);
+        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + " does not exist");
         User user = optionalUser.get();
         EditRequest request = new EditRequest();
         Document document = new Document();

@@ -15,6 +15,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import ppl.momofin.momofinbackend.dto.EditRequestDTO;
+import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.*;
 import ppl.momofin.momofinbackend.request.EditRequestRequest;
 import ppl.momofin.momofinbackend.security.JwtUtil;
@@ -337,6 +338,26 @@ class DocumentVerificationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.document.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
                 .andExpect(jsonPath("$.user.userId").value("292aeace-0148-4a20-98bf-bf7f12871efe"));
+
+        verify(documentService).requestEdit(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"), "Bertrum");
+    }
+
+    @Test
+    void testRequestEdit_DocumentServiceThrowsIOException_ReturnsBadRequest() throws Exception {
+        // Arrange
+        Document document = new Document();
+        document.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
+        EditRequest editRequest = new EditRequest(TEST_USER, document);
+        EditRequestRequest request = new EditRequestRequest();
+        request.setUsername("Bertrum");
+        when(documentService.requestEdit(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"), "Bertrum")).thenThrow(new UserNotFoundException("User with username Bertrum does not exist"));
+
+        mockMvc.perform(post("/doc/bd7ef7cf-8875-45fb-9fe5-f36319acddff/request-edit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Error making request: User with username Bertrum does not exist"));
 
         verify(documentService).requestEdit(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"), "Bertrum");
     }
