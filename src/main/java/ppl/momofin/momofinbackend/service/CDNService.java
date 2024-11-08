@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public interface CDNService {
     Document submitDocument(MultipartFile file, User user, String hashString) throws IOException;
-    Document editDocument(MultipartFile file, Document document, String hashString) throws IOException;
+    Document editDocument(MultipartFile file, Document document, String hashString, User editor) throws IOException;
     String getViewableUrl(Document document, UUID userId, String organizationName) throws IOException;
+    String getViewableUrl(Document document, UUID userId, String organizationName, int version) throws IOException;
 }

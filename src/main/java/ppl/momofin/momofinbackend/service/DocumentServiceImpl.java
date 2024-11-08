@@ -6,11 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.dto.EditRequestDTO;
 import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.Document;
+import ppl.momofin.momofinbackend.model.DocumentVersion;
 import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
+import ppl.momofin.momofinbackend.repository.DocumentVersionRepository;
 import ppl.momofin.momofinbackend.repository.EditRequestRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
@@ -31,6 +34,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     private static final String FILE_EMPTY_ERROR_MESSAGE = "File must not be null or empty";
     private static final String NOT_FOUND = " not found";
+    private static final String DOES_NOT_EXIST = " does not exist";
+
 
     @Value("${hmac.secret.key}")
     private String secretKey;
@@ -39,13 +44,15 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserRepository userRepository;
     private final EditRequestRepository editRequestRepository;
     private final CDNService cdnService;
+    private final DocumentVersionRepository documentVersionRepository;
 
     @Autowired
-    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService, EditRequestRepository editRequestRepository) {
+    public DocumentServiceImpl(DocumentRepository documentRepository, UserRepository userRepository, CDNService cdnService, EditRequestRepository editRequestRepository, DocumentVersionRepository documentVersionRepository) {
         this.userRepository = userRepository;
         this.documentRepository = documentRepository;
         this.cdnService = cdnService;
         this.editRequestRepository = editRequestRepository;
+        this.documentVersionRepository = documentVersionRepository;
     }
 
     @Override
@@ -149,10 +156,20 @@ public class DocumentServiceImpl implements DocumentService {
     public String getViewableUrl(UUID documentId, UUID userId, String organizationName) throws IOException {
         Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
 
-        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + " does not exist");
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + DOES_NOT_EXIST);
 
         Document document = optionalDocument.get();
         return cdnService.getViewableUrl(document, userId, organizationName);
+    }
+
+    @Override
+    public String getViewableUrl(UUID documentId, UUID userId, String organizationName, int version) throws IOException {
+        Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
+
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + DOES_NOT_EXIST);
+
+        Document document = optionalDocument.get();
+        return cdnService.getViewableUrl(document, userId, organizationName, version);
     }
 
     @Override
@@ -164,7 +181,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public EditRequest requestEdit(UUID documentId, String username) {
         Optional<User> optionalUser = userRepository.findByUsername(username);
-        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + NOT_FOUND);
+        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + DOES_NOT_EXIST);
         User user = optionalUser.get();
         EditRequest request = new EditRequest();
         Document document = new Document();
@@ -176,8 +193,8 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public List<EditRequest> getEditRequests(UUID userId) {
-        return editRequestRepository.findByUserId(userId);
+    public List<EditRequestDTO> getEditRequests(UUID userId) {
+        return editRequestRepository.findByUserIdAsDTO(userId);
     }
 
     @Override
@@ -192,15 +209,32 @@ public class DocumentServiceImpl implements DocumentService {
 
         String hashString = generateHash(file);
 
-        Document document = editRequest.getDocument();
+        UUID documentId = editRequest.getDocumentId();
+        UUID userId = editRequest.getUserId();
 
-        Document editedDocument = cdnService.editDocument(file, document, hashString);
+        Optional<Document> document = documentRepository.findByDocumentId(documentId);
+        if(document.isEmpty()) {
+            throw new IllegalStateException("Document with ID " + documentId + NOT_FOUND);
+        }
+        Optional<User> editor = userRepository.findById(userId);
+        if (editor.isEmpty()) {
+            throw new UserNotFoundException("User with ID " + userId + NOT_FOUND);
+        }
+
+        Document editedDocument = cdnService.editDocument(file, document.get(), hashString, editor.get());
         editRequestRepository.delete(editRequest);
         return editedDocument;
     }
 
+
+
     @Override
     public void rejectEditRequest(EditRequest editRequest) {
         editRequestRepository.delete(editRequest);
+    }
+
+    @Override
+    public List<DocumentVersion> findVersionsOfDocument(UUID documentId) {
+        return documentVersionRepository.findById_DocumentId(documentId);
     }
 }

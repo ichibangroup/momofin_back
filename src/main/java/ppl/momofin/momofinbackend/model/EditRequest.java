@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @Entity
@@ -42,5 +44,21 @@ public class EditRequest {
     public void setDocument(Document document) {
         this.document = document;
         id.setDocumentId(document.getDocumentId());
+    }
+
+    public UUID getDocumentId() {
+        return id.getDocumentId();
+    }
+
+    public void  setDocumentId(UUID documentId) {
+        id.setDocumentId(documentId);
+    }
+
+    public UUID getUserId() {
+        return id.getUserId();
+    }
+
+    public void setUserId(UUID userId) {
+        id.setUserId(userId);
     }
 }

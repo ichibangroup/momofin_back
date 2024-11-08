@@ -82,6 +82,9 @@ class GoogleCloudStorageCDNServiceTest {
     void testUploadFile() throws IOException {
         ArgumentCaptor<Document> documentCaptor = ArgumentCaptor.forClass(Document.class);
 
+        Document document = new Document();
+        document.setDocumentId(UUID.randomUUID());
+        when(documentRepository.save(any(Document.class))).thenReturn(document);
         cdnService.submitDocument(mockFile, user, "hashString");
 
         BlobId expectedBlobId = BlobId.of(bucketName, user.getOrganization().getName() + "/" + user.getUserId() + "/test-file/version_1_test-file.pdf");
@@ -186,7 +189,7 @@ class GoogleCloudStorageCDNServiceTest {
         when(documentRepository.save(any(Document.class))).thenReturn(document);
 
         // Execute the method
-        Document updatedDocument = cdnService.editDocument(mockFile, document, "newHash");
+        Document updatedDocument = cdnService.editDocument(mockFile, document, "newHash", user);
 
         // Verify interactions and results
         verify(mockStorage).create(expectedBlobInfo, mockFile.getBytes());
