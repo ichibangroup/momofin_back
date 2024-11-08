@@ -348,25 +348,6 @@ class OrganizationServiceTest {
                 organizationService.deleteUser(organizationId, userId, adminUser)
         );
     }
-
-    @Test
-    void deleteUser_ThrowsException_WhenUserNotFound() {
-        // Setup
-        Organization org = new Organization("Test Org", "Test Description");
-        org.setOrganizationId(organizationId);
-
-        User adminUser = new User();
-        adminUser.setOrganization(org);
-        adminUser.setOrganizationAdmin(true);
-
-        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org));
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
-
-        // Execute & Verify
-        assertThrows(RuntimeException.class, () ->
-                organizationService.deleteUser(organizationId, userId, adminUser)
-        );
-    }
     @Test
     void deleteUser_ThrowsException_WhenAdminFromDifferentOrganization() {
         // Setup
@@ -419,6 +400,52 @@ class OrganizationServiceTest {
         assertThrows(SecurityValidationException.class, () ->
                 organizationService.createOrganization("name", "description", "MALICIOUS", "location")
         );
+    }
+    @Test
+    void deleteUser_ThrowsException_WhenUserAlreadyDeleted() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        UUID orgId = UUID.randomUUID();
+        org.setOrganizationId(orgId);
+
+        User adminUser = new User();
+        adminUser.setOrganization(org);
+        adminUser.setOrganizationAdmin(true);
+
+        UUID userId = UUID.randomUUID();
+
+        // Mock user not found (already deleted) scenario
+        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        UserDeletionException exception = assertThrows(UserDeletionException.class, () ->
+                organizationService.deleteUser(orgId, userId, adminUser)
+        );
+        assertEquals("User no longer exists or was already deleted", exception.getMessage());
+    }
+    @Test
+    void deleteUser_ThrowsException_WhenUserNotFound() {
+        // Setup
+        UUID orgId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(orgId);
+
+        User adminUser = new User();
+        adminUser.setOrganization(org);
+        adminUser.setOrganizationAdmin(true);
+
+        // Mock organization found but user not found
+        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // Execute & Verify
+        UserDeletionException exception = assertThrows(UserDeletionException.class, () ->
+                organizationService.deleteUser(orgId, userId, adminUser)
+        );
+        assertEquals("User no longer exists or was already deleted", exception.getMessage());
     }
 
 

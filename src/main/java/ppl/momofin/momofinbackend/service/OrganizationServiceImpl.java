@@ -85,7 +85,7 @@ public class OrganizationServiceImpl implements OrganizationService {
 
     private User findUserById(UUID userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserDeletionException("User no longer exists or was already deleted"));
     }
 
     @Override
