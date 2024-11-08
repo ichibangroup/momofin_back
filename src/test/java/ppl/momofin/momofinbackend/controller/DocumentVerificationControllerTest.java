@@ -326,6 +326,9 @@ class DocumentVerificationControllerTest {
     void testRequestEdit_Success() throws Exception {
         Document document = new Document();
         document.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
+        User owner = new User();
+        owner.setOrganization(new Organization());
+        document.setOwner(owner);
         EditRequest editRequest = new EditRequest(TEST_USER, document);
         EditRequestRequest request = new EditRequestRequest();
         request.setUsername("Bertrum");
@@ -336,8 +339,8 @@ class DocumentVerificationControllerTest {
                         .content(objectMapper.writeValueAsString(request))
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.document.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
-                .andExpect(jsonPath("$.user.userId").value("292aeace-0148-4a20-98bf-bf7f12871efe"));
+                .andExpect(jsonPath("$.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
+                .andExpect(jsonPath("$.userId").value("292aeace-0148-4a20-98bf-bf7f12871efe"));
 
         verify(documentService).requestEdit(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"), "Bertrum");
     }
@@ -347,7 +350,6 @@ class DocumentVerificationControllerTest {
         // Arrange
         Document document = new Document();
         document.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
-        EditRequest editRequest = new EditRequest(TEST_USER, document);
         EditRequestRequest request = new EditRequestRequest();
         request.setUsername("Bertrum");
         when(documentService.requestEdit(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"), "Bertrum")).thenThrow(new UserNotFoundException("User with username Bertrum does not exist"));

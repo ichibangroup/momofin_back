@@ -1,13 +1,14 @@
 package ppl.momofin.momofinbackend.dto;
 import lombok.*;
 import ppl.momofin.momofinbackend.model.EditRequest;
+import ppl.momofin.momofinbackend.response.Response;
 
 import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class EditRequestDTO {
+public class EditRequestDTO implements Response {
     private String documentId;
     private String userId;
     private String organizationName;

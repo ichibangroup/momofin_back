@@ -34,6 +34,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     private static final String FILE_EMPTY_ERROR_MESSAGE = "File must not be null or empty";
     private static final String NOT_FOUND = " not found";
+    private static final String DOES_NOT_EXIST = " does not exist";
+
 
     @Value("${hmac.secret.key}")
     private String secretKey;
@@ -154,7 +156,7 @@ public class DocumentServiceImpl implements DocumentService {
     public String getViewableUrl(UUID documentId, UUID userId, String organizationName) throws IOException {
         Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
 
-        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + " does not exist");
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + DOES_NOT_EXIST);
 
         Document document = optionalDocument.get();
         return cdnService.getViewableUrl(document, userId, organizationName);
@@ -164,7 +166,7 @@ public class DocumentServiceImpl implements DocumentService {
     public String getViewableUrl(UUID documentId, UUID userId, String organizationName, int version) throws IOException {
         Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
 
-        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + " does not exist");
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + DOES_NOT_EXIST);
 
         Document document = optionalDocument.get();
         return cdnService.getViewableUrl(document, userId, organizationName, version);
@@ -179,7 +181,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public EditRequest requestEdit(UUID documentId, String username) {
         Optional<User> optionalUser = userRepository.findByUsername(username);
-        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + " does not exist");
+        if (optionalUser.isEmpty()) throw new UserNotFoundException("User with username " + username + DOES_NOT_EXIST);
         User user = optionalUser.get();
         EditRequest request = new EditRequest();
         Document document = new Document();
