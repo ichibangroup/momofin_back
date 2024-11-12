@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
@@ -15,7 +16,9 @@ import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
 import ppl.momofin.momofinbackend.request.AddOrganizationRequest;
+import ppl.momofin.momofinbackend.response.ErrorResponse;
 import ppl.momofin.momofinbackend.response.FetchAllUserResponse;
+import ppl.momofin.momofinbackend.response.Response;
 import ppl.momofin.momofinbackend.service.OrganizationService;
 import ppl.momofin.momofinbackend.response.OrganizationResponse;
 import ppl.momofin.momofinbackend.service.UserService;
@@ -25,8 +28,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class MomofinAdminControllerTest {
 
@@ -413,5 +415,114 @@ class MomofinAdminControllerTest {
             assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
             sentryMock.verify(() -> Sentry.captureException(exception));
         }
+    }
+    @Test
+    void deleteOrganization_Success() {
+        // Arrange
+        String orgId = UUID.randomUUID().toString();
+
+        // Act
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.deleteOrganization(orgId);
+
+        // Assert
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        verify(organizationService).deleteOrganization(UUID.fromString(orgId));
+    }
+    @Test
+    void deleteOrganization_HandlesException() {
+        // Arrange
+        String orgId = UUID.randomUUID().toString();
+        doThrow(new RuntimeException("Delete failed")).when(organizationService)
+                .deleteOrganization(any(UUID.class));
+
+        // Act
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.deleteOrganization(orgId);
+
+        // Assert
+        assertEquals(HttpStatus.GONE, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().getErrorMessage().contains("Delete failed"));
+    }
+    @Test
+    void setOrganizationAdmin_Success() {
+        // Arrange
+        String orgId = UUID.randomUUID().toString();
+        String userId = UUID.randomUUID().toString();
+        User updatedUser = new User();
+        when(organizationService.setOrganizationAdmin(
+                UUID.fromString(orgId),
+                UUID.fromString(userId)
+        )).thenReturn(updatedUser);
+
+        // Act
+        ResponseEntity<?> response = momofinAdminController.setOrganizationAdmin(orgId, userId);
+
+        // Assert
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+    }
+    @Test
+    void setOrganizationAdmin_HandlesSecurityException() {
+        // Arrange
+        String orgId = UUID.randomUUID().toString();
+        String userId = UUID.randomUUID().toString();
+        when(organizationService.setOrganizationAdmin(any(), any()))
+                .thenThrow(new SecurityException("Security violation"));
+
+        // Act
+        ResponseEntity<?> response = momofinAdminController.setOrganizationAdmin(orgId, userId);
+
+        // Assert
+        assertEquals(HttpStatus.GONE, response.getStatusCode());
+        assertNotNull(response.getBody());
+    }
+    @Test
+    void deleteOrganization_NotFound_ShouldReturnNotFound() {
+        // Arrange
+        String orgId = UUID.randomUUID().toString();
+        doThrow(new OrganizationNotFoundException("Organization not found"))
+                .when(organizationService).deleteOrganization(any(UUID.class));
+
+        // Act
+        ResponseEntity<OrganizationResponse> response = momofinAdminController.deleteOrganization(orgId);
+
+        // Assert
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        verify(organizationService).deleteOrganization(UUID.fromString(orgId));
+    }
+
+    @Test
+    void setOrganizationAdmin_OrganizationNotFound_ShouldReturnNotFound() {
+        // Arrange
+        String orgId = UUID.randomUUID().toString();
+        String userId = UUID.randomUUID().toString();
+
+        when(organizationService.setOrganizationAdmin(any(UUID.class), any(UUID.class)))
+                .thenThrow(new OrganizationNotFoundException("Organization not found"));
+
+        // Act
+        ResponseEntity<Response> response = momofinAdminController.setOrganizationAdmin(orgId, userId);
+
+        // Assert
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        verify(organizationService).setOrganizationAdmin(UUID.fromString(orgId), UUID.fromString(userId));
+    }
+
+    @Test
+    void setOrganizationAdmin_UnexpectedError_ShouldReturnGone() {
+        // Arrange
+        String orgId = UUID.randomUUID().toString();
+        String userId = UUID.randomUUID().toString();
+
+        when(organizationService.setOrganizationAdmin(any(UUID.class), any(UUID.class)))
+                .thenThrow(new RuntimeException("Unexpected error"));
+
+        // Act
+        ResponseEntity<Response> response = momofinAdminController.setOrganizationAdmin(orgId, userId);
+
+        // Assert
+        assertEquals(HttpStatus.GONE, response.getStatusCode());
+        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+        ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+        assertTrue(errorResponse.getErrorMessage().contains("Error setting organization admin"));
     }
 }
