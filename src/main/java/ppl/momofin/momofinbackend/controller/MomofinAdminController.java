@@ -5,13 +5,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import ppl.momofin.momofinbackend.dto.UserDTO;
-import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
-import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
-import ppl.momofin.momofinbackend.error.SecurityValidationException;
-import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
+import ppl.momofin.momofinbackend.error.*;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
@@ -217,6 +215,37 @@ public class MomofinAdminController {
             return ResponseEntity.status(HttpStatus.GONE)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new ErrorResponse("Error setting organization admin: " + e.getMessage()));
+        }
+    }
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<Response> deleteUser(@PathVariable String userId) {
+        try {
+            // Get the requesting Momofin admin from security context
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            User requestingUser = userService.fetchUserByUsername(username);
+
+            // Using the same service method, but with null orgId since Momofin admin doesn't need it
+            organizationService.deleteUser(null, UUID.fromString(userId), requestingUser);
+
+            // Success logging
+            Sentry.captureMessage(String.format(
+                    "[Success] User deleted by Momofin admin - UserID: %s",
+                    userId
+            ));
+
+            return ResponseEntity.noContent().build();
+        } catch (UserDeletionException e) {
+            logger.error("Error deleting user: {}", e.getMessage());
+            Sentry.captureException(e);
+            return ResponseEntity.status(HttpStatus.GONE)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Unexpected error deleting user", e);
+            Sentry.captureException(e);
+            return ResponseEntity.status(HttpStatus.GONE)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ErrorResponse("Error deleting user: " + e.getMessage()));
         }
     }
 }

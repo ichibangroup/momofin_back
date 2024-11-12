@@ -7,11 +7,11 @@ import org.mockito.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
-import ppl.momofin.momofinbackend.error.InvalidOrganizationException;
-import ppl.momofin.momofinbackend.error.OrganizationNotFoundException;
-import ppl.momofin.momofinbackend.error.SecurityValidationException;
-import ppl.momofin.momofinbackend.error.UserAlreadyExistsException;
+import ppl.momofin.momofinbackend.error.*;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.OrganizationRepository;
@@ -524,5 +524,99 @@ class MomofinAdminControllerTest {
         assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
         ErrorResponse errorResponse = (ErrorResponse) response.getBody();
         assertTrue(errorResponse.getErrorMessage().contains("Error setting organization admin"));
+    }
+    @Test
+    void deleteUser_Success_AsMomofinAdmin() {
+        // Arrange
+        String userId = UUID.randomUUID().toString();
+        User requestingUser = new User();
+        requestingUser.setMomofinAdmin(true);
+
+        when(userService.fetchUserByUsername(anyString())).thenReturn(requestingUser);
+        doNothing().when(organizationService).deleteUser(any(), any(UUID.class), any(User.class));
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class);
+             MockedStatic<SecurityContextHolder> securityContextMock = Mockito.mockStatic(SecurityContextHolder.class)) {
+
+            // Mock security context
+            SecurityContext securityContext = mock(SecurityContext.class);
+            Authentication authentication = mock(Authentication.class);
+            when(authentication.getName()).thenReturn("admin");
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            securityContextMock.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+
+            // Act
+            ResponseEntity<Response> response = momofinAdminController.deleteUser(userId);
+
+            // Assert
+            assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+            verify(organizationService).deleteUser(isNull(), eq(UUID.fromString(userId)), eq(requestingUser));
+            sentryMock.verify(() ->
+                    Sentry.captureMessage(String.format(
+                            "[Success] User deleted by Momofin admin - UserID: %s",
+                            userId
+                    ))
+            );
+        }
+    }
+
+    @Test
+    void deleteUser_UserDeletionException_AsMomofinAdmin() {
+        // Arrange
+        String userId = UUID.randomUUID().toString();
+        User requestingUser = new User();
+        requestingUser.setMomofinAdmin(true);
+
+        when(userService.fetchUserByUsername(anyString())).thenReturn(requestingUser);
+        doThrow(new UserDeletionException("Cannot delete other Momofin admins"))
+                .when(organizationService).deleteUser(any(), any(UUID.class), any(User.class));
+
+        try (MockedStatic<SecurityContextHolder> securityContextMock = Mockito.mockStatic(SecurityContextHolder.class)) {
+            // Mock security context
+            SecurityContext securityContext = mock(SecurityContext.class);
+            Authentication authentication = mock(Authentication.class);
+            when(authentication.getName()).thenReturn("admin");
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            securityContextMock.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+
+            // Act
+            ResponseEntity<Response> response = momofinAdminController.deleteUser(userId);
+
+            // Assert
+            assertEquals(HttpStatus.GONE, response.getStatusCode());
+            assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+            ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+            assertEquals("Cannot delete other Momofin admins", errorResponse.getErrorMessage());
+        }
+    }
+
+    @Test
+    void deleteUser_UnexpectedError_AsMomofinAdmin() {
+        // Arrange
+        String userId = UUID.randomUUID().toString();
+        User requestingUser = new User();
+        requestingUser.setMomofinAdmin(true);
+
+        when(userService.fetchUserByUsername(anyString())).thenReturn(requestingUser);
+        doThrow(new RuntimeException("Unexpected error"))
+                .when(organizationService).deleteUser(any(), any(UUID.class), any(User.class));
+
+        try (MockedStatic<SecurityContextHolder> securityContextMock = Mockito.mockStatic(SecurityContextHolder.class)) {
+            // Mock security context
+            SecurityContext securityContext = mock(SecurityContext.class);
+            Authentication authentication = mock(Authentication.class);
+            when(authentication.getName()).thenReturn("admin");
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            securityContextMock.when(SecurityContextHolder::getContext).thenReturn(securityContext);
+
+            // Act
+            ResponseEntity<Response> response = momofinAdminController.deleteUser(userId);
+
+            // Assert
+            assertEquals(HttpStatus.GONE, response.getStatusCode());
+            assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+            ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+            assertTrue(errorResponse.getErrorMessage().contains("Error deleting user"));
+        }
     }
 }
