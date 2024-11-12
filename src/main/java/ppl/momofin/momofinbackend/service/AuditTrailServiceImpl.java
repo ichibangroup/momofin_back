@@ -2,13 +2,10 @@ package ppl.momofin.momofinbackend.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import ppl.momofin.momofinbackend.model.AuditTrail;
-import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.AuditTrailRepository;
 import ppl.momofin.momofinbackend.repository.specification.AuditTrailSpecifications;
 
@@ -30,12 +27,13 @@ public class AuditTrailServiceImpl implements AuditTrailService {
         return auditTrailRepository.findAll();
     }
 
-    public Page<AuditTrail> getAuditTrails(User user, String action, LocalDateTime startDateTime, LocalDateTime endDateTime, Pageable pageable) {
+    public Page<AuditTrail> getAuditTrails(String username, String action, LocalDateTime startDateTime, LocalDateTime endDateTime, String documentName, Pageable pageable) {
         Specification<AuditTrail> spec = Specification.where(
-                        user != null ? AuditTrailSpecifications.hasUser(user) : null)
+                        username != null ? AuditTrailSpecifications.hasUser(username) : null)
                 .and(action != null ? AuditTrailSpecifications.hasAction(action) : null)
                 .and(startDateTime != null ? AuditTrailSpecifications.afterTimestamp(startDateTime) : null)
-                .and(endDateTime != null ? AuditTrailSpecifications.beforeTimestamp(endDateTime) : null);
+                .and(endDateTime != null ? AuditTrailSpecifications.beforeTimestamp(endDateTime) : null)
+                .and(documentName != null ? AuditTrailSpecifications.hasDocumentName(documentName) : null);
 
         return auditTrailRepository.findAll(spec, pageable);
     }
