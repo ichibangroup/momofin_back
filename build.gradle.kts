@@ -44,6 +44,7 @@ dependencies {
     implementation("com.google.cloud:google-cloud-storage:$gcpVersion")
     implementation("io.sentry:sentry:$sentryVersion")
     implementation("io.sentry:sentry-spring-boot-starter:$sentryVersion")
+    implementation ("org.springframework.boot:spring-boot-starter-hateoas")
 
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
