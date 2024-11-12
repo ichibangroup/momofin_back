@@ -51,7 +51,9 @@ public class AuditTrailAspect {
         auditTrail.setAuditOutcome("SUCCESS");
         String failed = "FAILED";
 
-        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
             auditTrail.setAuditOutcome(failed);
             auditTrailRepository.save(auditTrail);
             return;
