@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter;
 public class AuditTrailResponse {
     private Long id;
     private String username;
-    private String document;
+    private String documentName;
     private String action;
     private String date;
 
