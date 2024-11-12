@@ -107,26 +107,38 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     @Transactional
     public void deleteUser(UUID orgId, UUID userId, User requestingUser) {
-        Organization org = findOrganizationById(orgId);
         User userToDelete = findUserById(userId);
 
-        if (!requestingUser.isOrganizationAdmin()) {
-            throw new UserDeletionException("Only organization admins can delete users");
+        if (requestingUser.isMomofinAdmin()) {
+            // Momofin admin specific checks
+            if (userToDelete.isMomofinAdmin()) {
+                throw new UserDeletionException("Cannot delete other Momofin admins");
+            }
+            // Momofin admin can delete any org admin or regular user
+            userRepository.delete(userToDelete);
+        } else {
+            Organization org = findOrganizationById(orgId);
+            if (!requestingUser.isOrganizationAdmin()) {
+                throw new UserDeletionException("Only organization admins can delete users");
+            }
+
+            if (!requestingUser.getOrganization().equals(org)) {
+                throw new UserDeletionException("You can only delete users from your own organization");
+            }
+
+            if (!userToDelete.getOrganization().equals(org)) {
+                throw new UserDeletionException("User does not belong to your organization");
+            }
+
+            if (userToDelete.isOrganizationAdmin()) {
+                throw new UserDeletionException("Organization admins cannot be deleted");
+            }
+
+            userRepository.delete(userToDelete);
         }
 
-        if (!requestingUser.getOrganization().equals(org)) {
-            throw new UserDeletionException("You can only delete users from your own organization");
-        }
 
-        if (!userToDelete.getOrganization().equals(org)) {
-            throw new UserDeletionException("User does not belong to your organization");
-        }
 
-        if (userToDelete.isOrganizationAdmin()) {
-            throw new UserDeletionException("Organization admins cannot be deleted");
-        }
-
-        userRepository.delete(userToDelete);
     }
     private void validateInputs(String... inputs) {
         for (String input : inputs) {
@@ -135,5 +147,51 @@ public class OrganizationServiceImpl implements OrganizationService {
                 throw new SecurityValidationException("SQL injection detected in input");
             }
         }
+    }
+    @Override
+    @Transactional
+    public void deleteOrganization(UUID orgId) {
+        Organization org = findOrganizationById(orgId);
+
+        List<User> orgUsers = userRepository.findByOrganization(org);
+        for (User user : orgUsers) {
+            if (!user.getUsername().equals("deleted_user") && !user.isMomofinAdmin()) {
+                userRepository.delete(user);
+            } else if (user.isMomofinAdmin()) {
+                user.setOrganizationAdmin(false);
+                user.setOrganization(null);
+                userRepository.save(user);
+            }
+        }
+        organizationRepository.delete(org);
+    }
+    @Override
+    @Transactional
+    public User setOrganizationAdmin(UUID orgId, UUID userId) {
+        Organization org = findOrganizationById(orgId);
+        User user = findUserById(userId);
+
+        // Check if user already is an org admin
+        if (user.isOrganizationAdmin()) {
+            throw new UserDeletionException("User is already an organization admin");
+        }
+        // Check if user belongs to the organization
+        if (!user.getOrganization().equals(org)) {
+            throw new SecurityException("User does not belong to this organization");
+        }
+
+        // Check if user is momofin admin (can't be both)
+        if (user.isMomofinAdmin()) {
+            throw new SecurityException("Momofin admins cannot be set as organization admins directly");
+        }
+
+        // Check if trying to modify deleted user
+        if (user.getUsername().equals("deleted_user")) {
+            throw new SecurityException("Cannot modify system user");
+        }
+
+        // Set user as organization admin
+        user.setOrganizationAdmin(true);
+        return userRepository.save(user);
     }
 }

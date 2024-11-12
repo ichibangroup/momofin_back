@@ -15,4 +15,6 @@ public interface OrganizationService {
     List<Organization> getAllOrganizations();
     Organization createOrganization(String name, String description, String industry, String location);
     void deleteUser(UUID orgId, UUID userId, User requestingUser);
+    void deleteOrganization(UUID orgId);
+    User setOrganizationAdmin(UUID orgId, UUID userId);
 }
