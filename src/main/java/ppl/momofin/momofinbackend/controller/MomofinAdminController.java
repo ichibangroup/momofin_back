@@ -179,21 +179,26 @@ public class MomofinAdminController {
                     .body(new OrganizationResponse(null, "Error deleting organization: " + e.getMessage(), null));
         }
     }
-    @PutMapping("/organizations/{orgId}/users/{userId}/set-admin")
+    @PutMapping("/organizations/name/{orgName}/users/{userId}/set-admin")
     public ResponseEntity<Response> setOrganizationAdmin(
-            @PathVariable String orgId,
+            @PathVariable String orgName,
             @PathVariable String userId) {
         try {
+            // First find organization by name
+            Organization org = organizationRepository.findByName(orgName)
+                    .orElseThrow(() -> new OrganizationNotFoundException("Organization not found with name: " + orgName));
+
+            // Use existing service method with found org ID
             organizationService.setOrganizationAdmin(
-                    UUID.fromString(orgId),
+                    org.getOrganizationId(),
                     UUID.fromString(userId)
             );
 
             // Success logging
             Sentry.captureMessage(String.format(
-                    "[Success] User set as organization admin - UserID: %s, OrgID: %s",
+                    "[Success] User set as organization admin - UserID: %s, Organization: %s",
                     userId,
-                    orgId
+                    orgName
             ));
 
             return ResponseEntity.noContent().build();

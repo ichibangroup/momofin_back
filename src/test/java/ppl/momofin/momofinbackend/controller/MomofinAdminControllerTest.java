@@ -11,6 +11,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import ppl.momofin.momofinbackend.error.*;
 import ppl.momofin.momofinbackend.model.Organization;
 import ppl.momofin.momofinbackend.model.User;
@@ -443,38 +445,7 @@ class MomofinAdminControllerTest {
         assertNotNull(response.getBody());
         assertTrue(response.getBody().getErrorMessage().contains("Delete failed"));
     }
-    @Test
-    void setOrganizationAdmin_Success() {
-        // Arrange
-        String orgId = UUID.randomUUID().toString();
-        String userId = UUID.randomUUID().toString();
-        User updatedUser = new User();
-        when(organizationService.setOrganizationAdmin(
-                UUID.fromString(orgId),
-                UUID.fromString(userId)
-        )).thenReturn(updatedUser);
 
-        // Act
-        ResponseEntity<?> response = momofinAdminController.setOrganizationAdmin(orgId, userId);
-
-        // Assert
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-    }
-    @Test
-    void setOrganizationAdmin_HandlesSecurityException() {
-        // Arrange
-        String orgId = UUID.randomUUID().toString();
-        String userId = UUID.randomUUID().toString();
-        when(organizationService.setOrganizationAdmin(any(), any()))
-                .thenThrow(new SecurityException("Security violation"));
-
-        // Act
-        ResponseEntity<?> response = momofinAdminController.setOrganizationAdmin(orgId, userId);
-
-        // Assert
-        assertEquals(HttpStatus.GONE, response.getStatusCode());
-        assertNotNull(response.getBody());
-    }
     @Test
     void deleteOrganization_NotFound_ShouldReturnNotFound() {
         // Arrange
@@ -490,41 +461,6 @@ class MomofinAdminControllerTest {
         verify(organizationService).deleteOrganization(UUID.fromString(orgId));
     }
 
-    @Test
-    void setOrganizationAdmin_OrganizationNotFound_ShouldReturnNotFound() {
-        // Arrange
-        String orgId = UUID.randomUUID().toString();
-        String userId = UUID.randomUUID().toString();
-
-        when(organizationService.setOrganizationAdmin(any(UUID.class), any(UUID.class)))
-                .thenThrow(new OrganizationNotFoundException("Organization not found"));
-
-        // Act
-        ResponseEntity<Response> response = momofinAdminController.setOrganizationAdmin(orgId, userId);
-
-        // Assert
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        verify(organizationService).setOrganizationAdmin(UUID.fromString(orgId), UUID.fromString(userId));
-    }
-
-    @Test
-    void setOrganizationAdmin_UnexpectedError_ShouldReturnGone() {
-        // Arrange
-        String orgId = UUID.randomUUID().toString();
-        String userId = UUID.randomUUID().toString();
-
-        when(organizationService.setOrganizationAdmin(any(UUID.class), any(UUID.class)))
-                .thenThrow(new RuntimeException("Unexpected error"));
-
-        // Act
-        ResponseEntity<Response> response = momofinAdminController.setOrganizationAdmin(orgId, userId);
-
-        // Assert
-        assertEquals(HttpStatus.GONE, response.getStatusCode());
-        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
-        ErrorResponse errorResponse = (ErrorResponse) response.getBody();
-        assertTrue(errorResponse.getErrorMessage().contains("Error setting organization admin"));
-    }
     @Test
     void deleteUser_Success_AsMomofinAdmin() {
         // Arrange
@@ -617,6 +553,118 @@ class MomofinAdminControllerTest {
             assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
             ErrorResponse errorResponse = (ErrorResponse) response.getBody();
             assertTrue(errorResponse.getErrorMessage().contains("Error deleting user"));
+        }
+    }
+    @Test
+    void setOrganizationAdmin_Success() {
+        // Arrange
+        String orgName = "Test Org";
+        String userId = UUID.randomUUID().toString();
+        Organization org = new Organization("Test Org", "Description");
+        UUID orgId = UUID.randomUUID();
+        org.setOrganizationId(orgId);
+
+        when(organizationRepository.findByName(orgName)).thenReturn(Optional.of(org));
+        when(organizationService.setOrganizationAdmin(
+                org.getOrganizationId(),
+                UUID.fromString(userId)
+        )).thenReturn(new User());
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<Response> response = momofinAdminController.setOrganizationAdmin(orgName, userId);
+
+            // Assert
+            assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+            verify(organizationService).setOrganizationAdmin(org.getOrganizationId(), UUID.fromString(userId));
+            sentryMock.verify(() ->
+                    Sentry.captureMessage(String.format(
+                            "[Success] User set as organization admin - UserID: %s, Organization: %s",
+                            userId,
+                            orgName
+                    ))
+            );
+        }
+    }
+
+    @Test
+    void setOrganizationAdmin_OrganizationNotFound() {
+        // Arrange
+        String orgName = "Test Org";
+        String userId = UUID.randomUUID().toString();
+
+        when(organizationRepository.findByName(orgName))
+                .thenReturn(Optional.empty());
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<Response> response = momofinAdminController.setOrganizationAdmin(orgName, userId);
+
+            // Assert
+            assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+            verify(organizationService, never()).setOrganizationAdmin(any(), any());
+            sentryMock.verify(() -> Sentry.captureException(any(OrganizationNotFoundException.class)));
+        }
+    }
+
+    @Test
+    void setOrganizationAdmin_SecurityException() {
+        // Arrange
+        String orgName = "Test Org";
+        String userId = UUID.randomUUID().toString();
+        Organization org = new Organization("Test Org", "Description");
+        UUID orgId = UUID.randomUUID();
+        org.setOrganizationId(orgId);
+
+        SecurityException securityException = new SecurityException("Security error");
+
+        when(organizationRepository.findByName(orgName)).thenReturn(Optional.of(org));
+        when(organizationService.setOrganizationAdmin(
+                org.getOrganizationId(),
+                UUID.fromString(userId)
+        )).thenThrow(securityException);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<Response> response = momofinAdminController.setOrganizationAdmin(orgName, userId);
+
+            // Assert
+            assertEquals(HttpStatus.GONE, response.getStatusCode());
+            assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+            ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+            assertEquals("Security error", errorResponse.getErrorMessage());
+            sentryMock.verify(() -> Sentry.captureException(securityException));
+        }
+    }
+
+    @Test
+    void setOrganizationAdmin_UnexpectedError() {
+        // Arrange
+        String orgName = "Test Org";
+        String userId = UUID.randomUUID().toString();
+        Organization org = new Organization("Test Org", "Description");
+        UUID orgId = UUID.randomUUID();
+        org.setOrganizationId(orgId);
+
+        RuntimeException unexpectedException = new RuntimeException("Unexpected error");
+
+        when(organizationRepository.findByName(orgName)).thenReturn(Optional.of(org));
+        when(organizationService.setOrganizationAdmin(
+                org.getOrganizationId(),
+                UUID.fromString(userId)
+        )).thenThrow(unexpectedException);
+
+        try (MockedStatic<Sentry> sentryMock = Mockito.mockStatic(Sentry.class)) {
+            // Act
+            ResponseEntity<Response> response = momofinAdminController.setOrganizationAdmin(orgName, userId);
+
+            // Assert
+            assertEquals(HttpStatus.GONE, response.getStatusCode());
+            assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
+            ErrorResponse errorResponse = (ErrorResponse) response.getBody();
+            assertTrue(errorResponse.getErrorMessage().contains("Error setting organization admin"));
+            assertTrue(errorResponse.getErrorMessage().contains("Unexpected error"));
+            sentryMock.verify(() -> Sentry.captureException(unexpectedException));
         }
     }
 }
