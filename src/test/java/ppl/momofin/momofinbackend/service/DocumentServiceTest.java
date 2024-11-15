@@ -55,6 +55,10 @@ class DocumentServiceTest {
     private String mockUsername;
     private Document document;
     private UUID documentId;
+    private String organizationName;
+    private String expectedUrl;
+    private EditRequestKey editRequestKey;
+    private EditRequest editRequest;
 
     @BeforeEach
     void setUp() {
@@ -64,13 +68,30 @@ class DocumentServiceTest {
         mockUser = new User();
         Organization organization = new Organization("Momofin");
         mockUser.setName(mockUsername);
-        mockUser.setUserId(UUID.randomUUID());
+        mockUser.setUserId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
         mockUser.setOrganization(organization);
 
         document = new Document();
         documentId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         document.setDocumentId(documentId);
         document.setName("testfile.pdf");
+        document.setOwner(mockUser);
+
+        UUID requestedId = UUID.randomUUID();
+        User requestedUser = new User();
+        requestedUser.setName(mockUsername);
+        requestedUser.setUserId(requestedId);
+        requestedUser.setOrganization(organization);
+
+
+        editRequestKey = new EditRequestKey();
+        editRequestKey.setUserId(requestedId);
+        editRequestKey.setDocumentId(documentId);
+
+        editRequest = new EditRequest(requestedUser, document);
+
+        organizationName = "TestOrg";
+        expectedUrl = "https://cdn.example.com/document";
     }
 
     @Test
@@ -704,4 +725,65 @@ class DocumentServiceTest {
         verify(editRequestRepository, never()).delete(any());
     }
 
+    @Test
+    void getViewableUrlForEditRequest_Success() throws IOException {
+        // Arrange
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(document, mockUser.getUserId(), organizationName)).thenReturn(expectedUrl);
+
+        // Act
+        String result = documentService.getViewableUrlForEditRequest(documentId, editRequest, organizationName);
+
+        // Assert
+        assertEquals(expectedUrl, result);
+        verify(editRequestRepository).existsById(editRequest.getId());
+        verify(documentRepository).findByDocumentId(documentId);
+        verify(cdnService).getViewableUrl(document, mockUser.getUserId(), organizationName);
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_EditRequestNotFound() throws IOException {
+        // Arrange
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(false);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> documentService.getViewableUrlForEditRequest(documentId, editRequest, organizationName)
+        );
+        assertEquals("Edit request not found in the database.", exception.getMessage());
+        verify(documentRepository, never()).findByDocumentId(any());
+        verify(cdnService, never()).getViewableUrl(any(), any(), any());
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_DocumentNotFound() throws IOException {
+        // Arrange
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> documentService.getViewableUrlForEditRequest(documentId, editRequest, organizationName)
+        );
+        assertEquals("Document with id " + documentId + " does not exist", exception.getMessage());
+        verify(cdnService, never()).getViewableUrl(any(), any(), any());
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_CdnServiceThrowsException() throws IOException {
+        // Arrange
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(document, mockUser.getUserId(), organizationName))
+                .thenThrow(new IOException("CDN service error"));
+
+        // Act & Assert
+        assertThrows(
+                IOException.class,
+                () -> documentService.getViewableUrlForEditRequest(documentId, editRequest, organizationName)
+        );
+    }
 }
