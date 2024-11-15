@@ -31,6 +31,7 @@ public class DocumentVerificationController {
     private final DocumentService documentService;
     private final JwtUtil jwtUtil;
     private final UserService userService;
+    private static final String ERROR_RETRIEVING_DOCUMENT= "Error retrieving document: ";
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentVerificationController.class);
     @Autowired
@@ -112,7 +113,7 @@ public class DocumentVerificationController {
 
             return ResponseEntity.ok(urlResponse);
         } catch (RuntimeException | IOException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Error retrieving document: " + e.getMessage());
+            ErrorResponse errorResponse = new ErrorResponse(ERROR_RETRIEVING_DOCUMENT + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
@@ -127,7 +128,7 @@ public class DocumentVerificationController {
 
             return ResponseEntity.ok(urlResponse);
         } catch (RuntimeException | IOException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Error retrieving document: " + e.getMessage());
+            ErrorResponse errorResponse = new ErrorResponse(ERROR_RETRIEVING_DOCUMENT + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
@@ -170,7 +171,7 @@ public class DocumentVerificationController {
 
             return ResponseEntity.ok(urlResponse);
         } catch (RuntimeException | IOException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Error retrieving document: " + e.getMessage());
+            ErrorResponse errorResponse = new ErrorResponse(ERROR_RETRIEVING_DOCUMENT + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }

@@ -76,9 +76,9 @@ class DocumentVerificationControllerTest {
         TEST_USER.setOrganization(new Organization());
         claims.put("roles", Collections.singletonList("ROLE_USER"));
         when(jwtUtil.extractAllClaims("validToken")).thenReturn(claims);
-        organizationName = "TestOrg";
         viewableUrl = "https://cdn.example.com/viewable-doc";
-        documentId = UUID.randomUUID();
+        documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
+        organizationName = "testorg";
 
     }
 
@@ -282,9 +282,6 @@ class DocumentVerificationControllerTest {
     @Test
     void getViewableUrl_Success_ReturnsOkResponse() throws Exception {
         // Arrange
-        UUID documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
-        String organizationName = "testorg";
-        String viewableUrl = "https://cdn.example.com/document-url";
 
         when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
         when(documentService.getViewableUrl(documentId, UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"), organizationName)).thenReturn(viewableUrl);
@@ -302,8 +299,6 @@ class DocumentVerificationControllerTest {
     @Test
     void getViewableUrl_DocumentServiceThrowsIOException_ReturnsBadRequest() throws Exception {
         // Arrange
-        UUID documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
-        String organizationName = "testorg";
 
         when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
         when(documentService.getViewableUrl(documentId, UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"), organizationName)).thenThrow(new IOException("File not found: test.txt"));
@@ -330,6 +325,7 @@ class DocumentVerificationControllerTest {
                 .andExpect(jsonPath("$.hashString").value("hashString"))
                 .andExpect(jsonPath("$.name").value("documentName"));
     }
+
 
     @Test
     void testRequestEdit_Success() throws Exception {
@@ -422,7 +418,6 @@ class DocumentVerificationControllerTest {
 
     @Test
     void  testFetchDocumentVersions() throws Exception {
-        UUID documentId = UUID.randomUUID();
         DocumentVersion documentVersion = new DocumentVersion(1, documentId, "test.pdf", "jydkvlklififilviugilfilgi");
         DocumentVersion documentVersion2 = new DocumentVersion(2, documentId, "test.pdf", "iouivoikuicvliiulibivuivilb");
         List<DocumentVersion> versionList = new ArrayList<>();
@@ -442,9 +437,6 @@ class DocumentVerificationControllerTest {
     @Test
     void getViewableUrlVersion_Success_ReturnsOkResponse() throws Exception {
         // Arrange
-        UUID documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
-        String organizationName = "testorg";
-        String viewableUrl = "https://cdn.example.com/document-url";
 
         when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
         when(documentService.getViewableUrl(documentId, UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"), organizationName,2)).thenReturn(viewableUrl);
@@ -462,8 +454,6 @@ class DocumentVerificationControllerTest {
     @Test
     void getViewableUrlVersion_DocumentServiceThrowsIOException_ReturnsBadRequest() throws Exception {
         // Arrange
-        UUID documentId = UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff");
-        String organizationName = "testorg";
 
         when(jwtUtil.extractOrganizationName("validToken")).thenReturn(organizationName);
         when(documentService.getViewableUrl(documentId, UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"), organizationName, 333)).thenThrow(new IOException("File not found: test.txt"));
