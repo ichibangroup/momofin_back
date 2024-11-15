@@ -127,7 +127,7 @@ class GoogleCloudStorageCDNServiceTest {
         when(mockStorage.get(blobId)).thenReturn(blob);
         URI signedUri = URI.create("https://signed-url.com");
         URL signedUrl = signedUri.toURL();
-        when(blob.signUrl(1, TimeUnit.HOURS)).thenReturn(signedUrl);
+        when(blob.signUrl(15, TimeUnit.MINUTES)).thenReturn(signedUrl);
 
         // Act
         String viewableUrl = cdnService.getViewableUrl(document, userId, organizationName);
@@ -136,7 +136,7 @@ class GoogleCloudStorageCDNServiceTest {
         assertNotNull(viewableUrl);
         assertEquals("https://signed-url.com", viewableUrl);
         verify(mockStorage).get(blobId); // Ensure the correct blob was fetched
-        verify(blob).signUrl(1, TimeUnit.HOURS); // Ensure a signed URL was created
+        verify(blob).signUrl(15, TimeUnit.MINUTES); // Ensure a signed URL was created
     }
 
     @Test

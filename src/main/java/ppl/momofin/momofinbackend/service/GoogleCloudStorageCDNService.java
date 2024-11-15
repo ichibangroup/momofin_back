@@ -146,6 +146,7 @@ public class GoogleCloudStorageCDNService implements CDNService {
 
         document.setHashString(hashString);
         document.setCurrentVersion(nextVersion);
+        document.setBeingRequested(false);
 
         documentVersionRepository.save(newVersion);
 
@@ -173,7 +174,7 @@ public class GoogleCloudStorageCDNService implements CDNService {
         }
 
         // Generate a signed URL that expires in 1 hour
-        URL signedUrl = blob.signUrl(1, TimeUnit.HOURS);
+        URL signedUrl = blob.signUrl(15, TimeUnit.MINUTES);
         return signedUrl.toString();
     }
 
