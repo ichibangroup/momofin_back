@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import ppl.momofin.momofinbackend.dto.EditRequestDTO;
 import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import ppl.momofin.momofinbackend.model.*;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Collections;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -60,6 +62,9 @@ class DocumentVerificationControllerTest {
     private static final String INVALID_TOKEN = "Bearer invalidToken";
     private static final String TEST_USERNAME = "testUser";
     private static final User TEST_USER = new User();
+    private UUID documentId;
+    private String organizationName;
+    private String viewableUrl;
 
     @BeforeEach
     void setUp() {
@@ -71,6 +76,10 @@ class DocumentVerificationControllerTest {
         TEST_USER.setOrganization(new Organization());
         claims.put("roles", Collections.singletonList("ROLE_USER"));
         when(jwtUtil.extractAllClaims("validToken")).thenReturn(claims);
+        organizationName = "TestOrg";
+        viewableUrl = "https://cdn.example.com/viewable-doc";
+        documentId = UUID.randomUUID();
+
     }
 
     @AfterEach
@@ -467,5 +476,101 @@ class DocumentVerificationControllerTest {
         verify(jwtUtil, times(1)).extractUserId("validToken");
         verify(jwtUtil, times(1)).extractOrganizationName("validToken");
         verify(documentService, times(1)).getViewableUrl(documentId, UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"), organizationName, 333);
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_Success() throws Exception {
+        // Arrange
+        when(documentService.getViewableUrlForEditRequest(any(UUID.class), any(EditRequest.class), anyString()))
+                .thenReturn(viewableUrl);
+
+        // Act
+        ResultActions result = mockMvc.perform(get("/doc/edit-request/{documentId}", documentId)
+                .param("organizationName", organizationName)
+                .header("Authorization", VALID_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON));
+
+        // Assert
+        result.andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value(viewableUrl));
+
+        verify(documentService).getViewableUrlForEditRequest(eq(documentId), any(EditRequest.class), eq(organizationName));
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_NoAuthorizationHeader() throws Exception {
+        mockMvc.perform(get("/doc/edit-request/{documentId}", documentId)
+                        .param("organizationName", organizationName)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+
+        verify(documentService, never()).getViewableUrlForEditRequest(any(), any(), any());
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_InvalidToken() throws Exception {
+        // Arrange
+        when(jwtUtil.validateToken(anyString())).thenReturn(false);
+
+        // Act & Assert
+        mockMvc.perform(get("/doc/edit-request/{documentId}", documentId)
+                        .param("organizationName", organizationName)
+                        .header("Authorization", "Bearer invalid.token")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+
+        verify(documentService, never()).getViewableUrlForEditRequest(any(), any(), any());
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_InvalidDocumentId() throws Exception {
+        mockMvc.perform(get("/doc/edit-request/{documentId}", "invalid-uuid")
+                        .param("organizationName", organizationName)
+                        .header("Authorization", VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value(containsString("Error retrieving document: Invalid UUID string")));
+
+        verify(documentService, never()).getViewableUrlForEditRequest(any(), any(), any());
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_MissingOrganizationName() throws Exception {
+        mockMvc.perform(get("/doc/edit-request/{documentId}", documentId)
+                        .header("Authorization", VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+
+        verify(documentService, never()).getViewableUrlForEditRequest(any(), any(), any());
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_ServiceThrowsIOException() throws Exception {
+        // Arrange
+        when(documentService.getViewableUrlForEditRequest(any(UUID.class), any(EditRequest.class), anyString()))
+                .thenThrow(new IOException("Failed to get viewable URL"));
+
+        // Act & Assert
+        mockMvc.perform(get("/doc/edit-request/{documentId}", documentId)
+                        .param("organizationName", organizationName)
+                        .header("Authorization", VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Error retrieving document: Failed to get viewable URL"));
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_ServiceThrowsRuntimeException() throws Exception {
+        // Arrange
+        when(documentService.getViewableUrlForEditRequest(any(UUID.class), any(EditRequest.class), anyString()))
+                .thenThrow(new IllegalArgumentException("Document not found"));
+
+        // Act & Assert
+        mockMvc.perform(get("/doc/edit-request/{documentId}", documentId)
+                        .param("organizationName", organizationName)
+                        .header("Authorization", VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Error retrieving document: Document not found"));
     }
 }
