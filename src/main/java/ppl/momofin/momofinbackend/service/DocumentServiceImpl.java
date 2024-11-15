@@ -35,6 +35,7 @@ public class DocumentServiceImpl implements DocumentService {
     private static final String FILE_EMPTY_ERROR_MESSAGE = "File must not be null or empty";
     private static final String NOT_FOUND = " not found";
     private static final String DOES_NOT_EXIST = " does not exist";
+    private static final String DOCUMENT_WITH_ID = "Document with ID ";
 
 
     @Value("${hmac.secret.key}")
@@ -100,7 +101,7 @@ public class DocumentServiceImpl implements DocumentService {
         Optional<Document> documentOptional = documentRepository.findById(documentId);
 
         if (documentOptional.isEmpty()) {
-            throw new IllegalStateException("Document with ID " + documentId + NOT_FOUND);
+            throw new IllegalStateException(DOCUMENT_WITH_ID + documentId + NOT_FOUND);
         }
 
         Document document = documentOptional.get();
@@ -152,24 +153,39 @@ public class DocumentServiceImpl implements DocumentService {
         return documentRepository.findAllByOwner(user);
     }
 
-    @Override
-    public String getViewableUrl(UUID documentId, UUID userId, String organizationName) throws IOException {
+    private Document fetchDocumentOfOwner(UUID documentId, UUID userId) {
         Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
 
-        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + DOES_NOT_EXIST);
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException(DOCUMENT_WITH_ID + documentId + DOES_NOT_EXIST);
 
         Document document = optionalDocument.get();
+
+        if(!document.getOwner().getUserId().equals(userId)) throw new IllegalArgumentException(DOCUMENT_WITH_ID + documentId + " does not belong to you");
+        return document;
+    }
+
+    @Override
+    public String getViewableUrl(UUID documentId, UUID userId, String organizationName) throws IOException {
+        Document document = fetchDocumentOfOwner(documentId, userId);
         return cdnService.getViewableUrl(document, userId, organizationName);
     }
 
     @Override
     public String getViewableUrl(UUID documentId, UUID userId, String organizationName, int version) throws IOException {
+        Document document = fetchDocumentOfOwner(documentId, userId);
+        return cdnService.getViewableUrl(document, userId, organizationName, version);
+    }
+
+    public String getViewableUrlForEditRequest(UUID documentId, EditRequest editRequest, String organizationName) throws IOException {
+        if(!editRequestRepository.existsById(editRequest.getId())) {
+            throw new IllegalArgumentException("Edit request not found in the database.");
+        }
         Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
 
-        if (optionalDocument.isEmpty()) throw new IllegalArgumentException("Document with id " + documentId + DOES_NOT_EXIST);
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException(DOCUMENT_WITH_ID + documentId + DOES_NOT_EXIST);
 
         Document document = optionalDocument.get();
-        return cdnService.getViewableUrl(document, userId, organizationName, version);
+        return cdnService.getViewableUrl(document,document.getOwner().getUserId(), organizationName);
     }
 
     @Override
@@ -186,6 +202,7 @@ public class DocumentServiceImpl implements DocumentService {
         EditRequest request = new EditRequest();
         Document document = new Document();
         document.setDocumentId(documentId);
+        documentRepository.updateIsBeingRequested(documentId, true);
 
         request.setDocument(document);
         request.setUser(user);
@@ -214,7 +231,7 @@ public class DocumentServiceImpl implements DocumentService {
 
         Optional<Document> document = documentRepository.findByDocumentId(documentId);
         if(document.isEmpty()) {
-            throw new IllegalStateException("Document with ID " + documentId + NOT_FOUND);
+            throw new IllegalStateException(DOCUMENT_WITH_ID + documentId + NOT_FOUND);
         }
         Optional<User> editor = userRepository.findById(userId);
         if (editor.isEmpty()) {

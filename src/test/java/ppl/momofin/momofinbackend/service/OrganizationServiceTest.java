@@ -341,6 +341,11 @@ class OrganizationServiceTest {
         User adminUser = new User();
         adminUser.setOrganizationAdmin(true);
 
+        // Mock user to be found first
+        User userToDelete = new User();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userToDelete));
+
+        // Then mock organization not found
         when(organizationRepository.findById(organizationId)).thenReturn(Optional.empty());
 
         // Execute & Verify
@@ -446,6 +451,216 @@ class OrganizationServiceTest {
                 organizationService.deleteUser(orgId, userId, adminUser)
         );
         assertEquals("User no longer exists or was already deleted", exception.getMessage());
+    }
+    @Test
+    void deleteOrganization_Success() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(organizationId);
+
+        User regularUser = new User();
+        regularUser.setUsername("regular_user");
+        regularUser.setOrganization(org);
+        regularUser.setMomofinAdmin(false);
+
+        User momofinAdmin = new User();
+        momofinAdmin.setUsername("momofin_admin");
+        momofinAdmin.setOrganization(org);
+        momofinAdmin.setMomofinAdmin(true);
+
+        List<User> orgUsers = Arrays.asList(regularUser, momofinAdmin);
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org));
+        when(userRepository.findByOrganization(org)).thenReturn(orgUsers);
+
+        // Execute
+        organizationService.deleteOrganization(organizationId);
+
+        // Verify
+        verify(userRepository).delete(regularUser);
+        verify(userRepository, never()).delete(momofinAdmin);
+        verify(userRepository).save(momofinAdmin);
+        verify(organizationRepository).delete(org);
+    }
+
+    @Test
+    void deleteOrganization_WithSystemUser() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(organizationId);
+
+        User systemUser = new User();
+        systemUser.setUsername("deleted_user");
+        systemUser.setOrganization(org);
+
+        List<User> orgUsers = Collections.singletonList(systemUser);
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org));
+        when(userRepository.findByOrganization(org)).thenReturn(orgUsers);
+
+        // Execute
+        organizationService.deleteOrganization(organizationId);
+
+        // Verify
+        verify(userRepository, never()).delete(systemUser);
+        verify(organizationRepository).delete(org);
+    }
+
+    @Test
+    void setOrganizationAdmin_Success() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(organizationId);
+
+        User user = new User();
+        user.setUserId(userId);
+        user.setOrganization(org);
+        user.setOrganizationAdmin(false);
+        user.setMomofinAdmin(false);
+        user.setUsername("regular_user");
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        // Execute
+        User result = organizationService.setOrganizationAdmin(organizationId, userId);
+
+        // Assert
+        assertTrue(result.isOrganizationAdmin());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void setOrganizationAdmin_ThrowsException_WhenUserAlreadyAdmin() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(organizationId);
+
+        User existingAdmin = new User();
+        existingAdmin.setUserId(userId);
+        existingAdmin.setOrganization(org);
+        existingAdmin.setOrganizationAdmin(true);
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(existingAdmin));
+
+        // Execute & Verify
+        assertThrows(UserDeletionException.class, () ->
+                organizationService.setOrganizationAdmin(organizationId, userId)
+        );
+    }
+
+    @Test
+    void setOrganizationAdmin_ThrowsException_WhenUserIsMomofinAdmin() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(organizationId);
+
+        User momofinAdmin = new User();
+        momofinAdmin.setUserId(userId);
+        momofinAdmin.setOrganization(org);
+        momofinAdmin.setMomofinAdmin(true);
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(momofinAdmin));
+
+        // Execute & Verify
+        assertThrows(SecurityException.class, () ->
+                organizationService.setOrganizationAdmin(organizationId, userId)
+        );
+    }
+    @Test
+    void deleteUser_MomofinAdmin_CannotDeleteOtherMomofinAdmin() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(organizationId);
+
+        User requestingMomofinAdmin = new User();
+        requestingMomofinAdmin.setMomofinAdmin(true);
+        requestingMomofinAdmin.setOrganization(org);
+
+        User targetMomofinAdmin = new User();
+        targetMomofinAdmin.setUserId(userId);
+        targetMomofinAdmin.setMomofinAdmin(true);
+        targetMomofinAdmin.setOrganization(org);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(targetMomofinAdmin));
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org));
+
+        // Execute & Verify
+        UserDeletionException exception = assertThrows(UserDeletionException.class, () ->
+                organizationService.deleteUser(organizationId, userId, requestingMomofinAdmin)
+        );
+        assertEquals("Cannot delete other Momofin admins", exception.getMessage());
+    }
+
+    @Test
+    void deleteUser_MomofinAdmin_CanDeleteRegularUser() {
+        // Setup
+        Organization org = new Organization("Test Org", "Test Description");
+        org.setOrganizationId(organizationId);
+
+        User momofinAdmin = new User();
+        momofinAdmin.setMomofinAdmin(true);
+        momofinAdmin.setOrganization(org);
+
+        User regularUser = new User();
+        regularUser.setUserId(userId);
+        regularUser.setMomofinAdmin(false);
+        regularUser.setOrganization(org);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(regularUser));
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org));
+
+        // Execute
+        organizationService.deleteUser(organizationId, userId, momofinAdmin);
+
+        // Verify
+        verify(userRepository).delete(regularUser);
+    }
+
+    @Test
+    void setOrganizationAdmin_ThrowsException_WhenUserFromDifferentOrg() {
+        // Setup
+        Organization org1 = new Organization("Org 1", "Description 1");
+        Organization org2 = new Organization("Org 2", "Description 2");
+        org1.setOrganizationId(organizationId);
+
+        User user = new User();
+        user.setUserId(userId);
+        user.setOrganization(org2);
+        user.setOrganizationAdmin(false);
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org1));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        // Execute & Verify
+        SecurityException exception = assertThrows(SecurityException.class, () ->
+                organizationService.setOrganizationAdmin(organizationId, userId)
+        );
+        assertEquals("User does not belong to this organization", exception.getMessage());
+    }
+
+    @Test
+    void setOrganizationAdmin_ThrowsException_WhenSystemUser() {
+        // Setup
+        Organization org = new Organization("Test Org", "Description");
+        org.setOrganizationId(organizationId);
+
+        User systemUser = new User();
+        systemUser.setUserId(userId);
+        systemUser.setUsername("deleted_user");
+        systemUser.setOrganization(org);
+
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(org));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(systemUser));
+
+        // Execute & Verify
+        SecurityException exception = assertThrows(SecurityException.class, () ->
+                organizationService.setOrganizationAdmin(organizationId, userId)
+        );
+        assertEquals("Cannot modify system user", exception.getMessage());
     }
 
 

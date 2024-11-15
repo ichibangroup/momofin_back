@@ -18,7 +18,8 @@ public class Document {
     @ManyToOne
     @JoinColumn(name = "owner", referencedColumnName = "userId")
     private User owner;
-    private  int currentVersion;
+    private int currentVersion;
+    private boolean isBeingRequested;
 
     public Document() {}
 
