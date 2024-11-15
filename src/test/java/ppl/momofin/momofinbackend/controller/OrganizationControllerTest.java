@@ -140,18 +140,18 @@ class OrganizationControllerTest {
     }
 
     @Test
-    void deleteUser_ReturnsForbidden_WhenNotAuthorized() throws Exception {
+    void deleteUser_ReturnsGone_WhenUserAlreadyDeleted() throws Exception {
         // Setup
         String token = "Bearer valid_token";
         when(jwtUtil.extractUsername(anyString())).thenReturn("user");
         when(userService.fetchUserByUsername("user")).thenReturn(new User());
-        doThrow(new UserDeletionException("Not authorized"))
+        doThrow(new UserDeletionException("User no longer exists or was already deleted"))
                 .when(organizationService).deleteUser(any(UUID.class), any(UUID.class), any(User.class));
 
         // Execute & Verify
         mockMvc.perform(delete("/api/organizations/ebe2e5c8-1434-4f91-a5f5-da690db03a6a/users/292aeace-0148-4a20-98bf-bf7f12871efe")
                         .header("Authorization", token))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isGone());
     }
 
     @Test

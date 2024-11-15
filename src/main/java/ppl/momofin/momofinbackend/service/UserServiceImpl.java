@@ -106,6 +106,13 @@ public class UserServiceImpl implements UserService{
     private void updateUserFields(User existingUser, User updatedUser) {
         if (updatedUser == null) return;
 
+        String newUsername = updatedUser.getUsername();
+        if (newUsername != null && !newUsername.isEmpty()
+                && !newUsername.equals(existingUser.getUsername())
+                && userRepository.findByUsername(newUsername).isPresent()) {
+            throw new UserAlreadyExistsException("A user with this username already exists");
+        }
+
         updateField(existingUser, updatedUser.getUsername(), "Username");
         updateField(existingUser, updatedUser.getEmail(), "Email");
         updateField(existingUser, updatedUser.getName(), "Name");
