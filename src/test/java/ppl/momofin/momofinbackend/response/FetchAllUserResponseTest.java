@@ -30,7 +30,7 @@ class FetchAllUserResponseTest {
         String name = "testname";
         String email = "test@example.com";
 
-        FetchAllUserResponse userResponse = new FetchAllUserResponse(userId, username, name, email, organization);
+        FetchAllUserResponse userResponse = new FetchAllUserResponse(userId, username, name, email, organization, true, true);
 
         assertNotNull(userResponse);
         assertEquals(userId, userResponse.getUserId());
@@ -38,6 +38,8 @@ class FetchAllUserResponseTest {
         assertEquals(username, userResponse.getUsername());
         assertEquals(name, userResponse.getName());
         assertEquals(email, userResponse.getEmail());
+        assertTrue(userResponse.isMomofinAdmin());
+        assertTrue(userResponse.isOrganizationAdmin());
     }
 
     @Test
