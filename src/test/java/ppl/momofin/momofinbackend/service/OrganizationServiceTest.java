@@ -662,6 +662,36 @@ class OrganizationServiceTest {
         );
         assertEquals("Cannot modify system user", exception.getMessage());
     }
+    @Test
+    void createOrganization_shouldThrowException_whenTrimmedNameAlreadyExists() {
+        // Arrange
+        String nameWithSpaces = "Test Org  ";
+        String trimmedName = "Test Org";
+        when(organizationRepository.findByName(trimmedName)).thenReturn(Optional.of(new Organization()));
 
+        // Act & Assert
+        InvalidOrganizationException exception = assertThrows(InvalidOrganizationException.class,
+                () -> organizationService.createOrganization(nameWithSpaces, "Test Description", "Test Industry", "Test Location"));
+        assertEquals("Organization with name 'Test Org  ' already exists", exception.getMessage());
+        verify(organizationRepository).findByName(trimmedName);
+    }
+
+    @Test
+    void createOrganization_shouldSucceed_whenTrimmedNameDoesNotExist() {
+        // Arrange
+        String nameWithSpaces = "New Org  ";
+        String trimmedName = "New Org";
+        Organization expectedOrg = new Organization(trimmedName, "Test Description", "Test Industry", "Test Location");
+        when(organizationRepository.findByName(trimmedName)).thenReturn(Optional.empty());
+        when(organizationRepository.save(any(Organization.class))).thenReturn(expectedOrg);
+
+        // Act
+        Organization result = organizationService.createOrganization(nameWithSpaces, "Test Description", "Test Industry", "Test Location");
+
+        // Assert
+        assertEquals(trimmedName, result.getName());
+        verify(organizationRepository).findByName(trimmedName);
+        verify(organizationRepository).save(any(Organization.class));
+    }
 
 }
