@@ -11,6 +11,8 @@ import ppl.momofin.momofinbackend.service.UserService;
 import ppl.momofin.momofinbackend.error.UserNotFoundException;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/user")
@@ -27,10 +29,11 @@ public class UserProfileController {
     }
 
     @GetMapping("/profile/{userId}")
-    public ResponseEntity<User> getUserProfile(@PathVariable Long userId) {
+    public ResponseEntity<User> getUserProfile(@PathVariable String userId) {
+        userId = userId.replaceAll("[\n\r]", "_");
         logger.info("GET request received for user ID: {}", userId);
         try {
-            User user = userService.getUserById(userId);
+            User user = userService.getUserById(UUID.fromString(userId));
             return ResponseEntity.ok(user);
         } catch (UserNotFoundException e) {
             logger.warn("User not found: {}", userId);
@@ -40,15 +43,17 @@ public class UserProfileController {
 
     @PutMapping("/profile/{userId}")
     public ResponseEntity<Object> updateUserProfile(
-            @PathVariable Long userId,
+            @PathVariable String userId,
             @RequestBody User updatedUser,
             @RequestParam(required = false) String oldPassword,
             @RequestParam(required = false) String newPassword) {
+        userId = userId.replaceAll("[\n\r]", "_");
+
 
         logger.info("Received update request for user ID: {}", userId);
 
         try {
-            User user = userService.updateUser(userId, updatedUser, oldPassword, newPassword);
+            User user = userService.updateUser(UUID.fromString(userId), updatedUser, oldPassword, newPassword);
             logger.info("User profile updated successfully for user ID: {}", userId);
             return ResponseEntity.ok(user);
         } catch (UserNotFoundException e) {

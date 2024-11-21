@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 class JwtUtilTest {
@@ -26,9 +27,9 @@ class JwtUtilTest {
     void setUp() throws Exception {
         jwtUtil = new JwtUtil();
         Organization org = new Organization("Test Org");
-        org.setOrganizationId(1L);
+        org.setOrganizationId(UUID.fromString("ebe2e5c8-1434-4f91-a5f5-da690db03a6a"));
         testUser = new User(org, "testuser", "Test User", "test@example.com", "password", "Developer", true);
-
+        testUser.setUserId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
         // Use reflection to get the SECRET_KEY
         Field secretKeyField = JwtUtil.class.getDeclaredField("SECRET_KEY");
         secretKeyField.setAccessible(true);
@@ -41,7 +42,7 @@ class JwtUtilTest {
 
         assertTrue(jwtUtil.validateToken(token));
         assertEquals(testUser.getUsername(), jwtUtil.extractUsername(token));
-        assertEquals(testUser.getOrganization().getOrganizationId(), jwtUtil.extractOrganizationId(token));
+        assertEquals(testUser.getOrganization().getOrganizationId(), UUID.fromString(jwtUtil.extractOrganizationId(token)));
         assertTrue(jwtUtil.extractIsOrganizationAdmin(token));
     }
 
@@ -111,21 +112,27 @@ class JwtUtilTest {
     }
 
     @Test
-    void extractUsername_WithValidToken_ShouldReturnUsername() {
+    void extractUsername_WithValidToken() {
         String token = jwtUtil.generateToken(testUser);
         assertEquals(testUser.getUsername(), jwtUtil.extractUsername(token));
     }
 
     @Test
-    void extractOrganizationName_WithValidToken_ShouldReturnUsername() {
+    void extractUserId_WithValidToken() {
+        String token = jwtUtil.generateToken(testUser);
+        assertEquals(testUser.getUserId(), UUID.fromString(jwtUtil.extractUserId(token)));
+    }
+
+    @Test
+    void extractOrganizationName_WithValidToken() {
         String token = jwtUtil.generateToken(testUser);
         assertEquals(testUser.getOrganization().getName(), jwtUtil.extractOrganizationName(token));
     }
 
     @Test
-    void extractOrganizationId_WithValidToken_ShouldReturnOrganizationId() {
+    void extractOrganizationId_WithValidToken() {
         String token = jwtUtil.generateToken(testUser);
-        assertEquals(testUser.getOrganization().getOrganizationId(), jwtUtil.extractOrganizationId(token));
+        assertEquals(testUser.getOrganization().getOrganizationId(), UUID.fromString(jwtUtil.extractOrganizationId(token)));
     }
 
     @Test

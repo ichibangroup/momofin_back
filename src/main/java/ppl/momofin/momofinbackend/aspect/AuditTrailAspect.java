@@ -27,7 +27,7 @@ public class AuditTrailAspect {
         this.auditTrailRepository = auditTrailRepository;
     }
 
-    @Pointcut("execution(* ppl.momofin.momofinbackend.service.CDNService.uploadFile(..))")
+    @Pointcut("execution(* ppl.momofin.momofinbackend.service.CDNService.submitDocument(..))")
     public void documentSubmitPointcut() {}
 
     @Pointcut("execution(* ppl.momofin.momofinbackend.service.DocumentService.verifyDocument(..))")

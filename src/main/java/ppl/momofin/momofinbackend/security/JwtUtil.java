@@ -6,10 +6,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
 import ppl.momofin.momofinbackend.model.User;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 @Component
@@ -21,9 +18,9 @@ public class JwtUtil {
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", new ArrayList<>(user.getRoles()));  // Convert Set to List
-        claims.put("organizationId", user.getOrganization().getOrganizationId());
+        claims.put("organizationId", user.getOrganization().getOrganizationId().toString());
         claims.put("organizationName", user.getOrganization().getName());
-        claims.put("userId", user.getUserId());
+        claims.put("userId", user.getUserId().toString());
         claims.put("isOrganizationAdmin", user.isOrganizationAdmin());
         claims.put("isMomofinAdmin", user.isMomofinAdmin());
         return createToken(claims, user.getUsername());
@@ -51,8 +48,12 @@ public class JwtUtil {
         return extractClaim(token, Claims::getSubject);
     }
 
-    public Long extractOrganizationId(String token) {
-        return extractClaim(token, claims -> claims.get("organizationId", Long.class));
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", String.class));
+    }
+
+    public String extractOrganizationId(String token) {
+        return extractClaim(token, claims -> claims.get("organizationId", String.class));
     }
 
     public String extractOrganizationName(String token) {

@@ -5,16 +5,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import ppl.momofin.momofinbackend.model.User;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserDTO {
-    private Long userId;
+    private UUID userId;
     private String username;
     private String name;
     private String email;
     private String position;
     private boolean isOrganizationAdmin;
+    private boolean isMomofinAdmin;  // New field added
 
     public static UserDTO fromUser(User user) {
         return new UserDTO(
@@ -23,7 +26,8 @@ public class UserDTO {
                 user.getName(),
                 user.getEmail(),
                 user.getPosition(),
-                user.isOrganizationAdmin()
+                user.isOrganizationAdmin(),
+                user.isMomofinAdmin()  // Map the new field
         );
     }
 
@@ -35,6 +39,7 @@ public class UserDTO {
         user.setEmail(this.email);
         user.setPosition(this.position);
         user.setOrganizationAdmin(this.isOrganizationAdmin);
+        user.setMomofinAdmin(this.isMomofinAdmin);  // Set the new field
         return user;
     }
 }
