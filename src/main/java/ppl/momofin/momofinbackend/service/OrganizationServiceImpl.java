@@ -100,6 +100,12 @@ public class OrganizationServiceImpl implements OrganizationService {
         if (name == null || name.trim().isEmpty()) {
             throw new InvalidOrganizationException("Organization name cannot be empty");
         }
+
+        String trimmedName = name.trim();
+        if (organizationRepository.findByName(trimmedName).isPresent()) {
+            throw new InvalidOrganizationException("Organization with name '" + name + "' already exists");
+        }
+
         Organization newOrganization = new Organization(name, description, industry, location);
         return organizationRepository.save(newOrganization);
     }
