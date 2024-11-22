@@ -62,5 +62,25 @@ class EditRequestTest {
         assertEquals(request.getDocument(), document);
         assertEquals(documentId, request.getId().getDocumentId());
     }
+
+    @Test
+    void testGetSetDocumentId() {
+        UUID documentId = UUID.randomUUID();
+
+        EditRequest request = new EditRequest();
+        request.setDocumentId(documentId);
+
+        assertEquals(request.getDocumentId(), documentId);
+    }
+
+    @Test
+    void testGetSetUserId() {
+        UUID userId = UUID.randomUUID();
+
+        EditRequest request = new EditRequest();
+        request.setDocumentId(userId);
+
+        assertEquals(request.getDocumentId(), userId);
+    }
 }
 

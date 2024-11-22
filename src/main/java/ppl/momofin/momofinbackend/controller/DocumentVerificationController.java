@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.dto.EditRequestDTO;
+import ppl.momofin.momofinbackend.model.DocumentVersion;
 import ppl.momofin.momofinbackend.model.EditRequest;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.request.EditRequestRequest;
@@ -29,6 +31,7 @@ public class DocumentVerificationController {
     private final DocumentService documentService;
     private final JwtUtil jwtUtil;
     private final UserService userService;
+    private static final String ERROR_RETRIEVING_DOCUMENT= "Error retrieving document: ";
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentVerificationController.class);
     @Autowired
@@ -110,25 +113,67 @@ public class DocumentVerificationController {
 
             return ResponseEntity.ok(urlResponse);
         } catch (RuntimeException | IOException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Error retrieving document: " + e.getMessage());
+            ErrorResponse errorResponse = new ErrorResponse(ERROR_RETRIEVING_DOCUMENT + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/view/{documentId}/{version}")
+    public ResponseEntity<Response> getViewableUrl(@PathVariable String documentId, @PathVariable int version, @RequestHeader("Authorization") String token) {
+        try {
+            UUID userId = getUserId(token, jwtUtil);
+            String organizationName = getOrgName(token, jwtUtil);
+            String url = documentService.getViewableUrl(UUID.fromString(documentId), userId, organizationName, version);
+            Response urlResponse = new DocumentViewUrlResponse(url);
+
+            return ResponseEntity.ok(urlResponse);
+        } catch (RuntimeException | IOException e) {
+            ErrorResponse errorResponse = new ErrorResponse(ERROR_RETRIEVING_DOCUMENT + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
     @PostMapping("/{documentId}/request-edit")
-    public ResponseEntity<EditRequest> requestEdit(
+    public ResponseEntity<Response> requestEdit(
             @PathVariable String documentId,
             @RequestBody EditRequestRequest request) {
-        EditRequest editRequest = documentService.requestEdit(UUID.fromString(documentId), request.getUsername());
-        return ResponseEntity.ok(editRequest);
+        try {
+            EditRequest editRequest = documentService.requestEdit(UUID.fromString(documentId), request.getUsername());
+            EditRequestDTO editRequestDTO = EditRequestDTO.toDTO(editRequest);
+            return ResponseEntity.ok(editRequestDTO);
+        } catch (RuntimeException  e) {
+            ErrorResponse errorResponse = new ErrorResponse("Error making request: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
     @GetMapping("/edit-request")
-    public ResponseEntity<List<EditRequest>> getRequests(
+    public ResponseEntity<List<EditRequestDTO>> getRequests(
             @RequestHeader("Authorization") String token) {
         UUID userId = getUserId(token, jwtUtil);
-        List<EditRequest> editRequests = documentService.getEditRequests(userId);
+        List<EditRequestDTO> editRequests = documentService.getEditRequests(userId);
         return ResponseEntity.ok(editRequests);
+    }
+
+    @GetMapping("/edit-request/{documentId}")
+    public ResponseEntity<Response> getViewableUrlForEditRequest(
+            @PathVariable String documentId,
+            @RequestParam String organizationName,
+            @RequestHeader("Authorization") String token){
+        try {
+            User user = new User();
+            user.setUserId(getUserId(token, jwtUtil));
+            Document document = new Document();
+            document.setDocumentId(UUID.fromString(documentId));
+            EditRequest request = new EditRequest(user, document);
+            String url = documentService.getViewableUrlForEditRequest(UUID.fromString(documentId), request, organizationName);
+            Response urlResponse = new DocumentViewUrlResponse(url);
+
+            return ResponseEntity.ok(urlResponse);
+        } catch (RuntimeException | IOException e) {
+            ErrorResponse errorResponse = new ErrorResponse(ERROR_RETRIEVING_DOCUMENT + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
     @PostMapping("/edit-request/{documentId}")
@@ -143,6 +188,13 @@ public class DocumentVerificationController {
         EditRequest request = new EditRequest(user, document);
         Document editedDocument = documentService.editDocument(file, request);
         return ResponseEntity.ok(editedDocument);
+    }
+
+    @GetMapping("{documentId}/versions")
+    public ResponseEntity<List<DocumentVersion>> getVersions(
+            @PathVariable String documentId
+    ) {
+        return ResponseEntity.ok(documentService.findVersionsOfDocument(UUID.fromString(documentId)));
     }
 
     public static String getUsername(String token, JwtUtil jwtUtil) {

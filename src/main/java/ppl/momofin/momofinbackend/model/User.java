@@ -19,14 +19,14 @@ public class User {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email")
     private String email;
 
     @JsonIgnore
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "position", nullable = false)
+    @Column(name = "position")
     private String position;
 
     @Column(name = "username", nullable = false)

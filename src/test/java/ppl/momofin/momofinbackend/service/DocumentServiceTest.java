@@ -11,12 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
+import ppl.momofin.momofinbackend.dto.EditRequestDTO;
 import ppl.momofin.momofinbackend.error.UserNotFoundException;
-import ppl.momofin.momofinbackend.model.Document;
-import ppl.momofin.momofinbackend.model.EditRequest;
-import ppl.momofin.momofinbackend.model.Organization;
-import ppl.momofin.momofinbackend.model.User;
+import ppl.momofin.momofinbackend.model.*;
 import ppl.momofin.momofinbackend.repository.DocumentRepository;
+import ppl.momofin.momofinbackend.repository.DocumentVersionRepository;
 import ppl.momofin.momofinbackend.repository.EditRequestRepository;
 import ppl.momofin.momofinbackend.repository.UserRepository;
 
@@ -45,6 +44,8 @@ class DocumentServiceTest {
     private CDNService cdnService;
     @Mock
     private EditRequestRepository editRequestRepository;
+    @Mock
+    private DocumentVersionRepository documentVersionRepository;
 
     @InjectMocks
     private DocumentServiceImpl documentService;
@@ -54,6 +55,10 @@ class DocumentServiceTest {
     private String mockUsername;
     private Document document;
     private UUID documentId;
+    private String organizationName;
+    private String expectedUrl;
+    private EditRequestKey editRequestKey;
+    private EditRequest editRequest;
 
     @BeforeEach
     void setUp() {
@@ -63,12 +68,30 @@ class DocumentServiceTest {
         mockUser = new User();
         Organization organization = new Organization("Momofin");
         mockUser.setName(mockUsername);
+        mockUser.setUserId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
         mockUser.setOrganization(organization);
 
         document = new Document();
         documentId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
         document.setDocumentId(documentId);
         document.setName("testfile.pdf");
+        document.setOwner(mockUser);
+
+        UUID requestedId = UUID.randomUUID();
+        User requestedUser = new User();
+        requestedUser.setName(mockUsername);
+        requestedUser.setUserId(requestedId);
+        requestedUser.setOrganization(organization);
+
+
+        editRequestKey = new EditRequestKey();
+        editRequestKey.setUserId(requestedId);
+        editRequestKey.setDocumentId(documentId);
+
+        editRequest = new EditRequest(requestedUser, document);
+
+        organizationName = "TestOrg";
+        expectedUrl = "https://cdn.example.com/document";
     }
 
     @Test
@@ -359,8 +382,6 @@ class DocumentServiceTest {
     void getViewableUrl_DocumentExists_ReturnsViewableUrl() throws IOException {
         // Arrange
         UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
-        String organizationName = "testorg";
-        String expectedUrl = "https://cdn.example.com/signed-url";
 
         when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.of(document));
         when(cdnService.getViewableUrl(document, userId, organizationName)).thenReturn(expectedUrl);
@@ -378,7 +399,6 @@ class DocumentServiceTest {
     void getViewableUrl_DocumentDoesNotExist_ThrowsIllegalArgumentException() throws IOException {
         // Arrange
         UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
-        String organizationName = "testorg";
 
         when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.empty());
 
@@ -386,16 +406,32 @@ class DocumentServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
                 documentService.getViewableUrl(documentId, userId, organizationName));
 
-        assertEquals("Document with id " + document.getDocumentId() + " does not exist", exception.getMessage());
+        assertEquals("Document with ID " + document.getDocumentId() + " does not exist", exception.getMessage());
         verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
         verify(cdnService, never()).getViewableUrl(any(Document.class), any(UUID.class), anyString());
+    }
+
+    @Test
+    void testFetchDocumentOfOwner_ThrowsExceptionIfUserIsNotOwner() {
+        UUID otherUserId = UUID.randomUUID();
+
+        // Mock repository to return the document when searched by documentId
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+
+        // Act & Assert: Expect an exception if a different user ID tries to access the document
+        assertThrows(IllegalArgumentException.class, () ->
+                        documentService.getViewableUrl(documentId, otherUserId, organizationName),
+                "Expected fetchDocumentOfOwner to throw, but it didn't"
+        );
+
+        // Verify that the repository was queried
+        verify(documentRepository, times(1)).findByDocumentId(documentId);
     }
 
     @Test
     void getViewableUrl_CdnServiceThrowsIOException_ThrowsIOException() throws IOException {
         // Arrange
         UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
-        String organizationName = "testorg";
 
         when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.of(document));
         when(cdnService.getViewableUrl(document, userId, organizationName)).thenThrow(new IOException("Failed to get URL"));
@@ -428,7 +464,6 @@ class DocumentServiceTest {
     @Test
     void testRequestEdit_Success() {
         // Mock the expected behavior
-        EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
         editRequest.setUser(mockUser);
         when(editRequestRepository.save(any(EditRequest.class))).thenReturn(editRequest);
@@ -439,14 +474,13 @@ class DocumentServiceTest {
 
         // Verify interactions and result
         verify(editRequestRepository).save(any(EditRequest.class));
-        assertEquals(document.getDocumentId(), result.getDocument().getDocumentId());
-        assertEquals(mockUser.getUserId(), result.getUser().getUserId());
+        assertEquals(document.getDocumentId(), result.getDocumentId());
+        assertEquals(mockUser.getUserId(), result.getUserId());
     }
 
     @Test
     void testRequestEdit_UserDoesNotExist() {
         // Mock the expected behavior
-        EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
         editRequest.setUser(mockUser);
         when(userRepository.findByUsername(mockUsername)).thenReturn(Optional.empty());
@@ -454,7 +488,7 @@ class DocumentServiceTest {
         UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> {
             documentService.requestEdit(documentId, mockUsername);
         });
-        String expectedErrorMessage = "User with username " + mockUsername + " not found";
+        String expectedErrorMessage = "User with username " + mockUsername + " does not exist";
         assertEquals(expectedErrorMessage, exception.getMessage());
     }
 
@@ -463,39 +497,44 @@ class DocumentServiceTest {
         // Set up sample edit requests
         EditRequest editRequest1 = new EditRequest();
         editRequest1.setDocument(document);
+        document.setOwner(mockUser);
         editRequest1.setUser(mockUser);
+        EditRequestDTO editRequest1DTO = EditRequestDTO.toDTO(editRequest1);
 
-        List<EditRequest> editRequests = new ArrayList<>();
-        editRequests.add(editRequest1);
-        when(editRequestRepository.findByUserId(mockUser.getUserId())).thenReturn(editRequests);
+        List<EditRequestDTO> editRequests = new ArrayList<>();
+        editRequests.add(editRequest1DTO);
+        when(editRequestRepository.findByUserIdAsDTO(mockUser.getUserId())).thenReturn(editRequests);
 
         // Execute the method
-        List<EditRequest> result = documentService.getEditRequests(mockUser.getUserId());
+        List<EditRequestDTO> result = documentService.getEditRequests(mockUser.getUserId());
 
         // Verify interactions and result
-        verify(editRequestRepository).findByUserId(mockUser.getUserId());
+        verify(editRequestRepository).findByUserIdAsDTO(mockUser.getUserId());
         assertEquals(1, result.size());
-        assertEquals(editRequest1, result.get(0));
+        assertEquals(editRequest1DTO, result.get(0));
     }
 
     @Test
     void testEditDocument_Success() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
-        EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
+        document.setOwner(mockUser);
         editRequest.setUser(mockUser);
 
         Document updatedDocument = new Document();
         updatedDocument.setDocumentId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
 
+        when(userRepository.findById(mockUser.getUserId())).thenReturn(Optional.of(mockUser));
+        when(documentRepository.findByDocumentId(editRequest.getDocumentId())).thenReturn(Optional.of(document));
+
         // Mock interactions
-        when(cdnService.editDocument(any(MultipartFile.class), any(Document.class), anyString())).thenReturn(updatedDocument);
+        when(cdnService.editDocument(any(MultipartFile.class), any(Document.class), anyString(), eq(mockUser))).thenReturn(updatedDocument);
         when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
 
         // Execute the method
         Document result = documentService.editDocument(mockFile, editRequest);
 
         // Verify interactions and result
-        verify(cdnService).editDocument(eq(mockFile), eq(document), anyString());
+        verify(cdnService).editDocument(eq(mockFile), eq(document), anyString(), eq(mockUser));
         verify(editRequestRepository).delete(editRequest);
         assertEquals(updatedDocument.getDocumentId(), result.getDocumentId());
     }
@@ -504,7 +543,6 @@ class DocumentServiceTest {
     void testEditDocument_FileEmpty_ThrowsException() {
         // Set up an empty file and an EditRequest
         MockMultipartFile emptyFile = new MockMultipartFile("file", "", "application/pdf", new byte[0]);
-        EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
 
         // Execute and verify exception
@@ -516,7 +554,6 @@ class DocumentServiceTest {
 
     @Test
     void testEditDocument_FileNull_ThrowsException() {
-        EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
 
         // Execute and verify exception
@@ -529,7 +566,6 @@ class DocumentServiceTest {
     @Test
     void testEditDocument_EditRequestNotExists_ThrowsException() {
 
-        EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
         when(editRequestRepository.existsById(editRequest.getId())).thenReturn(false);
 
@@ -543,7 +579,6 @@ class DocumentServiceTest {
     @Test
     void testRejectEditRequest_Success() {
         // Set up EditRequest
-        EditRequest editRequest = new EditRequest();
         editRequest.setDocument(document);
         editRequest.setUser(mockUser);
 
@@ -552,5 +587,203 @@ class DocumentServiceTest {
 
         // Verify interactions
         verify(editRequestRepository).delete(editRequest);
+    }
+
+    @Test
+    void  testFetchDocumentVersions() {
+        DocumentVersion documentVersion = new DocumentVersion(1, documentId, "test.pdf", "jydkvlklififilviugilfilgi");
+        DocumentVersion documentVersion2 = new DocumentVersion(2, documentId, "test.pdf", "iouivoikuicvliiulibivuivilb");
+        List<DocumentVersion> versionList = new ArrayList<>();
+        versionList.add(documentVersion);
+        versionList.add(documentVersion2);
+        when(documentVersionRepository.findById_DocumentId(documentId)).thenReturn(versionList);
+
+        List<DocumentVersion> results = documentService.findVersionsOfDocument(documentId);
+
+        assertEquals(results, versionList);
+        verify(documentVersionRepository).findById_DocumentId(documentId);
+    }
+
+    @Test
+    void getViewableUrlVersion_DocumentExists_ReturnsViewableUrl() throws IOException {
+        // Arrange
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
+
+        when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(document, userId, organizationName,3)).thenReturn(expectedUrl);
+
+        // Act
+        String actualUrl = documentService.getViewableUrl(document.getDocumentId(), userId, organizationName,3);
+
+        // Assert
+        assertEquals(expectedUrl, actualUrl);
+        verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
+        verify(cdnService, times(1)).getViewableUrl(document, userId, organizationName,3);
+    }
+
+    @Test
+    void getViewableUrlVersion_DocumentDoesNotExist_ThrowsIllegalArgumentException() throws IOException {
+        // Arrange
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
+
+        when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                documentService.getViewableUrl(documentId, userId, organizationName, 555));
+
+        assertEquals("Document with ID " + document.getDocumentId() + " does not exist", exception.getMessage());
+        verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
+        verify(cdnService, never()).getViewableUrl(any(Document.class), any(UUID.class), anyString());
+    }
+
+    @Test
+    void getViewableUrlVersion_CdnServiceThrowsIOException_ThrowsIOException() throws IOException {
+        // Arrange
+        UUID userId = UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe");
+
+        when(documentRepository.findByDocumentId(document.getDocumentId())).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(document, userId, organizationName, 555)).thenThrow(new IOException("Failed to get URL"));
+
+        // Act & Assert
+        IOException exception = assertThrows(IOException.class, () ->
+                documentService.getViewableUrl(documentId, userId, organizationName, 555));
+
+        assertEquals("Failed to get URL", exception.getMessage());
+        verify(documentRepository, times(1)).findByDocumentId(document.getDocumentId());
+        verify(cdnService, times(1)).getViewableUrl(document, userId, organizationName, 555);
+    }
+
+    @Test
+    void editDocument_WhenDocumentNotFound_ThrowsIllegalStateException() throws Exception {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        EditRequestKey key = new EditRequestKey();
+        key.setUserId(userId);
+        key.setDocumentId(documentId);
+        editRequest.setId(key);
+        editRequest.setDocumentId(documentId);
+        editRequest.setUserId(userId);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.pdf",
+                "application/pdf",
+                "test content".getBytes()
+        );
+
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> documentService.editDocument(file, editRequest)
+        );
+
+        assertEquals("Document with ID " + documentId + " not found", exception.getMessage());
+        verify(documentRepository).findByDocumentId(documentId);
+        verify(editRequestRepository).existsById(editRequest.getId());
+        verify(userRepository, never()).findById(any());
+        verify(cdnService, never()).editDocument(any(), any(), any(), any());
+        verify(editRequestRepository, never()).delete(any());
+    }
+
+    @Test
+    void editDocument_WhenUserNotFound_ThrowsUserNotFoundException() throws Exception {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        EditRequestKey key = new EditRequestKey();
+        key.setUserId(userId);
+        key.setDocumentId(documentId);
+        editRequest.setId(key);
+        editRequest.setDocumentId(documentId);
+        editRequest.setUserId(userId);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "test.pdf",
+                "application/pdf",
+                "test content".getBytes()
+        );
+
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        UserNotFoundException exception = assertThrows(
+                UserNotFoundException.class,
+                () -> documentService.editDocument(file, editRequest)
+        );
+
+        assertEquals("User with ID " + userId + " not found", exception.getMessage());
+        verify(documentRepository).findByDocumentId(documentId);
+        verify(editRequestRepository).existsById(editRequest.getId());
+        verify(userRepository).findById(userId);
+        verify(cdnService, never()).editDocument(any(), any(), any(), any());
+        verify(editRequestRepository, never()).delete(any());
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_Success() throws IOException {
+        // Arrange
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(document, mockUser.getUserId(), organizationName)).thenReturn(expectedUrl);
+
+        // Act
+        String result = documentService.getViewableUrlForEditRequest(documentId, editRequest, organizationName);
+
+        // Assert
+        assertEquals(expectedUrl, result);
+        verify(editRequestRepository).existsById(editRequest.getId());
+        verify(documentRepository).findByDocumentId(documentId);
+        verify(cdnService).getViewableUrl(document, mockUser.getUserId(), organizationName);
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_EditRequestNotFound() throws IOException {
+        // Arrange
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(false);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> documentService.getViewableUrlForEditRequest(documentId, editRequest, organizationName)
+        );
+        assertEquals("Edit request not found in the database.", exception.getMessage());
+        verify(documentRepository, never()).findByDocumentId(any());
+        verify(cdnService, never()).getViewableUrl(any(), any(), any());
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_DocumentNotFound() throws IOException {
+        // Arrange
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> documentService.getViewableUrlForEditRequest(documentId, editRequest, organizationName)
+        );
+        assertEquals("Document with ID " + documentId + " does not exist", exception.getMessage());
+        verify(cdnService, never()).getViewableUrl(any(), any(), any());
+    }
+
+    @Test
+    void getViewableUrlForEditRequest_CdnServiceThrowsException() throws IOException {
+        // Arrange
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+        when(cdnService.getViewableUrl(document, mockUser.getUserId(), organizationName))
+                .thenThrow(new IOException("CDN service error"));
+
+        // Act & Assert
+        assertThrows(
+                IOException.class,
+                () -> documentService.getViewableUrlForEditRequest(documentId, editRequest, organizationName)
+        );
     }
 }

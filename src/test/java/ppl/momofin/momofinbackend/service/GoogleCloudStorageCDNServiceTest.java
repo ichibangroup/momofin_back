@@ -82,6 +82,9 @@ class GoogleCloudStorageCDNServiceTest {
     void testUploadFile() throws IOException {
         ArgumentCaptor<Document> documentCaptor = ArgumentCaptor.forClass(Document.class);
 
+        Document document = new Document();
+        document.setDocumentId(UUID.randomUUID());
+        when(documentRepository.save(any(Document.class))).thenReturn(document);
         cdnService.submitDocument(mockFile, user, "hashString");
 
         BlobId expectedBlobId = BlobId.of(bucketName, user.getOrganization().getName() + "/" + user.getUserId() + "/test-file/version_1_test-file.pdf");
@@ -124,7 +127,7 @@ class GoogleCloudStorageCDNServiceTest {
         when(mockStorage.get(blobId)).thenReturn(blob);
         URI signedUri = URI.create("https://signed-url.com");
         URL signedUrl = signedUri.toURL();
-        when(blob.signUrl(1, TimeUnit.HOURS)).thenReturn(signedUrl);
+        when(blob.signUrl(15, TimeUnit.MINUTES)).thenReturn(signedUrl);
 
         // Act
         String viewableUrl = cdnService.getViewableUrl(document, userId, organizationName);
@@ -133,7 +136,7 @@ class GoogleCloudStorageCDNServiceTest {
         assertNotNull(viewableUrl);
         assertEquals("https://signed-url.com", viewableUrl);
         verify(mockStorage).get(blobId); // Ensure the correct blob was fetched
-        verify(blob).signUrl(1, TimeUnit.HOURS); // Ensure a signed URL was created
+        verify(blob).signUrl(15, TimeUnit.MINUTES); // Ensure a signed URL was created
     }
 
     @Test
@@ -186,7 +189,7 @@ class GoogleCloudStorageCDNServiceTest {
         when(documentRepository.save(any(Document.class))).thenReturn(document);
 
         // Execute the method
-        Document updatedDocument = cdnService.editDocument(mockFile, document, "newHash");
+        Document updatedDocument = cdnService.editDocument(mockFile, document, "newHash", user);
 
         // Verify interactions and results
         verify(mockStorage).create(expectedBlobInfo, mockFile.getBytes());

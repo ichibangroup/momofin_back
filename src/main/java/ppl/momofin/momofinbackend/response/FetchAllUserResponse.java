@@ -18,6 +18,8 @@ public class FetchAllUserResponse {
     private String name;
     private String email;
     private String organization;
+    private boolean isMomofinAdmin;
+    private boolean isOrganizationAdmin;
 
     public static FetchAllUserResponse fromUser(User user) {
         return new FetchAllUserResponse(
@@ -25,7 +27,9 @@ public class FetchAllUserResponse {
                 user.getUsername(),
                 user.getName(),
                 user.getEmail(),
-                user.getOrganization().getName()
+                user.getOrganization().getName(),
+                user.isMomofinAdmin(),
+                user.isOrganizationAdmin()
         );
     }
 }

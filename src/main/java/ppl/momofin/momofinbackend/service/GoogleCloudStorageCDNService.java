@@ -104,20 +104,23 @@ public class GoogleCloudStorageCDNService implements CDNService {
         document.setOwner(user);
         document.setCurrentVersion(1);
 
+        Document savedDocument = documentRepository.save(document);
+
         DocumentVersion version = new DocumentVersion();
         version.setFileName(fileName);
         version.setHashString(hashString);
+        version.setEditedBy(user);
 
         version.setVersion(1);
-        version.setDocumentId(document.getDocumentId());
+        version.setDocumentId(savedDocument.getDocumentId());
         documentVersionRepository.save(version);
 
-        return documentRepository.save(document);
+        return savedDocument;
     }
 
 
     @Override
-    public Document editDocument(MultipartFile file, Document document, String hashString) throws IOException {
+    public Document editDocument(MultipartFile file, Document document, String hashString, User editor) throws IOException {
         String fileName = document.getName();
         String cleanedFileName =  cleanFileName(fileName);
 
@@ -139,9 +142,11 @@ public class GoogleCloudStorageCDNService implements CDNService {
         newVersion.setVersion(nextVersion);
         newVersion.setFileName(document.getName());
         newVersion.setHashString(hashString);
+        newVersion.setEditedBy(editor);
 
         document.setHashString(hashString);
         document.setCurrentVersion(nextVersion);
+        document.setBeingRequested(false);
 
         documentVersionRepository.save(newVersion);
 
@@ -151,10 +156,15 @@ public class GoogleCloudStorageCDNService implements CDNService {
 
     @Override
     public String getViewableUrl(Document document, UUID userId, String organizationName) throws IOException {
+        return getViewableUrl(document, userId, organizationName, document.getCurrentVersion());
+    }
+
+    @Override
+    public String getViewableUrl(Document document, UUID userId, String organizationName, int version) throws IOException {
         String fileName = document.getName();
         String cleanedFileName =  cleanFileName(fileName);
 
-        String versionedFileName = "version_" + document.getCurrentVersion() + "_" + fileName;
+        String versionedFileName = "version_" + version + "_" + fileName;
         String folderName = organizationName + "/" + userId + "/" + cleanedFileName;
         BlobId blobId = BlobId.of(bucketName, folderName + "/" + versionedFileName);
         Blob blob = storage.get(blobId);
@@ -164,7 +174,7 @@ public class GoogleCloudStorageCDNService implements CDNService {
         }
 
         // Generate a signed URL that expires in 1 hour
-        URL signedUrl = blob.signUrl(1, TimeUnit.HOURS);
+        URL signedUrl = blob.signUrl(15, TimeUnit.MINUTES);
         return signedUrl.toString();
     }
 

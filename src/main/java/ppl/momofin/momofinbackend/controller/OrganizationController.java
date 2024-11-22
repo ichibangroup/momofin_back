@@ -70,7 +70,7 @@ public class OrganizationController {
             organizationService.deleteUser(UUID.fromString(orgId), UUID.fromString(userId), requestingUser);
             return ResponseEntity.noContent().build();
         } catch (UserDeletionException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            return ResponseEntity.status(HttpStatus.GONE)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new ErrorResponse(e.getMessage()));
         } catch (OrganizationNotFoundException e) {

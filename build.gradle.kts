@@ -45,6 +45,8 @@ dependencies {
     implementation("io.sentry:sentry:$sentryVersion")
     implementation("io.sentry:sentry-spring-boot-starter:$sentryVersion")
     implementation ("org.springframework.boot:spring-boot-starter-hateoas")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
