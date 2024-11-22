@@ -36,10 +36,18 @@ public class AuditTrailController {
             @RequestParam(defaultValue = "timestamp") String sortBy,
             @RequestParam(defaultValue = "DESC") String direction
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(direction), sortBy));
+        // Map sortBy to handle foreign key fields
+        String resolvedSortBy = resolveSortField(sortBy);
 
-        LocalDateTime startDateTime = startDate != null ? LocalDateTime.parse(startDate) : null;
-        LocalDateTime endDateTime = endDate != null ? LocalDateTime.parse(endDate) : null;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(direction), resolvedSortBy));
+
+        LocalDateTime startDateTime = (startDate != null && !startDate.isEmpty())
+                ? LocalDateTime.parse(startDate)
+                : null;
+
+        LocalDateTime endDateTime = (endDate != null && !endDate.isEmpty())
+                ? LocalDateTime.parse(endDate)
+                : null;
 
         Page<AuditTrail> auditTrailPage = auditTrailService.getAuditTrails(username, action, startDateTime, endDateTime, documentName, pageable);
 
@@ -47,6 +55,17 @@ public class AuditTrailController {
 
         return ResponseEntity.ok(responsePage);
     }
+
+    // Helper method to map sortBy fields to database column names
+    private String resolveSortField(String sortBy) {
+        return switch (sortBy) {
+            case "username" -> "user.username"; // Assuming the User entity is joined with the field `user`
+            case "documentName" -> "document.name"; // Assuming the Document entity is joined with the field `document`
+            case "action" -> "action";
+            default -> "timestamp";
+        };
+    }
+
 
 
     @GetMapping("/{id}")

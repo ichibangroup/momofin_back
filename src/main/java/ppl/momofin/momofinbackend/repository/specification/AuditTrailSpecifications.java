@@ -14,7 +14,7 @@ public class AuditTrailSpecifications {
 
     public static Specification<AuditTrail> hasUser(String username) {
         return (root, query, cb) ->
-                username == null ? cb.conjunction() : cb.like(cb.lower(root.get("user").get("username")), "%" + username.toLowerCase() + "%");
+                username == null || username.trim().isEmpty() ? cb.conjunction() : cb.like(cb.lower(root.get("user").get("username")), "%" + username.toLowerCase() + "%");
     }
 
     public static Specification<AuditTrail> afterTimestamp(LocalDateTime startDateTime) {
@@ -29,6 +29,6 @@ public class AuditTrailSpecifications {
 
     public static Specification<AuditTrail> hasDocumentName(String documentName) {
         return (root, query, cb) ->
-                documentName == null ? cb.conjunction() : cb.like(cb.lower(root.get("document").get("name")), "%" + documentName.toLowerCase() + "%");
+                documentName == null || documentName.trim().isEmpty() ? cb.conjunction() : cb.like(cb.lower(root.get("document").get("name")), "%" + documentName.toLowerCase() + "%");
     }
 }
