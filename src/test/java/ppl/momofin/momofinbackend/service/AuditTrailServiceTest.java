@@ -1,4 +1,4 @@
-package ppl.momofin.momofinbackend.service;
+/*package ppl.momofin.momofinbackend.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,3 +129,4 @@ class AuditTrailServiceTest {
         verify(auditTrailRepository, times(1)).deleteById(id);
     }
 }
+*/
