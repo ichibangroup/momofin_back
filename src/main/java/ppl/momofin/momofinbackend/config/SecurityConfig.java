@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers("/api/organizations/**").hasRole("ORG_ADMIN")
-                        .requestMatchers("/api/momofin-admin/**").hasRole("MOMOFIN_ADMIN")
+                        .requestMatchers("/api/momofin-admin/**", "/actuators/prometheus").hasRole("MOMOFIN_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
