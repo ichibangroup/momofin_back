@@ -36,7 +36,6 @@ public class AuditTrailController {
             @RequestParam(defaultValue = "timestamp") String sortBy,
             @RequestParam(defaultValue = "DESC") String direction
     ) {
-        // Map sortBy to handle foreign key fields
         String resolvedSortBy = resolveSortField(sortBy);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(direction), resolvedSortBy));
@@ -56,33 +55,12 @@ public class AuditTrailController {
         return ResponseEntity.ok(responsePage);
     }
 
-    // Helper method to map sortBy fields to database column names
     private String resolveSortField(String sortBy) {
         return switch (sortBy) {
-            case "username" -> "user.username"; // Assuming the User entity is joined with the field `user`
-            case "documentName" -> "document.name"; // Assuming the Document entity is joined with the field `document`
+            case "username" -> "user.username";
+            case "documentName" -> "document.name";
             case "action" -> "action";
             default -> "timestamp";
         };
-    }
-
-
-
-    @GetMapping("/{id}")
-    public ResponseEntity<AuditTrail> getAuditTrailById(@PathVariable Long id) {
-        AuditTrail auditTrail = auditTrailService.getAuditTrailById(id);
-        return ResponseEntity.ok(auditTrail);
-    }
-
-    @PostMapping
-    public ResponseEntity<AuditTrail> createAuditTrail(@RequestBody AuditTrail auditTrail) {
-        AuditTrail createdAuditTrail = auditTrailService.createAuditTrail(auditTrail);
-        return ResponseEntity.status(201).body(createdAuditTrail);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAuditTrail(@PathVariable Long id) {
-        auditTrailService.deleteAuditTrail(id);
-        return ResponseEntity.noContent().build();
     }
 }
