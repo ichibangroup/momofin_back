@@ -1,4 +1,4 @@
-/*package ppl.momofin.momofinbackend.controller;
+package ppl.momofin.momofinbackend.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,6 @@ class AuditTrailControllerTest {
 
     @Test
     void testGetAllAudits_withFilters() {
-        // Arrange
         String username = "testUser";
         String action = "SUBMIT";
         String startDate = "2023-10-01T08:00:00";
@@ -163,4 +162,3 @@ class AuditTrailControllerTest {
         verify(auditTrailService, times(1)).deleteAuditTrail(1L);
     }
 }
-*/

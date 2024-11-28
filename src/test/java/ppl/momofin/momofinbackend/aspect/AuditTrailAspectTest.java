@@ -40,17 +40,15 @@ class AuditTrailAspectTest {
 
     @Test
     void testCaptureDocumentAfterSubmit_SuccessfulAudit() {
-        // Mocking an authenticated user and a valid document
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("testUser");
 
-        User user = new User(); // Mocked user
-        Document document = new Document(); // Mocked document
+        User user = new User();
+        Document document = new Document();
 
         when(userService.fetchUserByUsername("testUser")).thenReturn(user);
 
-        // Test the document submission audit
         auditTrailAspect.captureDocumentAfterSubmit(document);
 
         verify(auditTrailRepository, times(1)).save(any(AuditTrail.class));
@@ -58,13 +56,11 @@ class AuditTrailAspectTest {
 
     @Test
     void testCaptureDocumentAfterSubmit_AuthenticationFailed() {
-        // Mocking an unauthenticated scenario
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(false);
 
-        Document document = new Document(); // Mocked document
+        Document document = new Document();
 
-        // Test the document submission audit
         auditTrailAspect.captureDocumentAfterSubmit(document);
 
         verify(auditTrailRepository, times(1)).save(any(AuditTrail.class));
@@ -74,15 +70,13 @@ class AuditTrailAspectTest {
 
     @Test
     void testCaptureDocumentAfterVerify_UserNotFound() {
-        // Mocking an authenticated user with no corresponding user in the system
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("nonexistentUser");
 
-        Document document = new Document(); // Mocked document
+        Document document = new Document();
         when(userService.fetchUserByUsername("nonexistentUser")).thenReturn(null);
 
-        // Test the document verification audit
         auditTrailAspect.captureDocumentAfterVerify(document);
 
         verify(auditTrailRepository, times(1)).save(any(AuditTrail.class));
@@ -92,15 +86,13 @@ class AuditTrailAspectTest {
 
     @Test
     void testCaptureDocumentAfterVerify_DocumentNull() {
-        // Mocking an authenticated user but with no document passed
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("testUser");
 
-        User user = new User(); // Mocked user
+        User user = new User();
         when(userService.fetchUserByUsername("testUser")).thenReturn(user);
 
-        // Test the document verification audit with a null document
         auditTrailAspect.captureDocumentAfterVerify(null);
 
         verify(auditTrailRepository, times(1)).save(any(AuditTrail.class));
@@ -109,7 +101,6 @@ class AuditTrailAspectTest {
     }
 
     private AuditTrail captureAuditTrail() {
-        // Capture the saved AuditTrail object for further assertions
         var argument = ArgumentCaptor.forClass(AuditTrail.class);
         verify(auditTrailRepository).save(argument.capture());
         return argument.getValue();
