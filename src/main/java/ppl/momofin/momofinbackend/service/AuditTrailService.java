@@ -9,9 +9,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AuditTrailService {
-    List<AuditTrail> getAllAuditTrails();
     Page<AuditTrail> getAuditTrails(String username, String action, LocalDateTime startDateTime, LocalDateTime endDateTime, String documentName, Pageable pageable);
-    AuditTrail getAuditTrailById(Long id);
     AuditTrail createAuditTrail(AuditTrail auditTrail);
-    void deleteAuditTrail(Long id);
+    }
+
 }

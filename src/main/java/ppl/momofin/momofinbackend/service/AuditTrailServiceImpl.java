@@ -10,8 +10,6 @@ import ppl.momofin.momofinbackend.repository.AuditTrailRepository;
 import ppl.momofin.momofinbackend.repository.specification.AuditTrailSpecifications;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class AuditTrailServiceImpl implements AuditTrailService {
@@ -21,10 +19,6 @@ public class AuditTrailServiceImpl implements AuditTrailService {
     @Autowired
     public AuditTrailServiceImpl(AuditTrailRepository auditTrailRepository) {
         this.auditTrailRepository = auditTrailRepository;
-    }
-
-    public List<AuditTrail> getAllAuditTrails() {
-        return auditTrailRepository.findAll();
     }
 
     public Page<AuditTrail> getAuditTrails(String username, String action, LocalDateTime startDateTime, LocalDateTime endDateTime, String documentName, Pageable pageable) {
@@ -38,16 +32,7 @@ public class AuditTrailServiceImpl implements AuditTrailService {
         return auditTrailRepository.findAll(spec, pageable);
     }
 
-    public AuditTrail getAuditTrailById(Long id) {
-        Optional<AuditTrail> auditTrail = auditTrailRepository.findById(id);
-        return auditTrail.orElseThrow(() -> new IllegalArgumentException("AuditTrail not found"));
-    }
-
     public AuditTrail createAuditTrail(AuditTrail auditTrail) {
         return auditTrailRepository.save(auditTrail);
-    }
-
-    public void deleteAuditTrail(Long id) {
-        auditTrailRepository.deleteById(id);
     }
 }
