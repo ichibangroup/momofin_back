@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.exception;
 
+import io.sentry.Sentry;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,21 +21,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
         String message = ex.getMessage() != null ? ex.getMessage() : "No details available";
 
+        Sentry.captureException(ex);
+
         logger.error("IllegalArgumentException occurred: {}", message, ex);
 
         ErrorResponse errorResponse = new ErrorResponse("Invalid request: " + message);
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         String message = ex.getMessage() != null ? ex.getMessage() : "No details available";
+
+        Sentry.captureException(ex);
 
         logger.error("Unexpected error occurred: {}", message, ex);
 
         ErrorResponse errorResponse = new ErrorResponse("An unexpected error occurred. Please try again later.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
-
 }
