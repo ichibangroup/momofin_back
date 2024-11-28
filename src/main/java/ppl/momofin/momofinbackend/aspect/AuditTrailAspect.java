@@ -12,6 +12,7 @@ import ppl.momofin.momofinbackend.model.AuditTrail;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.repository.AuditTrailRepository;
+import ppl.momofin.momofinbackend.service.AuditTrailService;
 import ppl.momofin.momofinbackend.service.UserService;
 
 @Aspect
@@ -19,12 +20,12 @@ import ppl.momofin.momofinbackend.service.UserService;
 public class AuditTrailAspect {
     private final UserService userService;
 
-    private final AuditTrailRepository auditTrailRepository;
+    private final AuditTrailService auditTrailService;
 
     @Autowired
-    public AuditTrailAspect(UserService userService, AuditTrailRepository auditTrailRepository) {
+    public AuditTrailAspect(UserService userService, AuditTrailService auditTrailService) {
         this.userService = userService;
-        this.auditTrailRepository = auditTrailRepository;
+        this.auditTrailService = auditTrailService;
     }
 
     @Pointcut("execution(* ppl.momofin.momofinbackend.service.CDNService.submitDocument(..))")
@@ -55,7 +56,7 @@ public class AuditTrailAspect {
                 || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
             auditTrail.setAuditOutcome(failed);
-            auditTrailRepository.save(auditTrail);
+            auditTrailService.createAuditTrail(auditTrail);
             return;
         }
 
@@ -63,19 +64,19 @@ public class AuditTrailAspect {
         User user = userService.fetchUserByUsername(username);
         if (user == null) {
             auditTrail.setAuditOutcome(failed);
-            auditTrailRepository.save(auditTrail);
+            auditTrailService.createAuditTrail(auditTrail);
             return;
         }
 
         if (document == null) {
             auditTrail.setAuditOutcome(failed);
-            auditTrailRepository.save(auditTrail);
+            auditTrailService.createAuditTrail(auditTrail);
             return;
         }
 
         auditTrail.setUser(user);
         auditTrail.setDocument(document);
 
-        auditTrailRepository.save(auditTrail);
+        auditTrailService.createAuditTrail(auditTrail);
     }
 }
