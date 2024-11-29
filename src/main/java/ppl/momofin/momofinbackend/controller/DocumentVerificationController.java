@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.controller;
 
+import io.sentry.Sentry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,8 @@ public class DocumentVerificationController {
     private final JwtUtil jwtUtil;
     private final UserService userService;
     private static final String ERROR_RETRIEVING_DOCUMENT= "Error retrieving document: ";
+    private static final String ERROR_MAKING_REQUEST = "Error making request: ";
+
 
     private static final Logger logger = LoggerFactory.getLogger(DocumentVerificationController.class);
     @Autowired
@@ -49,6 +52,8 @@ public class DocumentVerificationController {
             DocumentSubmissionSuccessResponse successResponse = new DocumentSubmissionSuccessResponse(result);
             return ResponseEntity.ok(successResponse);
         } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
+            Sentry.captureException(e);
+
             ErrorResponse errorResponse = new ErrorResponse("Error processing document: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
@@ -58,17 +63,24 @@ public class DocumentVerificationController {
     public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) {
         try {
             String username = getUsername(token, jwtUtil);
+
             Document document = documentService.verifyDocument(file, username);
+
             DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(document);
             return ResponseEntity.ok(successResponse);
         } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalStateException e) {
+            Sentry.captureException(e);
+
             ErrorResponse errorResponse = new ErrorResponse("Error verifying document: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
     @PostMapping("/verify/{documentId}")
-    public ResponseEntity<Response> verifyDocument(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file, @PathVariable("documentId") String documentId) {
+    public ResponseEntity<Response> verifyDocument(
+            @RequestHeader("Authorization") String token,
+            @RequestParam("file") MultipartFile file,
+            @PathVariable("documentId") String documentId) {
         try {
             String username = getUsername(token, jwtUtil);
 
@@ -77,8 +89,12 @@ public class DocumentVerificationController {
             DocumentVerificationSuccessResponse successResponse = new DocumentVerificationSuccessResponse(verifiedDocument);
             return ResponseEntity.ok(successResponse);
         } catch (IllegalStateException e) {
+            Sentry.captureException(e);
+
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(e.getMessage()));
         } catch (IOException | NoSuchAlgorithmException | InvalidKeyException | IllegalArgumentException e) {
+            Sentry.captureException(e);
+
             ErrorResponse errorResponse = new ErrorResponse("Verification failed: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
@@ -108,26 +124,37 @@ public class DocumentVerificationController {
         try {
             UUID userId = getUserId(token, jwtUtil);
             String organizationName = getOrgName(token, jwtUtil);
-            String url = documentService.getViewableUrl(UUID.fromString(documentId), userId, organizationName);
-            Response urlResponse = new DocumentViewUrlResponse(url);
 
+            String url = documentService.getViewableUrl(UUID.fromString(documentId), userId, organizationName);
+
+            Response urlResponse = new DocumentViewUrlResponse(url);
             return ResponseEntity.ok(urlResponse);
+
         } catch (RuntimeException | IOException e) {
+            Sentry.captureException(e);
+
             ErrorResponse errorResponse = new ErrorResponse(ERROR_RETRIEVING_DOCUMENT + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
 
     @GetMapping("/view/{documentId}/{version}")
-    public ResponseEntity<Response> getViewableUrl(@PathVariable String documentId, @PathVariable int version, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<Response> getViewableUrl(
+            @PathVariable String documentId,
+            @PathVariable int version,
+            @RequestHeader("Authorization") String token) {
         try {
             UUID userId = getUserId(token, jwtUtil);
             String organizationName = getOrgName(token, jwtUtil);
-            String url = documentService.getViewableUrl(UUID.fromString(documentId), userId, organizationName, version);
-            Response urlResponse = new DocumentViewUrlResponse(url);
 
+            String url = documentService.getViewableUrl(UUID.fromString(documentId), userId, organizationName, version);
+
+            Response urlResponse = new DocumentViewUrlResponse(url);
             return ResponseEntity.ok(urlResponse);
+
         } catch (RuntimeException | IOException e) {
+            Sentry.captureException(e);
+
             ErrorResponse errorResponse = new ErrorResponse(ERROR_RETRIEVING_DOCUMENT + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
@@ -139,10 +166,14 @@ public class DocumentVerificationController {
             @RequestBody EditRequestRequest request) {
         try {
             EditRequest editRequest = documentService.requestEdit(UUID.fromString(documentId), request.getUsername());
+
             EditRequestDTO editRequestDTO = EditRequestDTO.toDTO(editRequest);
             return ResponseEntity.ok(editRequestDTO);
-        } catch (RuntimeException  e) {
-            ErrorResponse errorResponse = new ErrorResponse("Error making request: " + e.getMessage());
+
+        } catch (RuntimeException e) {
+            Sentry.captureException(e);
+
+            ErrorResponse errorResponse = new ErrorResponse(ERROR_MAKING_REQUEST + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
@@ -159,18 +190,21 @@ public class DocumentVerificationController {
     public ResponseEntity<Response> getViewableUrlForEditRequest(
             @PathVariable String documentId,
             @RequestParam String organizationName,
-            @RequestHeader("Authorization") String token){
+            @RequestHeader("Authorization") String token) {
         try {
             User user = new User();
             user.setUserId(getUserId(token, jwtUtil));
             Document document = new Document();
             document.setDocumentId(UUID.fromString(documentId));
             EditRequest request = new EditRequest(user, document);
+
             String url = documentService.getViewableUrlForEditRequest(UUID.fromString(documentId), request, organizationName);
             Response urlResponse = new DocumentViewUrlResponse(url);
 
             return ResponseEntity.ok(urlResponse);
         } catch (RuntimeException | IOException e) {
+            Sentry.captureException(e);
+
             ErrorResponse errorResponse = new ErrorResponse(ERROR_RETRIEVING_DOCUMENT + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
@@ -188,20 +222,6 @@ public class DocumentVerificationController {
         EditRequest request = new EditRequest(user, document);
         Document editedDocument = documentService.editDocument(file, request);
         return ResponseEntity.ok(editedDocument);
-    }
-
-    @DeleteMapping("/edit-request/{documentId}")
-    public ResponseEntity<String> rejectRequest(
-            @PathVariable String documentId,
-            @RequestHeader("Authorization") String token
-            ) {
-        User user = new User();
-        user.setUserId(getUserId(token, jwtUtil));
-        Document document = new Document();
-        document.setDocumentId(UUID.fromString(documentId));
-        EditRequest request = new EditRequest(user, document);
-        documentService.rejectEditRequest(request);
-        return ResponseEntity.ok("Request deleted successfully");
     }
 
     @GetMapping("{documentId}/versions")
