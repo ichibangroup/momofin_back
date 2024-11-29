@@ -19,6 +19,7 @@ public class AuditTrailAspect {
 
     private final UserService userService;
     private final AuditTrailService auditTrailService;
+    private static final String FAILED = "FAILED";
 
     public AuditTrailAspect(UserService userService, AuditTrailService auditTrailService) {
         this.userService = userService;
@@ -49,21 +50,21 @@ public class AuditTrailAspect {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (!isAuthenticated(authentication)) {
-            auditTrail.setAuditOutcome("FAILED");
+            auditTrail.setAuditOutcome(FAILED);
         } else {
             String username = authentication.getName();
             User user = userService.fetchUserByUsername(username);
             if (user != null) {
                 auditTrail.setUser(user);
             } else {
-                auditTrail.setAuditOutcome("FAILED");
+                auditTrail.setAuditOutcome(FAILED);
             }
         }
 
         if (document != null) {
             auditTrail.setDocument(document);
         } else {
-            auditTrail.setAuditOutcome("FAILED");
+            auditTrail.setAuditOutcome(FAILED);
         }
 
         auditTrailService.createAuditTrail(auditTrail);
