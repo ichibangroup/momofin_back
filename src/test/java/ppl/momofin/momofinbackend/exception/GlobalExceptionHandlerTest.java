@@ -1,4 +1,4 @@
-package exception;
+package ppl.momofin.momofinbackend.exception;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -6,7 +6,6 @@ import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import ppl.momofin.momofinbackend.exception.GlobalExceptionHandler;
 import ppl.momofin.momofinbackend.response.ErrorResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
