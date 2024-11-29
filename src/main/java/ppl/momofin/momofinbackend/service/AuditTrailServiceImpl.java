@@ -32,7 +32,7 @@ public class AuditTrailServiceImpl implements AuditTrailService {
         return auditTrailRepository.findAll(spec, pageable);
     }
 
-    public AuditTrail createAuditTrail(AuditTrail auditTrail) {
-        return auditTrailRepository.save(auditTrail);
+    public void createAuditTrail(AuditTrail auditTrail) {
+        auditTrailRepository.save(auditTrail);
     }
 }

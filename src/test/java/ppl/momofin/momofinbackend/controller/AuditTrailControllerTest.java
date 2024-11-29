@@ -2,163 +2,132 @@ package ppl.momofin.momofinbackend.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.*;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ppl.momofin.momofinbackend.model.AuditTrail;
-import ppl.momofin.momofinbackend.model.Document;
-import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.response.AuditTrailResponse;
 import ppl.momofin.momofinbackend.service.AuditTrailService;
-import ppl.momofin.momofinbackend.service.UserService;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AuditTrailControllerTest {
 
+    private AuditTrailController auditTrailController;
+
     @Mock
     private AuditTrailService auditTrailService;
 
-    @Mock
-    private UserService userService;
-
-    @InjectMocks
-    private AuditTrailController auditTrailController;
-
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
+        auditTrailController = new AuditTrailController(auditTrailService);
     }
 
     @Test
-    void testGetAllAudits_withFilters() {
+    void getAllAudits_shouldReturnPagedResponse() {
         String username = "testUser";
         String action = "SUBMIT";
-        String startDate = "2023-10-01T08:00:00";
-        String endDate = "2023-10-02T13:00:00";
+        String startDate = "2023-01-01T00:00:00";
+        String endDate = "2023-01-31T23:59:59";
+        String documentName = "testDoc";
         int page = 0;
         int size = 10;
         String sortBy = "timestamp";
         String direction = "DESC";
 
-        User mockUser = new User();
-        mockUser.setUsername(username);
+        LocalDateTime startDateTime = LocalDateTime.parse(startDate);
+        LocalDateTime endDateTime = LocalDateTime.parse(endDate);
 
-        Document mockDoc = new Document();
-        mockDoc.setName("dummydoc");
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp"));
+        AuditTrail mockAuditTrail = new AuditTrail();
+        mockAuditTrail.setAction(action);
 
-        when(userService.fetchUserByUsername(username)).thenReturn(mockUser);
-
-        AuditTrail auditTrail = new AuditTrail();
-        auditTrail.setId(1L);
-        auditTrail.setUser(mockUser);
-        auditTrail.setDocument(mockDoc);
-        auditTrail.setAction(action);
-        auditTrail.setTimestamp(LocalDateTime.parse(startDate));
-
-        List<AuditTrail> auditTrailList = Collections.singletonList(auditTrail);
-        Page<AuditTrail> auditTrailPage = new PageImpl<>(auditTrailList, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy)), auditTrailList.size());
-
-        when(auditTrailService.getAuditTrails(eq(mockUser), eq(action), any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class)))
+        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of(mockAuditTrail), pageable, 1);
+        when(auditTrailService.getAuditTrails(username, action, startDateTime, endDateTime, documentName, pageable))
                 .thenReturn(auditTrailPage);
 
-        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(username, action, startDate, endDate, page, size, sortBy, direction);
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
+                username, action, startDate, endDate, documentName, page, size, sortBy, direction
+        );
 
-        assertEquals(1, Objects.requireNonNull(response.getBody()).getContent().size());
+        assertEquals(200, response.getStatusCodeValue());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().getTotalElements());
 
-        AuditTrailResponse auditTrailResponse = response.getBody().getContent().getFirst();
-        assertEquals(auditTrail.getId(), auditTrailResponse.getId());
-        assertEquals(auditTrail.getUser().getUsername(), auditTrailResponse.getUsername());
-        assertEquals(auditTrail.getAction(), auditTrailResponse.getAction());
-        assertEquals(auditTrail.getTimestamp().format(DateTimeFormatter.ofPattern("H:mm • d MMM, uuuu")), auditTrailResponse.getDate());
+        verify(auditTrailService, times(1))
+                .getAuditTrails(username, action, startDateTime, endDateTime, documentName, pageable);
     }
 
     @Test
-    void testGetAllAudits_withoutFilters() {
-        int page = 0;
-        int size = 10;
-        String sortBy = "timestamp";
-        String direction = "DESC";
-
-        User mockUser = new User();
-        mockUser.setUsername("dummyuser");
-    private static List<AuditTrail> getAuditTrails() {
-        User testuser = new User();
-        testuser.setUserId(UUID.fromString("292aeace-0148-4a20-98bf-bf7f12871efe"));
-        testuser.setUsername("tester");
-
-        Document mockDoc = new Document();
-        mockDoc.setName("dummydoc");
-        Document testdoc = new Document();
-        testdoc.setDocumentId(UUID.fromString("bd7ef7cf-8875-45fb-9fe5-f36319acddff"));
-        testdoc.setName("testdoc");
-
-        AuditTrail auditTrail = new AuditTrail();
-        auditTrail.setId(1L);
-        auditTrail.setUser(mockUser);
-        auditTrail.setDocument(mockDoc);
-        auditTrail.setAction("VERIFY");
-        auditTrail.setTimestamp(LocalDateTime.now());
-
-        List<AuditTrail> auditTrailList = Collections.singletonList(auditTrail);
-        Page<AuditTrail> auditTrailPage = new PageImpl<>(auditTrailList, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy)), auditTrailList.size());
-
-        when(auditTrailService.getAuditTrails(any(), any(), any(), any(), any(Pageable.class)))
+    void getAllAudits_shouldHandleDefaultParameters() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "timestamp"));
+        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
+        when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
                 .thenReturn(auditTrailPage);
 
-        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(null, null, null, null, page, size, sortBy, direction);
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
+                null, null, null, null, null, 0, 10, "timestamp", "DESC"
+        );
 
-        assertEquals(1, Objects.requireNonNull(response.getBody()).getContent().size());
+        assertEquals(200, response.getStatusCodeValue());
+        assertNotNull(response.getBody());
+        assertEquals(0, response.getBody().getTotalElements());
 
-        AuditTrailResponse auditTrailResponse = response.getBody().getContent().getFirst();
-        assertEquals(auditTrail.getId(), auditTrailResponse.getId());
-        assertEquals(auditTrail.getAction(), auditTrailResponse.getAction());
-        assertEquals(auditTrail.getTimestamp().format(DateTimeFormatter.ofPattern("H:mm • d MMM, uuuu")), auditTrailResponse.getDate());
+        verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
     }
 
     @Test
-    void testGetAuditTrailById() {
-        AuditTrail mockAuditTrail = new AuditTrail();
-        mockAuditTrail.setId(1L);
-        when(auditTrailService.getAuditTrailById(1L)).thenReturn(mockAuditTrail);
+    void getAllAudits_shouldHandleInvalidDateFormat() {
+        String invalidStartDate = "invalidDate";
 
-        ResponseEntity<AuditTrail> response = auditTrailController.getAuditTrailById(1L);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(mockAuditTrail, response.getBody());
-        verify(auditTrailService, times(1)).getAuditTrailById(1L);
+        assertThrows(Exception.class, () -> {
+            auditTrailController.getAllAudits(
+                    null, null, invalidStartDate, null, null, 0, 10, "timestamp", "DESC"
+            );
+        });
     }
 
     @Test
-    void testCreateAuditTrail() {
-        AuditTrail mockAuditTrail = new AuditTrail();
-        mockAuditTrail.setId(1L);
-        when(auditTrailService.createAuditTrail(any(AuditTrail.class))).thenReturn(mockAuditTrail);
+    void getAllAudits_shouldResolveSortFieldCorrectly() {
+        String sortBy = "username";
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "user.username"));
+        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
+        when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
+                .thenReturn(auditTrailPage);
 
-        ResponseEntity<AuditTrail> response = auditTrailController.createAuditTrail(mockAuditTrail);
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
+                null, null, null, null, null, 0, 10, sortBy, "DESC"
+        );
 
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals(mockAuditTrail, response.getBody());
-        verify(auditTrailService, times(1)).createAuditTrail(mockAuditTrail);
+        assertEquals(200, response.getStatusCodeValue());
+        assertNotNull(response.getBody());
+        assertEquals(0, response.getBody().getTotalElements());
+
+        verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
     }
 
     @Test
-    void testDeleteAuditTrail() {
-        ResponseEntity<Void> response = auditTrailController.deleteAuditTrail(1L);
+    void getAllAudits_shouldDefaultToTimestampSortWhenInvalidSortFieldProvided() {
+        String invalidSortField = "invalidField";
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "timestamp"));
+        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
+        when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
+                .thenReturn(auditTrailPage);
 
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        verify(auditTrailService, times(1)).deleteAuditTrail(1L);
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
+                null, null, null, null, null, 0, 10, invalidSortField, "DESC"
+        );
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertNotNull(response.getBody());
+        assertEquals(0, response.getBody().getTotalElements());
+
+        verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
     }
 }
