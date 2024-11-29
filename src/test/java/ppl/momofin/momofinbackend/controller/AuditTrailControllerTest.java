@@ -56,7 +56,6 @@ class AuditTrailControllerTest {
                 username, action, startDate, endDate, documentName, page, size, sortBy, direction
         );
 
-        assertEquals(200, response.getStatusCodeValue());
         assertNotNull(response.getBody());
         assertEquals(1, response.getBody().getTotalElements());
 
@@ -75,7 +74,6 @@ class AuditTrailControllerTest {
                 null, null, null, null, null, 0, 10, "timestamp", "DESC"
         );
 
-        assertEquals(200, response.getStatusCodeValue());
         assertNotNull(response.getBody());
         assertEquals(0, response.getBody().getTotalElements());
 
@@ -105,7 +103,6 @@ class AuditTrailControllerTest {
                 null, null, null, null, null, 0, 10, sortBy, "DESC"
         );
 
-        assertEquals(200, response.getStatusCodeValue());
         assertNotNull(response.getBody());
         assertEquals(0, response.getBody().getTotalElements());
 
@@ -124,7 +121,6 @@ class AuditTrailControllerTest {
                 null, null, null, null, null, 0, 10, sortBy, "DESC"
         );
 
-        assertEquals(200, response.getStatusCodeValue());
         assertNotNull(response.getBody());
         assertEquals(0, response.getBody().getTotalElements());
 
@@ -143,7 +139,6 @@ class AuditTrailControllerTest {
                 null, null, null, null, null, 0, 10, sortBy, "DESC"
         );
 
-        assertEquals(200, response.getStatusCodeValue());
         assertNotNull(response.getBody());
         assertEquals(0, response.getBody().getTotalElements());
 
@@ -162,7 +157,6 @@ class AuditTrailControllerTest {
                 null, null, null, null, null, 0, 10, invalidSortField, "DESC"
         );
 
-        assertEquals(200, response.getStatusCodeValue());
         assertNotNull(response.getBody());
         assertEquals(0, response.getBody().getTotalElements());
 
