@@ -563,4 +563,47 @@ class DocumentVerificationControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorMessage").value("Error retrieving document: Document not found"));
     }
+
+    @Test
+    public void testRejectRequest_Successful() throws Exception {
+        // Arrange
+
+        // Mock the JWT token validation
+        doNothing().when(documentService).rejectEditRequest(any());
+        when(jwtUtil.extractUserId(anyString())).thenReturn(TEST_USER.getUserId().toString());
+
+        // Act & Assert
+        mockMvc.perform(delete("/doc/edit-request/{documentId}", documentId)
+                        .header("Authorization", VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Request deleted successfully"));
+
+        // Verify the service method was called with correct parameters
+        verify(documentService).rejectEditRequest(any(EditRequest.class));
+    }
+
+    @Test
+    public void testRejectRequest_MissingToken() throws Exception {
+        // Arrange
+        String documentId = UUID.randomUUID().toString();
+
+        // Act & Assert
+        mockMvc.perform(delete("/doc/edit-request/{documentId}", documentId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void testRejectRequest_InvalidDocumentId() throws Exception {
+        // Arrange
+        String invalidDocumentId = "not-a-valid-uuid";
+        String validToken = "Bearer valid-token";
+
+        // Act & Assert
+        mockMvc.perform(delete("/doc/edit-request/{documentId}", invalidDocumentId)
+                        .header("Authorization", validToken)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
 }
