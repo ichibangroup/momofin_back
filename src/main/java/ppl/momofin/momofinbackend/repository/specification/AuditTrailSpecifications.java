@@ -6,6 +6,9 @@ import ppl.momofin.momofinbackend.model.AuditTrail;
 import java.time.LocalDateTime;
 
 public class AuditTrailSpecifications {
+    private AuditTrailSpecifications() {
+        throw new IllegalStateException("Utility class");
+    }
 
     public static Specification<AuditTrail> hasAction(String action) {
         return (root, query, cb) ->

@@ -6,8 +6,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
 import ppl.momofin.momofinbackend.model.AuditTrail;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AuditTrailSpecificationsTest {
@@ -21,6 +24,20 @@ class AuditTrailSpecificationsTest {
         cb = mock(CriteriaBuilder.class);
         query = mock(CriteriaQuery.class);
         root = mock(Root.class);
+    }
+
+    @Test
+    void testPrivateConstructorThrowsException() throws Exception {
+        Constructor<AuditTrailSpecifications> constructor = AuditTrailSpecifications.class.getDeclaredConstructor();
+
+        constructor.setAccessible(true);
+
+        Exception exception = assertThrows(InvocationTargetException.class, constructor::newInstance);
+
+        Throwable cause = exception.getCause();
+
+        assertInstanceOf(IllegalStateException.class, cause);
+        assertEquals("Utility class", cause.getMessage());
     }
 
     @Test
