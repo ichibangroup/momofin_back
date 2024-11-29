@@ -14,8 +14,8 @@ import ppl.momofin.momofinbackend.model.User;
 import ppl.momofin.momofinbackend.service.AuditTrailService;
 import ppl.momofin.momofinbackend.service.UserService;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @Aspect
@@ -99,6 +99,30 @@ class AuditTrailAspectTest {
         assertEquals("SUBMIT", capturedAuditTrail.getAction());
         assertEquals("FAILED", capturedAuditTrail.getAuditOutcome());
         assertNull(capturedAuditTrail.getUser());
+    }
+
+    @Test
+    void shouldCreateAuditTrailWithFailedOutcomeForNullUser() {
+        Document document = mock(Document.class);
+        User user = new User();
+        user.setUsername("testUser");
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("testUser");
+        when(userService.fetchUserByUsername("testUser")).thenReturn(user);
+
+        when(userService.fetchUserByUsername(any(String.class))).thenReturn(null);
+
+        auditTrailAspect.captureDocumentAfterSubmit(document);
+
+        ArgumentCaptor<AuditTrail> auditTrailCaptor = ArgumentCaptor.forClass(AuditTrail.class);
+        verify(auditTrailService, times(1)).createAuditTrail(auditTrailCaptor.capture());
+
+        AuditTrail capturedAuditTrail = auditTrailCaptor.getValue();
+        assertEquals("FAILED", capturedAuditTrail.getAuditOutcome());
+        assertNull(capturedAuditTrail.getUser()); // No user should be set
+        assertNotNull(capturedAuditTrail.getDocument()); // The document should still be set
     }
 
     @Test

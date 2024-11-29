@@ -94,9 +94,47 @@ class AuditTrailControllerTest {
     }
 
     @Test
-    void getAllAudits_shouldResolveSortFieldCorrectly() {
+    void getAllAudits_shouldResolveSortFieldUsernameCorrectly() {
         String sortBy = "username";
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "user.username"));
+        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
+        when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
+                .thenReturn(auditTrailPage);
+
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
+                null, null, null, null, null, 0, 10, sortBy, "DESC"
+        );
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertNotNull(response.getBody());
+        assertEquals(0, response.getBody().getTotalElements());
+
+        verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
+    }
+
+    @Test
+    void getAllAudits_shouldResolveSortFieldDocumentNameCorrectly() {
+        String sortBy = "documentName";
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "document.name"));
+        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
+        when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
+                .thenReturn(auditTrailPage);
+
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
+                null, null, null, null, null, 0, 10, sortBy, "DESC"
+        );
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertNotNull(response.getBody());
+        assertEquals(0, response.getBody().getTotalElements());
+
+        verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
+    }
+
+    @Test
+    void getAllAudits_shouldResolveSortFieldActionCorrectly() {
+        String sortBy = "action";
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "action"));
         Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
         when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
                 .thenReturn(auditTrailPage);
