@@ -1,5 +1,6 @@
 package ppl.momofin.momofinbackend.controller;
 
+import io.sentry.Sentry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,21 +39,35 @@ public class AuditTrailController {
     ) {
         String resolvedSortBy = resolveSortField(sortBy);
 
+        Sentry.captureMessage("Fetching audit trails with parameters - username: " + username + ", action: " + action +
+                ", startDate: " + startDate + ", endDate: " + endDate + ", documentName: " + documentName +
+                ", page: " + page + ", size: " + size + ", sortBy: " + sortBy + ", direction: " + direction);
+
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(direction), resolvedSortBy));
 
-        LocalDateTime startDateTime = (startDate != null && !startDate.isEmpty())
-                ? LocalDateTime.parse(startDate)
-                : null;
+        LocalDateTime startDateTime = null;
+        LocalDateTime endDateTime = null;
 
-        LocalDateTime endDateTime = (endDate != null && !endDate.isEmpty())
-                ? LocalDateTime.parse(endDate)
-                : null;
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                startDateTime = LocalDateTime.parse(startDate);
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                endDateTime = LocalDateTime.parse(endDate);
+            }
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            return ResponseEntity.badRequest().body(null);
+        }
 
-        Page<AuditTrail> auditTrailPage = auditTrailService.getAuditTrails(username, action, startDateTime, endDateTime, documentName, pageable);
-
-        Page<AuditTrailResponse> responsePage = auditTrailPage.map(AuditTrailResponse::fromAuditTrail);
-
-        return ResponseEntity.ok(responsePage);
+        try {
+            Page<AuditTrail> auditTrailPage = auditTrailService.getAuditTrails(username, action, startDateTime, endDateTime, documentName, pageable);
+            Page<AuditTrailResponse> responsePage = auditTrailPage.map(AuditTrailResponse::fromAuditTrail);
+            return ResponseEntity.ok(responsePage);
+        } catch (Exception e) {
+            Sentry.captureException(e);
+            return ResponseEntity.status(500).body(null);
+        }
     }
 
     private String resolveSortField(String sortBy) {
