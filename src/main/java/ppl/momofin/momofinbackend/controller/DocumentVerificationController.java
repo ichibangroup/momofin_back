@@ -190,6 +190,20 @@ public class DocumentVerificationController {
         return ResponseEntity.ok(editedDocument);
     }
 
+    @DeleteMapping("/edit-request/{documentId}")
+    public ResponseEntity<String> rejectRequest(
+            @PathVariable String documentId,
+            @RequestHeader("Authorization") String token
+            ) {
+        User user = new User();
+        user.setUserId(getUserId(token, jwtUtil));
+        Document document = new Document();
+        document.setDocumentId(UUID.fromString(documentId));
+        EditRequest request = new EditRequest(user, document);
+        documentService.rejectEditRequest(request);
+        return ResponseEntity.ok("Request deleted successfully");
+    }
+
     @GetMapping("{documentId}/versions")
     public ResponseEntity<List<DocumentVersion>> getVersions(
             @PathVariable String documentId

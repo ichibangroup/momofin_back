@@ -247,6 +247,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public void rejectEditRequest(EditRequest editRequest) {
+        documentRepository.updateIsBeingRequested(editRequest.getDocumentId(), false);
         editRequestRepository.delete(editRequest);
     }
 
