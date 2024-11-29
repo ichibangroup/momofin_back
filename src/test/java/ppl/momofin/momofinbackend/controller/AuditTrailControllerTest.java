@@ -2,6 +2,9 @@ package ppl.momofin.momofinbackend.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.*;
@@ -13,6 +16,7 @@ import ppl.momofin.momofinbackend.service.AuditTrailService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -93,61 +97,6 @@ class AuditTrailControllerTest {
         assertNull(response.getBody());
     }
 
-
-    @Test
-    void getAllAudits_shouldResolveSortFieldUsernameCorrectly() {
-        String sortBy = "username";
-        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "user.username"));
-        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
-        when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
-                .thenReturn(auditTrailPage);
-
-        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
-                null, null, null, null, null, 0, 10, sortBy, "DESC"
-        );
-
-        assertNotNull(response.getBody());
-        assertEquals(0, response.getBody().getTotalElements());
-
-        verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
-    }
-
-    @Test
-    void getAllAudits_shouldResolveSortFieldDocumentNameCorrectly() {
-        String sortBy = "documentName";
-        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "document.name"));
-        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
-        when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
-                .thenReturn(auditTrailPage);
-
-        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
-                null, null, null, null, null, 0, 10, sortBy, "DESC"
-        );
-
-        assertNotNull(response.getBody());
-        assertEquals(0, response.getBody().getTotalElements());
-
-        verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
-    }
-
-    @Test
-    void getAllAudits_shouldResolveSortFieldActionCorrectly() {
-        String sortBy = "action";
-        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "action"));
-        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
-        when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
-                .thenReturn(auditTrailPage);
-
-        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
-                null, null, null, null, null, 0, 10, sortBy, "DESC"
-        );
-
-        assertNotNull(response.getBody());
-        assertEquals(0, response.getBody().getTotalElements());
-
-        verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
-    }
-
     @Test
     void getAllAudits_shouldDefaultToTimestampSortWhenInvalidSortFieldProvided() {
         String invalidSortField = "invalidField";
@@ -190,5 +139,35 @@ class AuditTrailControllerTest {
 
         verify(auditTrailService, times(1))
                 .getAuditTrails(username, action, LocalDateTime.parse(startDate), LocalDateTime.parse(endDate), documentName, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("sortFieldProvider")
+    void getAllAudits_shouldResolveSortFieldsCorrectly(String sortBy, String expectedSortField) {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, expectedSortField));
+        Page<AuditTrail> auditTrailPage = new PageImpl<>(List.of());
+        when(auditTrailService.getAuditTrails(null, null, null, null, null, pageable))
+                .thenReturn(auditTrailPage);
+
+        // Act
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
+                null, null, null, null, null, 0, 10, sortBy, "DESC"
+        );
+
+        // Assert
+        assertNotNull(response.getBody());
+        assertEquals(0, response.getBody().getTotalElements());
+
+        // Verify interaction with the service
+        verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
+    }
+
+    // Providing values for different test cases
+    private static Stream<Arguments> sortFieldProvider() {
+        return Stream.of(
+                Arguments.of("username", "user.username"),
+                Arguments.of("documentName", "document.name"),
+                Arguments.of("action", "action")
+        );
     }
 }
