@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import ppl.momofin.momofinbackend.model.AuditTrail;
 import ppl.momofin.momofinbackend.response.AuditTrailResponse;
@@ -84,12 +85,14 @@ class AuditTrailControllerTest {
     void getAllAudits_shouldHandleInvalidDateFormat() {
         String invalidStartDate = "invalidDate";
 
-        assertThrows(Exception.class, () -> {
-            auditTrailController.getAllAudits(
-                    null, null, invalidStartDate, null, null, 0, 10, "timestamp", "DESC"
-            );
-        });
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
+                null, null, invalidStartDate, null, null, 0, 10, "timestamp", "DESC"
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNull(response.getBody());
     }
+
 
     @Test
     void getAllAudits_shouldResolveSortFieldUsernameCorrectly() {
@@ -161,5 +164,31 @@ class AuditTrailControllerTest {
         assertEquals(0, response.getBody().getTotalElements());
 
         verify(auditTrailService, times(1)).getAuditTrails(null, null, null, null, null, pageable);
+    }
+
+    @Test
+    void getAllAudits_shouldHandleExceptionAndReturnInternalServerError() {
+        String username = "testUser";
+        String action = "SUBMIT";
+        String startDate = "2023-01-01T00:00:00";
+        String endDate = "2023-01-31T23:59:59";
+        String documentName = "testDoc";
+        int page = 0;
+        int size = 10;
+        String sortBy = "timestamp";
+        String direction = "DESC";
+
+        when(auditTrailService.getAuditTrails(any(), any(), any(), any(), any(), any()))
+                .thenThrow(new RuntimeException("Database error"));
+
+        ResponseEntity<Page<AuditTrailResponse>> response = auditTrailController.getAllAudits(
+                username, action, startDate, endDate, documentName, page, size, sortBy, direction
+        );
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertNull(response.getBody());
+
+        verify(auditTrailService, times(1))
+                .getAuditTrails(username, action, LocalDateTime.parse(startDate), LocalDateTime.parse(endDate), documentName, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp")));
     }
 }
