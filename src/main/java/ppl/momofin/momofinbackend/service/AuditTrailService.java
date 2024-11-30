@@ -9,4 +9,5 @@ public interface AuditTrailService {
     AuditTrail getAuditTrailById(Long id);
     AuditTrail createAuditTrail(AuditTrail auditTrail);
     void deleteAuditTrail(Long id);
+    void newAuditTrailMethod();
 }
