@@ -786,4 +786,67 @@ class DocumentServiceTest {
                 () -> documentService.getViewableUrlForEditRequest(documentId, editRequest, organizationName)
         );
     }
+
+    @Test
+    void cancelEditRequestsSuccessful() {
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+
+        documentService.cancelEditRequest(documentId, mockUser.getUserId());
+
+        verify(documentRepository).findByDocumentId(documentId);
+        verify(documentRepository).updateIsBeingRequested(documentId, false);
+        verify(editRequestRepository).deleteByDocumentId(documentId);
+    }
+
+    @Test
+    void cancelEditRequestsEmptyDocument() {
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, ()->
+        documentService.cancelEditRequest(documentId, mockUser.getUserId()));
+
+        verify(documentRepository).findByDocumentId(documentId);
+        verify(documentRepository, never()).updateIsBeingRequested(documentId, false);
+        verify(editRequestRepository, never()).deleteByDocumentId(documentId);
+    }
+
+    @Test
+    void cancelEditRequestsInvalidUser() {
+        when(documentRepository.findByDocumentId(documentId)).thenReturn(Optional.of(document));
+
+
+        documentService.cancelEditRequest(documentId, UUID.randomUUID());
+
+        verify(documentRepository).findByDocumentId(documentId);
+        verify(documentRepository, never()).updateIsBeingRequested(documentId, false);
+        verify(editRequestRepository, never()).deleteByDocumentId(documentId);
+    }
+
+    @Test
+    void editDocumentAlreadyExistsInDatabaseTest() throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        editRequest.setDocument(document);
+        document.setOwner(mockUser);
+        editRequest.setUser(mockUser);
+        when(userRepository.findById(mockUser.getUserId())).thenReturn(Optional.of(mockUser));
+        when(documentRepository.findByDocumentId(editRequest.getDocumentId())).thenReturn(Optional.of(document));
+
+        // Mock interactions
+        when(editRequestRepository.existsById(editRequest.getId())).thenReturn(true);
+
+        String expectedHash = "the hash";
+
+        DocumentServiceImpl documentServiceSpy = spy(documentService);
+        doReturn(expectedHash).when(documentServiceSpy).generateHash(any(MultipartFile.class));
+
+        Document hashStringMatchedDocument = new Document();
+        hashStringMatchedDocument.setHashString(expectedHash);
+        when(documentRepository.findByHashString(expectedHash)).thenReturn(Optional.of(hashStringMatchedDocument));
+
+        // Execute the method
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+        documentServiceSpy.editDocument(mockFile, editRequest));
+
+        assertEquals("This document is already present in our database, please ensure that you have not accidentally submitted an already existing document as the edit", exception.getMessage());
+        verify(cdnService, never()).editDocument(any(MultipartFile.class), any(Document.class), anyString(), eq(mockUser));
+    }
 }
