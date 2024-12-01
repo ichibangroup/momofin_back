@@ -406,8 +406,22 @@ class DocumentVerificationControllerTest {
                         .file(file)
                         .header("Authorization", VALID_TOKEN))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
-                .andExpect(jsonPath("$.name").value("test-document.pdf"));
+                .andExpect(jsonPath("$.editedDocument.documentId").value("bd7ef7cf-8875-45fb-9fe5-f36319acddff"))
+                .andExpect(jsonPath("$.editedDocument.name").value("test-document.pdf"));
+    }
+
+    @Test
+    void testEditDocument_ErrorThrown() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "test.txt", MediaType.TEXT_PLAIN_VALUE, "test content".getBytes());
+
+        when(documentService.editDocument(eq(file), any(EditRequest.class)))
+                .thenThrow(new RuntimeException("An error occurred"));
+
+        mockMvc.perform(multipart("/doc/edit-request/{documentId}", "bd7ef7cf-8875-45fb-9fe5-f36319acddff")
+                        .file(file)
+                        .header("Authorization", VALID_TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorMessage").value("Error editing document: An error occurred"));
     }
     @Test
     void testEditDocument_MissingFile() throws Exception {
@@ -595,15 +609,16 @@ class DocumentVerificationControllerTest {
     }
 
     @Test
-    public void testRejectRequest_InvalidDocumentId() throws Exception {
-        // Arrange
-        String invalidDocumentId = "not-a-valid-uuid";
-        String validToken = "Bearer valid-token";
+    void cancelRequest_Success() throws Exception {
+        UUID userId = UUID.randomUUID();
 
-        // Act & Assert
-        mockMvc.perform(delete("/doc/edit-request/{documentId}", invalidDocumentId)
-                        .header("Authorization", validToken)
+        when(jwtUtil.extractUserId(any(String.class))).thenReturn(String.valueOf(userId));
+
+
+        mockMvc.perform(delete("/doc/edit-request/{documentId}/cancel", documentId)
+                        .header("Authorization", VALID_TOKEN)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(content().string("Request deleted successfully"));
     }
 }

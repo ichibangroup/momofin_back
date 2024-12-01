@@ -29,4 +29,5 @@ public interface DocumentService {
     List<DocumentVersion> findVersionsOfDocument(UUID documentId);
     String getViewableUrlForEditRequest(UUID documentId, EditRequest editRequest, String organizationName) throws IOException;
 
+    void cancelEditRequest(UUID documentId, UUID userId);
 }

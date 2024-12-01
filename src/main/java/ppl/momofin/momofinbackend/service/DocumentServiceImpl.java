@@ -237,10 +237,28 @@ public class DocumentServiceImpl implements DocumentService {
         if (editor.isEmpty()) {
             throw new UserNotFoundException("User with ID " + userId + NOT_FOUND);
         }
+        Optional<Document> document2 = documentRepository.findByHashString(hashString);
+        if(document2.isPresent()) {
+            throw new RuntimeException("This document is already present in our database, please ensure that you have not accidentally submitted an already existing document as the edit");
+        }
 
         Document editedDocument = cdnService.editDocument(file, document.get(), hashString, editor.get());
         editRequestRepository.delete(editRequest);
         return editedDocument;
+    }
+
+    @Override
+    public void cancelEditRequest(UUID documentId, UUID userId) {
+        Optional<Document> optionalDocument = documentRepository.findByDocumentId(documentId);
+
+        if (optionalDocument.isEmpty()) throw new IllegalArgumentException(DOCUMENT_WITH_ID + documentId + DOES_NOT_EXIST);
+
+        Document document = optionalDocument.get();
+
+        if(document.getOwner().getUserId().equals(userId)) {
+            documentRepository.updateIsBeingRequested(documentId, false);
+            editRequestRepository.deleteByDocumentId(documentId);
+        }
     }
 
 
