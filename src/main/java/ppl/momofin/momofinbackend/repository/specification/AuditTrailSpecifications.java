@@ -12,8 +12,12 @@ public class AuditTrailSpecifications {
     }
 
     public static Specification<AuditTrail> hasOrganization(Organization organization) {
-        return (root, query, cb) ->
-                cb.equal(root.get("document").get("owner").get("organization"), organization);
+        return (root, query, cb) -> {
+            if (organization == null) {
+                return cb.disjunction();
+            }
+            return cb.equal(root.get("document").get("owner").get("organization"), organization);
+        };
     }
 
     public static Specification<AuditTrail> hasAction(String action) {

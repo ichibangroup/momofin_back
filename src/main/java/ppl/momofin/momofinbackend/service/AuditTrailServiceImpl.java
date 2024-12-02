@@ -46,26 +46,6 @@ public class AuditTrailServiceImpl implements AuditTrailService {
         return auditTrailRepository.findAll(spec, pageable);
     }
 
-    public Integer getTotalCount(
-            Organization organization,
-            String username,
-            String action,
-            LocalDateTime startDateTime,
-            LocalDateTime endDateTime,
-            String documentName
-    ) {
-        Specification<AuditTrail> spec = Specification.where(
-                        username != null ? AuditTrailSpecifications.hasUser(username) : null)
-                .and(action != null ? AuditTrailSpecifications.hasAction(action) : null)
-                .and(startDateTime != null ? AuditTrailSpecifications.afterTimestamp(startDateTime) : null)
-                .and(endDateTime != null ? AuditTrailSpecifications.beforeTimestamp(endDateTime) : null)
-                .and(documentName != null ? AuditTrailSpecifications.hasDocumentName(documentName) : null)
-                .and(AuditTrailSpecifications.hasOrganization(organization));
-
-        long longCount = auditTrailRepository.count(spec);
-        return Math.toIntExact(longCount);
-    }
-
     public void createAuditTrail(AuditTrail auditTrail) {
         auditTrailRepository.save(auditTrail);
     }

@@ -17,7 +17,6 @@ import ppl.momofin.momofinbackend.security.JwtUtil;
 import ppl.momofin.momofinbackend.service.AuditTrailService;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -48,7 +47,10 @@ public class AuditTrailController {
             @RequestParam(defaultValue = "timestamp") String sortBy,
             @RequestParam(defaultValue = "DESC") String direction
     ) {
-        String organizationId = getOrg(token, jwtUtil);
+        String organizationId = (token != null) ? getOrg(token, jwtUtil) : null;
+        if (organizationId == null) {
+            throw new IllegalArgumentException("Missing organization ID");
+        }
 
         UUID uuid = null;
         try {
@@ -102,6 +104,9 @@ public class AuditTrailController {
     }
 
     public static String getOrg(String token, JwtUtil jwtUtil) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Invalid or missing Authorization token");
+        }
         String jwtToken = token.substring(7);
         return jwtUtil.extractOrganizationId(jwtToken);
     }

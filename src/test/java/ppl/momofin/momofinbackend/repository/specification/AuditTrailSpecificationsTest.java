@@ -5,10 +5,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
 import ppl.momofin.momofinbackend.model.AuditTrail;
+import ppl.momofin.momofinbackend.model.Organization;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -26,6 +28,8 @@ class AuditTrailSpecificationsTest {
         root = mock(Root.class);
     }
 
+
+
     @Test
     void testPrivateConstructorThrowsException() throws Exception {
         Constructor<AuditTrailSpecifications> constructor = AuditTrailSpecifications.class.getDeclaredConstructor();
@@ -38,6 +42,56 @@ class AuditTrailSpecificationsTest {
 
         assertInstanceOf(IllegalStateException.class, cause);
         assertEquals("Utility class", cause.getMessage());
+    }
+
+    @Test
+    void testHasOrganization_withNullOrganization() {
+        // Test case for null organization
+        Specification<AuditTrail> specification = AuditTrailSpecifications.hasOrganization(null);
+
+        // Act
+        Predicate result = specification.toPredicate(root, query, cb);
+
+        // Assert
+        assertNull(result, "Predicate should be null");
+        verify(cb).disjunction();
+        verifyNoInteractions(root); // Ensure root was not accessed
+    }
+
+    @Test
+    void testHasOrganization_withNonNullOrganization() {
+        // Mock organization
+        Organization mockOrganization = new Organization();
+        mockOrganization.setOrganizationId(UUID.randomUUID());
+        mockOrganization.setName("Test Organization");
+
+        // Mock paths
+        Path documentPath = mock(Path.class);
+        Path ownerPath = mock(Path.class);
+        Path organizationPath = mock(Path.class);
+
+        // Setup path navigation
+        when(root.get("document")).thenReturn(documentPath);
+        when(documentPath.get("owner")).thenReturn(ownerPath);
+        when(ownerPath.get("organization")).thenReturn(organizationPath);
+
+        // Mock cb.equal behavior
+        Predicate mockPredicate = mock(Predicate.class);
+        when(cb.equal(organizationPath, mockOrganization)).thenReturn(mockPredicate);
+
+        // Act
+        Specification<AuditTrail> specification = AuditTrailSpecifications.hasOrganization(mockOrganization);
+        Predicate result = specification.toPredicate(root, query, cb);
+
+        // Assertions
+        assertNotNull(result, "Predicate should not be null");
+        assertEquals(mockPredicate, result, "Generated predicate should match the mocked predicate");
+
+        // Verify path traversal and predicate generation
+        verify(root).get("document");
+        verify(documentPath).get("owner");
+        verify(ownerPath).get("organization");
+        verify(cb).equal(organizationPath, mockOrganization);
     }
 
     @Test
