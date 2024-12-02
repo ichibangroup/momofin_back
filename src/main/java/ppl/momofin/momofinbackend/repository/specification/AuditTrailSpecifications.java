@@ -2,12 +2,18 @@ package ppl.momofin.momofinbackend.repository.specification;
 
 import org.springframework.data.jpa.domain.Specification;
 import ppl.momofin.momofinbackend.model.AuditTrail;
+import ppl.momofin.momofinbackend.model.Organization;
 
 import java.time.LocalDateTime;
 
 public class AuditTrailSpecifications {
     private AuditTrailSpecifications() {
         throw new IllegalStateException("Utility class");
+    }
+
+    public static Specification<AuditTrail> hasOrganization(Organization organization) {
+        return (root, query, cb) ->
+                cb.equal(root.get("document").get("owner").get("organization"), organization);
     }
 
     public static Specification<AuditTrail> hasAction(String action) {

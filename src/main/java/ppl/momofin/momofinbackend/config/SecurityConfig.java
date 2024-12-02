@@ -27,6 +27,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/audit/audits").hasRole("ORG_ADMIN")
                         .requestMatchers("/api/organizations/**").hasRole("ORG_ADMIN")
                         .requestMatchers("/api/momofin-admin/**", "/actuators/prometheus").hasRole("MOMOFIN_ADMIN")
                         .anyRequest().authenticated()
