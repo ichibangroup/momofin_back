@@ -1,27 +1,34 @@
 package ppl.momofin.momofinbackend.aspect;
 
+import org.aspectj.lang.annotation.Aspect;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import ppl.momofin.momofinbackend.model.AuditTrail;
 import ppl.momofin.momofinbackend.model.Document;
 import ppl.momofin.momofinbackend.model.User;
-import ppl.momofin.momofinbackend.repository.AuditTrailRepository;
+import ppl.momofin.momofinbackend.service.AuditTrailService;
 import ppl.momofin.momofinbackend.service.UserService;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@Aspect
 class AuditTrailAspectTest {
 
     @Mock
     private UserService userService;
 
     @Mock
-    private AuditTrailRepository auditTrailRepository;
+    private AuditTrailService auditTrailService;
+
+    @InjectMocks
+    private AuditTrailAspect auditTrailAspect;
 
     @Mock
     private SecurityContext securityContext;
@@ -29,89 +36,137 @@ class AuditTrailAspectTest {
     @Mock
     private Authentication authentication;
 
-    @InjectMocks
-    private AuditTrailAspect auditTrailAspect;
-
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
         SecurityContextHolder.setContext(securityContext);
     }
 
     @Test
-    void testCaptureDocumentAfterSubmit_SuccessfulAudit() {
-        // Mocking an authenticated user and a valid document
+    void shouldCreateAuditTrailForDocumentSubmission() {
+        Document document = new Document();
+        User user = new User();
+        user.setUsername("testUser");
+
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("testUser");
-
-        User user = new User(); // Mocked user
-        Document document = new Document(); // Mocked document
-
         when(userService.fetchUserByUsername("testUser")).thenReturn(user);
 
-        // Test the document submission audit
         auditTrailAspect.captureDocumentAfterSubmit(document);
 
-        verify(auditTrailRepository, times(1)).save(any(AuditTrail.class));
+        ArgumentCaptor<AuditTrail> captor = ArgumentCaptor.forClass(AuditTrail.class);
+        verify(auditTrailService).createAuditTrail(captor.capture());
+
+        AuditTrail capturedAuditTrail = captor.getValue();
+        assertEquals("SUBMIT", capturedAuditTrail.getAction());
+        assertEquals("SUCCESS", capturedAuditTrail.getAuditOutcome());
+        assertEquals(user, capturedAuditTrail.getUser());
+        assertEquals(document, capturedAuditTrail.getDocument());
     }
 
     @Test
-    void testCaptureDocumentAfterSubmit_AuthenticationFailed() {
-        // Mocking an unauthenticated scenario
+    void shouldCreateAuditTrailWithFailedOutcomeForUnauthenticatedUser() {
+        Document document = new Document();
+
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(false);
 
-        Document document = new Document(); // Mocked document
-
-        // Test the document submission audit
         auditTrailAspect.captureDocumentAfterSubmit(document);
 
-        verify(auditTrailRepository, times(1)).save(any(AuditTrail.class));
-        AuditTrail auditTrail = captureAuditTrail();
-        assertEquals("FAILED", auditTrail.getAuditOutcome());
+        ArgumentCaptor<AuditTrail> captor = ArgumentCaptor.forClass(AuditTrail.class);
+        verify(auditTrailService).createAuditTrail(captor.capture());
+
+        AuditTrail capturedAuditTrail = captor.getValue();
+        assertEquals("SUBMIT", capturedAuditTrail.getAction());
+        assertEquals("FAILED", capturedAuditTrail.getAuditOutcome());
+        assertNull(capturedAuditTrail.getUser());
     }
 
     @Test
-    void testCaptureDocumentAfterVerify_UserNotFound() {
-        // Mocking an authenticated user with no corresponding user in the system
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.isAuthenticated()).thenReturn(true);
-        when(authentication.getName()).thenReturn("nonexistentUser");
+    void shouldCreateAuditTrailWithFailedOutcomeForAnonymousUser() {
+        Document document = new Document();
+        AnonymousAuthenticationToken anonymousAuth = mock(AnonymousAuthenticationToken.class);
 
-        Document document = new Document(); // Mocked document
-        when(userService.fetchUserByUsername("nonexistentUser")).thenReturn(null);
+        when(securityContext.getAuthentication()).thenReturn(anonymousAuth);
 
-        // Test the document verification audit
-        auditTrailAspect.captureDocumentAfterVerify(document);
+        auditTrailAspect.captureDocumentAfterSubmit(document);
 
-        verify(auditTrailRepository, times(1)).save(any(AuditTrail.class));
-        AuditTrail auditTrail = captureAuditTrail();
-        assertEquals("FAILED", auditTrail.getAuditOutcome());
+        ArgumentCaptor<AuditTrail> captor = ArgumentCaptor.forClass(AuditTrail.class);
+        verify(auditTrailService).createAuditTrail(captor.capture());
+
+        AuditTrail capturedAuditTrail = captor.getValue();
+        assertEquals("SUBMIT", capturedAuditTrail.getAction());
+        assertEquals("FAILED", capturedAuditTrail.getAuditOutcome());
+        assertNull(capturedAuditTrail.getUser());
     }
 
     @Test
-    void testCaptureDocumentAfterVerify_DocumentNull() {
-        // Mocking an authenticated user but with no document passed
+    void shouldCreateAuditTrailWithFailedOutcomeForNullUser() {
+        Document document = mock(Document.class);
+        User user = new User();
+        user.setUsername("testUser");
+
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("testUser");
-
-        User user = new User(); // Mocked user
         when(userService.fetchUserByUsername("testUser")).thenReturn(user);
 
-        // Test the document verification audit with a null document
-        auditTrailAspect.captureDocumentAfterVerify(null);
+        when(userService.fetchUserByUsername(any(String.class))).thenReturn(null);
 
-        verify(auditTrailRepository, times(1)).save(any(AuditTrail.class));
-        AuditTrail auditTrail = captureAuditTrail();
-        assertEquals("FAILED", auditTrail.getAuditOutcome());
+        auditTrailAspect.captureDocumentAfterSubmit(document);
+
+        ArgumentCaptor<AuditTrail> auditTrailCaptor = ArgumentCaptor.forClass(AuditTrail.class);
+        verify(auditTrailService, times(1)).createAuditTrail(auditTrailCaptor.capture());
+
+        AuditTrail capturedAuditTrail = auditTrailCaptor.getValue();
+        assertEquals("FAILED", capturedAuditTrail.getAuditOutcome());
+        assertNull(capturedAuditTrail.getUser()); // No user should be set
+        assertNotNull(capturedAuditTrail.getDocument()); // The document should still be set
     }
 
-    private AuditTrail captureAuditTrail() {
-        // Capture the saved AuditTrail object for further assertions
-        var argument = ArgumentCaptor.forClass(AuditTrail.class);
-        verify(auditTrailRepository).save(argument.capture());
-        return argument.getValue();
+    @Test
+    void shouldCreateAuditTrailWithFailedOutcomeForNullDocument() {
+        User user = new User();
+        user.setUsername("testUser");
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("testUser");
+        when(userService.fetchUserByUsername("testUser")).thenReturn(user);
+
+        auditTrailAspect.captureDocumentAfterSubmit(null);
+
+        ArgumentCaptor<AuditTrail> captor = ArgumentCaptor.forClass(AuditTrail.class);
+        verify(auditTrailService).createAuditTrail(captor.capture());
+
+        AuditTrail capturedAuditTrail = captor.getValue();
+        assertEquals("SUBMIT", capturedAuditTrail.getAction());
+        assertEquals("FAILED", capturedAuditTrail.getAuditOutcome());
+        assertEquals(user, capturedAuditTrail.getUser());
+        assertNull(capturedAuditTrail.getDocument());
+    }
+
+    @Test
+    void shouldCreateAuditTrailForDocumentVerification() {
+        Document document = new Document();
+        User user = new User();
+        user.setUsername("testUser");
+
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("testUser");
+        when(userService.fetchUserByUsername("testUser")).thenReturn(user);
+
+        auditTrailAspect.captureDocumentAfterVerify(document);
+
+        ArgumentCaptor<AuditTrail> captor = ArgumentCaptor.forClass(AuditTrail.class);
+        verify(auditTrailService).createAuditTrail(captor.capture());
+
+        AuditTrail capturedAuditTrail = captor.getValue();
+        assertEquals("VERIFY", capturedAuditTrail.getAction());
+        assertEquals("SUCCESS", capturedAuditTrail.getAuditOutcome());
+        assertEquals(user, capturedAuditTrail.getUser());
+        assertEquals(document, capturedAuditTrail.getDocument());
     }
 }
