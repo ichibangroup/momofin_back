@@ -177,17 +177,46 @@ public class DocumentVerificationController {
     }
 
     @PostMapping("/edit-request/{documentId}")
-    public ResponseEntity<Document> editDocument(
+    public ResponseEntity<Response> editDocument(
             @PathVariable String documentId,
             @RequestHeader("Authorization") String token,
             @RequestParam("file") MultipartFile file) throws IOException, NoSuchAlgorithmException, InvalidKeyException {
+        try {
+            User user = new User();
+            user.setUserId(getUserId(token, jwtUtil));
+            Document document = new Document();
+            document.setDocumentId(UUID.fromString(documentId));
+            EditRequest request = new EditRequest(user, document);
+            Document editedDocument = documentService.editDocument(file, request);
+            return ResponseEntity.ok(new DocumentEditSuccessResponse(editedDocument));
+        } catch (RuntimeException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Error editing document: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    @DeleteMapping("/edit-request/{documentId}")
+    public ResponseEntity<String> rejectRequest(
+            @PathVariable String documentId,
+            @RequestHeader("Authorization") String token
+            ) {
         User user = new User();
         user.setUserId(getUserId(token, jwtUtil));
         Document document = new Document();
         document.setDocumentId(UUID.fromString(documentId));
         EditRequest request = new EditRequest(user, document);
-        Document editedDocument = documentService.editDocument(file, request);
-        return ResponseEntity.ok(editedDocument);
+        documentService.rejectEditRequest(request);
+        return ResponseEntity.ok("Request deleted successfully");
+    }
+
+    @DeleteMapping("/edit-request/{documentId}/cancel")
+    public ResponseEntity<String> cancelRequest(
+            @PathVariable String documentId,
+            @RequestHeader("Authorization") String token
+    ) {
+        UUID userId = getUserId(token, jwtUtil);
+        documentService.cancelEditRequest(UUID.fromString(documentId), userId);
+        return ResponseEntity.ok("Request deleted successfully");
     }
 
     @GetMapping("{documentId}/versions")
